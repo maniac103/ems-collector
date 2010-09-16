@@ -8,6 +8,8 @@
 std::string Options::m_deviceName;
 unsigned int Options::m_rateLimit = 0;
 DebugStream Options::m_debugStreams[DebugCount];
+std::string Options::m_pidFilePath;
+bool Options::m_daemonize = true;
 std::string Options::m_dbPath;
 std::string Options::m_dbUser;
 std::string Options::m_dbPass;
@@ -15,25 +17,35 @@ std::string Options::m_dbPass;
 Options::ParseResult
 Options::parse(int argc, char *argv[])
 {
+    std::string defaultPidFilePath;
+    
+    defaultPidFilePath = "/var/run/";
+    defaultPidFilePath += argv[0];
+    defaultPidFilePath += ".pid";
+
     boost::program_options::options_description general("General options");
     general.add_options()
-	("help", "Show this help message")
-	("ratelimit", boost::program_options::value<unsigned int>(&m_rateLimit)->default_value(0),
-	 "Rate limit (in s) for writing sensors into DB");
-
-    boost::program_options::options_description debug("Debug options");
-    debug.add_options()
-	("debug", boost::program_options::value<std::string>()->default_value("none"),
+	("help,h", "Show this help message")
+	("ratelimit,r", boost::program_options::value<unsigned int>(&m_rateLimit)->default_value(0),
+	 "Rate limit (in s) for writing sensors into DB")
+	("debug,d", boost::program_options::value<std::string>()->default_value("none"),
 	 "Comma separated list of debug flags (all, serial, message, data, none) "
 	 " and their files, e.g. message=/tmp/messages.txt");
+
+    boost::program_options::options_description daemon("Daemon options");
+    daemon.add_options()
+	("pid-file,p",
+	 boost::program_options::value<std::string>(&m_pidFilePath)->default_value(defaultPidFilePath),
+	 "Pid file path")
+	("foreground,f", "Run in foreground");
 
     boost::program_options::options_description db("Database options");
     db.add_options()
 	("db-path", boost::program_options::value<std::string>(&m_dbPath),
 	 "Path or server:port specification of database server (none to not connect to DB)")
-	("db-user", boost::program_options::value<std::string>(&m_dbUser),
+	("db-user,u", boost::program_options::value<std::string>(&m_dbUser),
 	 "Database user name")
-	("db-pass", boost::program_options::value<std::string>(&m_dbPass),
+	("db-pass,P", boost::program_options::value<std::string>(&m_dbPass),
 	 "Database password");
 
     boost::program_options::options_description hidden("Hidden options");
@@ -42,13 +54,13 @@ Options::parse(int argc, char *argv[])
 
     boost::program_options::options_description options;
     options.add(general);
-    options.add(debug);
+    options.add(daemon);
     options.add(db);
     options.add(hidden);
 
     boost::program_options::options_description visible;
     visible.add(general);
-    visible.add(debug);
+    visible.add(daemon);
     visible.add(db);
 
     boost::program_options::positional_options_description p;
@@ -70,6 +82,10 @@ Options::parse(int argc, char *argv[])
 	std::cerr << "Usage: " << argv[0] << " [options] <serial_device>" << std::endl;
 	std::cerr << visible << std::endl;
 	return ParseFailure;
+    }
+
+    if (variables.count("foreground")) {
+	m_daemonize = false;
     }
 
     if (variables.count("debug")) {

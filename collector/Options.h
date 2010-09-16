@@ -54,6 +54,12 @@ class Options
 	static const std::string& deviceName() {
 	    return m_deviceName;
 	}
+	static bool daemonize() {
+	    return m_daemonize;
+	}
+	static const std::string& pidFilePath() {
+	    return m_pidFilePath;
+	}
 	static const std::string& databasePath() {
 	    return m_dbPath;
 	}
@@ -87,6 +93,8 @@ class Options
     private:
 	static std::string m_deviceName;
 	static unsigned int m_rateLimit;
+	static std::string m_pidFilePath;
+	static bool m_daemonize;
 	static std::string m_dbPath;
 	static std::string m_dbUser;
 	static std::string m_dbPass;
