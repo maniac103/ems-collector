@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <boost/foreach.hpp>
+#include <boost/tokenizer.hpp>
 #include <boost/program_options.hpp>
 #include "Options.h"
 
@@ -86,40 +88,31 @@ Options::parse(int argc, char *argv[])
 		m_debugStreams[i].setFile(file);
 	    }
 	} else {
-	    size_t lastPos = 0, pos;
-	    while ((pos = flags.find(',', lastPos)) != std::string::npos) {
-		parseDebugDefinition(flags.substr(lastPos, pos - lastPos));
-		lastPos = pos + 1;
-	    }
-	    if (lastPos < flags.length()) {
-		parseDebugDefinition(flags.substr(lastPos));
+	    boost::char_separator<char> sep(",");
+	    boost::tokenizer<boost::char_separator<char> > tokens(flags, sep);
+	    BOOST_FOREACH(const std::string& item, tokens) {
+		std::string file;
+		size_t start = item.find('=');
+		unsigned int module;
+
+		if (item.compare(0, 6, "serial") == 0) {
+		    module = DebugSerial;
+		} else if (item.compare(0, 7, "message") == 0) {
+		    module = DebugMessages;
+		} else if (item.compare(0, 4, "data") == 0) {
+		    module = DebugData;
+		} else {
+		    continue;
+		}
+
+		if (start != std::string::npos) {
+		    file = item.substr(start + 1);
+		}
+		m_debugStreams[module].setFile(file);
 	    }
 	}
     }
 
     return ParseSuccess;
-}
-
-void
-Options::parseDebugDefinition(const std::string& definition)
-{
-    std::string file;
-    size_t start = definition.find('=');
-    unsigned int module;
-
-    if (definition.compare(0, 6, "serial") == 0) {
-	module = DebugSerial;
-    } else if (definition.compare(0, 7, "message") == 0) {
-	module = DebugMessages;
-    } else if (definition.compare(0, 4, "data") == 0) {
-	module = DebugData;
-    } else {
-	return;
-    }
-
-    if (start != std::string::npos) {
-	file = definition.substr(start + 1);
-    }
-    m_debugStreams[module].setFile(file);
 }
 

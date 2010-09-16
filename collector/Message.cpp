@@ -1,20 +1,15 @@
 #include <iostream>
-#include <iomanip>
+#include <boost/format.hpp>
 #include <cassert>
 #include "Message.h"
 #include "Options.h"
 
-#define BYTEFORMAT_HEX \
-    "0x" << std::setbase(16) << std::setw(2) << std::setfill('0') << (unsigned int)
-#define BYTEFORMAT_DEC \
-    std::dec << (unsigned int)
-
-#define RETURN_ON_SIZE_MISMATCH(expected,text)                 \
-    if (m_buffer.size() != expected) {                         \
-	std::cerr << text << " size mismatch (";               \
-	std::cerr << std::dec << m_buffer.size() << " vs. ";   \
-	std::cerr << expected << ")" << std::endl;             \
-	return;                                                \
+#define RETURN_ON_SIZE_MISMATCH(expected,text)     \
+    if (m_buffer.size() != expected) {             \
+	std::cerr << text << " size mismatch (";   \
+	std::cerr << m_buffer.size() << " vs. ";   \
+	std::cerr << expected << ")" << std::endl; \
+	return;                                    \
     }
 
 void
@@ -31,16 +26,13 @@ Message::parse()
 	struct tm time;
 
 	localtime_r(&now, &time);
-	debug << std::dec << "MESSAGE[";
-	debug << std::setw(2) << std::setfill('0') << time.tm_mday;
-	debug << "." << std::setw(2) << std::setfill('0') << (time.tm_mon + 1);
-	debug << "." << (time.tm_year + 1900) << " ";
-	debug << std::setw(2) << std::setfill('0') << time.tm_hour;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_min;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_sec;
+	debug << "MESSAGE[";
+	debug << boost::format("%1$02d.%2$02d.%3 %4$02d:%5$02d:%6$02d")
+	      % time.tm_mday % (time.tm_mon + 1) % (time.tm_year + 1900)
+	      % time.tm_hour % time.tm_min % time.tm_sec;
 	debug << "]: ";
 	for (size_t i = 0; i < m_buffer.size(); i++) {
-	    debug << " " << BYTEFORMAT_HEX m_buffer[i];
+	    debug << " " << boost::format("%1$#02x") % m_buffer[i];
 	}
 	debug << std::endl;
     }
@@ -129,8 +121,9 @@ Message::parse()
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
 	    dataDebug << "DATA: Unhandled message received";
-	    dataDebug << "(source " << BYTEFORMAT_HEX source << ", type ";
-	    dataDebug << BYTEFORMAT_HEX type << ")." << std::endl;
+	    dataDebug << "(source " << boost::format("%1$#02x") % source;
+	    dataDebug << ", type " << boost::format("%1$#02x") % type;
+	    dataDebug << ")." << std::endl;
 	}
     }
 }
@@ -210,14 +203,14 @@ Message::parseUBAStatus1Message()
     DebugStream& debug = Options::dataDebug();
     if (debug) {
 	debug << "DATA: Servicecode = " << m_buffer[19] << m_buffer[20] << std::endl;
-	debug << "DATA: Fehlercode = " << BYTEFORMAT_DEC m_buffer[22] << std::endl;
+	debug << "DATA: Fehlercode = " << boost::format("%1%d") % m_buffer[22] << std::endl;
 	debug << "DATA: Betriebsart = ";
 	switch (m_buffer[24]) {
 	    case 0: debug << "Auto"; break;
 	    case 1: debug << "Nacht"; break;
 	    case 2: debug << "Tag"; break;
 	    case 3: debug << "Warmwasser"; break;
-	    default: debug << "??? " << BYTEFORMAT_DEC m_buffer[24]; break;
+	    default: debug << "??? " << boost::format("%1$d") % m_buffer[24]; break;
 	}
 	debug << std::endl;
     }
@@ -292,12 +285,12 @@ Message::parseRCTimeMessage()
 
     DebugStream& debug = Options::dataDebug();
     if (debug) {
-	debug << "DATA: Datum =  " << BYTEFORMAT_DEC m_buffer[4] << ".";
-	debug << BYTEFORMAT_DEC m_buffer[2] << ".";
-	debug << BYTEFORMAT_DEC (2000 + m_buffer[1]) << std::endl;
-	debug << "DATA: Zeit = " << BYTEFORMAT_DEC m_buffer[3] << ":";
-	debug << BYTEFORMAT_DEC m_buffer[5] << ":";
-	debug << BYTEFORMAT_DEC m_buffer[6] << std::endl;
+	debug << "DATA: Datum =  ";
+	debug << boost::format("%1$d.%2$d.%3$d")
+	      % m_buffer[4] % m_buffer[2] % (2000 + m_buffer[1]) << std::endl;
+	debug << "DATA: Zeit = ";
+	debug << boost::format("%1$d:%2$02d:%3%02d")
+	      % m_buffer[3] % m_buffer[5] % m_buffer[6] << std::endl;
 	debug << "DATA: Wochentag = ";
 	switch (m_buffer[7]) {
 	    case 0: debug << "Montag"; break;
@@ -307,7 +300,7 @@ Message::parseRCTimeMessage()
 	    case 4: debug << "Freitag"; break;
 	    case 5: debug << "Samstag"; break;
 	    case 6: debug << "Sonntag"; break;
-	    default: debug << "???" << BYTEFORMAT_DEC m_buffer[7];
+	    default: debug << "???" << boost::format("%1$d") % m_buffer[7];
 	}
 	debug << std::endl;
     }
@@ -332,9 +325,9 @@ Message::parseRCHK1StatusMessage()
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: Kennlinie HK1 "
-			     << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
-			     << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
-			     << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
+			     << "10°C -> " << boost::format("%1$d") %m_buffer[8]
+			     << "°C / 0°C -> " << boost::format("%1$d") % m_buffer[9]
+			     << "°C / -10°C -> " << boost::format("%1$d") % m_buffer[10]
 			     << "°C" << std::endl;
     }
 
@@ -356,9 +349,9 @@ Message::parseRCHK2StatusMessage()
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: Kennlinie HK2 "
-			     << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
-			     << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
-			     << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
+			     << "10°C -> " << boost::format("%1$d") %m_buffer[8]
+			     << "°C / 0°C -> " << boost::format("%1$d") % m_buffer[9]
+			     << "°C / -10°C -> " << boost::format("%1$d") % m_buffer[10]
 			     << "°C" << std::endl;
     }
 
@@ -400,7 +393,7 @@ Message::parseMMTempMessage()
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: MM10 Flags "
-			     << BYTEFORMAT_HEX m_buffer[7] << std::endl;
+			     << boost::format("%1$#02x") % m_buffer[7] << std::endl;
     }
 }
 

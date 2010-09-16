@@ -72,7 +72,6 @@ class Options
 	static const unsigned int DebugData = 2;
 	static const unsigned int DebugCount = 3;
 	static DebugStream m_debugStreams[DebugCount];
-	static void parseDebugDefinition(const std::string& definition);
 
     public:
 	static DebugStream& serialDebug() {

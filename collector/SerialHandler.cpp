@@ -1,5 +1,5 @@
 #include <iostream>
-#include <iomanip>
+#include <boost/format.hpp>
 #include "SerialHandler.h"
 #include "Options.h"
 
@@ -45,11 +45,9 @@ SerialHandler::readComplete(const boost::system::error_code& error,
     }
 
     if (debug) {
-	debug << "SERIAL: Got bytes ";
+	debug << "SERIAL: Got bytes";
 	for (size_t i = 0; i < bytesTransferred; i++) {
-	    debug << std::setfill('0') << std::setw(2)
-		  << std::showbase << std::hex
-		  << (unsigned int) m_recvBuffer[i] << " ";
+	    debug << " " << boost::format("%1$02x") % m_recvBuffer[i];
 	}
 	debug << std::endl;
     }
