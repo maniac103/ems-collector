@@ -36,7 +36,6 @@ class Database {
 	    SensorVorlaufHK2IstTemp,
 	    SensorMischersteuerung,
 	    SensorRuecklaufTemp,
-	    SensorAnlagenTemp,
 	    SensorAussenTemp,
 	    SensorGedaempfteAussenTemp,
 	    SensorRaumSollTemp,

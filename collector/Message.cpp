@@ -196,8 +196,6 @@ Message::parseUBAStatus1Message()
 			  "°C", Database::NumericSensorLast);
     printNumberAndAddToDb(14, 2, 10, "Rücklauftemperatur",
 			  "°C", Database::SensorRuecklaufTemp);
-    printNumberAndAddToDb(21, 2, 10, "Anlagentemperatur",
-			  "°C", Database::SensorAnlagenTemp);
     printNumberAndAddToDb(4, 1, 1, "Max. Leistung", "%",
 			  Database::SensorMaxLeistung /* FIXME: remove */);
     printNumberAndAddToDb(5, 1, 1, "Mom. Leistung", "%",
