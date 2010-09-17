@@ -56,6 +56,8 @@ class Database {
 	    SensorBrenner,
 	    SensorZuendung,
 	    SensorHKPumpe,
+	    SensorHK1Pumpe,
+	    SensorHK2Pumpe,
 	    SensorHKWW,
 	    SensorZirkulation,
 	    Sensor3WegeHeizen,

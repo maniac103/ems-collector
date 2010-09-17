@@ -209,15 +209,6 @@ Message::parseUBAStatus1Message()
     if (debug) {
 	debug << "DATA: Servicecode = " << m_buffer[19] << m_buffer[20] << std::endl;
 	debug << "DATA: Fehlercode = " << BYTEFORMAT_DEC m_buffer[22] << std::endl;
-	debug << "DATA: Betriebsart = ";
-	switch (m_buffer[24]) {
-	    case 0: debug << "Auto"; break;
-	    case 1: debug << "Nacht"; break;
-	    case 2: debug << "Tag"; break;
-	    case 3: debug << "Warmwasser"; break;
-	    default: debug << "??? " << BYTEFORMAT_DEC m_buffer[24]; break;
-	}
-	debug << std::endl;
     }
 
     printBoolAndAddToDb(8, 0, "Flamme", Database::SensorFlamme);
@@ -266,7 +257,6 @@ Message::parseUBAStatus3Message()
     printNumberAndAddToDb(4, 2, 10, "Mom. Wassertemperatur", "°C",
 			  Database::NumericSensorLast /* FIXME? */);
 
-    printBoolAndAddToDb(6, 0, "Tagbetrieb", Database::SensorTagbetrieb);
     printBoolAndAddToDb(6, 3, "Warmwasserbereitung", Database::SensorWarmwasserBereitung);
     printBoolAndAddToDb(6, 5, "3-Wege-Ventil Heizen", Database::BooleanSensorLast);
 }
@@ -315,6 +305,7 @@ Message::parseRCOutdoorTempMessage()
 {
     printNumberAndAddToDb(1, 1, 1, "Gedämpfte Außentemperatur", "°C",
 			  Database::SensorGedaempfteAussenTemp);
+    printBoolAndAddToDb(3, 0, "Tagbetrieb", Database::SensorTagbetrieb);
 }
 
 void
@@ -337,8 +328,11 @@ Message::parseRCHK1StatusMessage()
 
     printNumberAndAddToDb(15, 1, 1, "Vorlauf HK1 Solltemperatur", "°C",
 			  Database::SensorVorlaufHK1SollTemp);
-    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(14, 4, "Pumpe HK1", Database::BooleanSensorLast);
+    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
+    /* FIXME */
+    printBoolAndAddToDb(1, 2, "??? Automatikbetrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 7, "??? Pumpe HK1", Database::BooleanSensorLast);
+    printBoolAndAddToDb(14, 4, "Pumpe HK1", Database::SensorHK1Pumpe);
 }
 
 void
@@ -361,8 +355,11 @@ Message::parseRCHK2StatusMessage()
 
     printNumberAndAddToDb(15, 1, 1, "Vorlauf HK2 Solltemperatur", "°C",
 			  Database::SensorVorlaufHK2SollTemp);
-    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(14, 4, "Pumpe HK2", Database::BooleanSensorLast);
+    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
+    /* FIXME */
+    printBoolAndAddToDb(1, 2, "??? Automatikbetrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 7, "??? Pumpe HK1", Database::BooleanSensorLast);
+    printBoolAndAddToDb(14, 4, "Pumpe HK2", Database::SensorHK2Pumpe);
 }
 
 void
