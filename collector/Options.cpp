@@ -14,6 +14,14 @@ std::string Options::m_dbPath;
 std::string Options::m_dbUser;
 std::string Options::m_dbPass;
 
+static void
+usage(std::ostream& stream, const char *programName,
+      boost::program_options::options_description& options)
+{
+    stream << "Usage: " << programName << " [options] <serial_device>" << std::endl;
+    stream << options << std::endl;
+}
+
 Options::ParseResult
 Options::parse(int argc, char *argv[])
 {
@@ -67,20 +75,23 @@ Options::parse(int argc, char *argv[])
     p.add("device", 1);
 
     boost::program_options::variables_map variables;
-    boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-				  options(options).positional(p).run(), variables);
-    boost::program_options::notify(variables);
+    try {
+	boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+				      options(options).positional(p).run(), variables);
+	boost::program_options::notify(variables);
+    } catch (boost::program_options::unknown_option& e) {
+	usage(std::cerr, argv[0], visible);
+	return ParseFailure;
+    }
 
     if (variables.count("help")) {
-	std::cout << "Usage: " << argv[0] << " [options] <serial_device>" << std::endl;
-	std::cout << visible << std::endl;
+	usage(std::cout, argv[0], visible);
 	return CloseAfterParse;
     }
 
     /* check for missing variables */
     if (!variables.count("device")) {
-	std::cerr << "Usage: " << argv[0] << " [options] <serial_device>" << std::endl;
-	std::cerr << visible << std::endl;
+	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
     }
 
