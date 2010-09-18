@@ -23,7 +23,7 @@ class DebugStream : public std::ostream
 	    } else if (file == "stderr") {
 		rdbuf(std::cerr.rdbuf());
 	    } else if (!file.empty()) {
-		m_fileBuf.open(file.c_str(), std::ios::out);
+		m_fileBuf.open(file.c_str(), std::ios::out | std::ios::app);
 		rdbuf(&m_fileBuf);
 	    }
 	    m_active = true;
