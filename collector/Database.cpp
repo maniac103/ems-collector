@@ -146,7 +146,7 @@ Database::createSensorRows()
     query.execute(SensorRuecklaufTemp, sensorTypeNumeric,
 		  "Rücklauftemperatur", readingTypeTemperature, "°C");
     query.execute(SensorAussenTemp, sensorTypeNumeric,
-		  "Außenemperatur", readingTypeTemperature, "°C");
+		  "Außentemperatur", readingTypeTemperature, "°C");
     query.execute(SensorGedaempfteAussenTemp, sensorTypeNumeric,
 		  "Gedämpfte Außentemperatur", readingTypeTemperature, "°C");
     query.execute(SensorRaumSollTemp, sensorTypeNumeric,
