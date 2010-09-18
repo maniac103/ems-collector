@@ -63,6 +63,7 @@ class Database {
 	    Sensor3WegeHeizen,
 	    Sensor3WegeWW,
 	    SensorWarmwasserBereitung,
+	    SensorAutomatikbetrieb,
 	    SensorTagbetrieb,
 	    BooleanSensorLast
 	} BooleanSensors;

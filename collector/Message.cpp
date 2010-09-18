@@ -329,9 +329,7 @@ Message::parseRCHK1StatusMessage()
     printNumberAndAddToDb(15, 1, 1, "Vorlauf HK1 Solltemperatur", "°C",
 			  Database::SensorVorlaufHK1SollTemp);
     printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
-    /* FIXME */
-    printBoolAndAddToDb(1, 2, "??? Automatikbetrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 7, "??? Pumpe HK1", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
     printBoolAndAddToDb(14, 4, "Pumpe HK1", Database::SensorHK1Pumpe);
 }
 
@@ -356,9 +354,7 @@ Message::parseRCHK2StatusMessage()
     printNumberAndAddToDb(15, 1, 1, "Vorlauf HK2 Solltemperatur", "°C",
 			  Database::SensorVorlaufHK2SollTemp);
     printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
-    /* FIXME */
-    printBoolAndAddToDb(1, 2, "??? Automatikbetrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 7, "??? Pumpe HK1", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
     printBoolAndAddToDb(14, 4, "Pumpe HK2", Database::SensorHK2Pumpe);
 }
 

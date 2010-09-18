@@ -180,6 +180,7 @@ Database::createSensorRows()
     query.execute(Sensor3WegeHeizen, sensorTypeBoolean, "3-Wege-Ventil Heizen");
     query.execute(Sensor3WegeWW, sensorTypeBoolean, "3-Wege-Ventil Warmwasser");
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
+    query.execute(SensorAutomatikbetrieb, sensorTypeBoolean, "Automatikbetrieb");
     query.execute(SensorTagbetrieb, sensorTypeBoolean, "Tagbetrieb");
 
     transaction.commit();
