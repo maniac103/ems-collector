@@ -82,6 +82,9 @@ Options::parse(int argc, char *argv[])
     } catch (boost::program_options::unknown_option& e) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
+    } catch (boost::program_options::multiple_occurrences& e) {
+	usage(std::cerr, argv[0], visible);
+	return ParseFailure;
     }
 
     if (variables.count("help")) {
