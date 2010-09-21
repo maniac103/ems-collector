@@ -318,7 +318,7 @@ Message::parseRCTimeMessage()
 
     DebugStream& debug = Options::dataDebug();
     if (debug) {
-	debug << "DATA: Datum =  " << BYTEFORMAT_DEC m_buffer[4] << ".";
+	debug << "DATA: Datum = " << BYTEFORMAT_DEC m_buffer[4] << ".";
 	debug << BYTEFORMAT_DEC m_buffer[2] << ".";
 	debug << BYTEFORMAT_DEC (2000 + m_buffer[1]) << std::endl;
 	debug << "DATA: Zeit = " << BYTEFORMAT_DEC m_buffer[3] << ":";
@@ -386,9 +386,9 @@ Message::parseRCHKMonitorMessage(const char *name,
 	      << "°C" << std::endl;
 
 	debug << "DATA: Einschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_buffer[6] << "min" << std::endl;
+	      << BYTEFORMAT_DEC m_buffer[6] << " min" << std::endl;
 	debug << "DATA: Ausschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_buffer[7] << "min" << std::endl;
+	      << BYTEFORMAT_DEC m_buffer[7] << " min" << std::endl;
     }
 
     text = "Vorlauf ";
