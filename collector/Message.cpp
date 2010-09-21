@@ -76,15 +76,15 @@ Message::parse()
 		     * 0x8 0x10 0x11 0x24 0x32 0x46 0x1 0x4 0x8a 0x3 0x5 0x5 0x1e 0x0 0x0 0x0 */
 		    break;
 		case 0x14: parseUBAUnknown1Message(); handled = true; break;
-		case 0x18: parseUBAStatus1Message(); handled = true; break;
-		case 0x19: parseUBAStatus2Message(); handled = true; break;
+		case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
+		case 0x19: parseUBAMonitorSlowMessage(); handled = true; break;
 		case 0x1c:
 		    /* unknown message with varying length
 		     * 0x8 0x10 0x1c 0x0 0x8a 0x4 0x13 0x1c 0x1d 0x0 0x0 0x0
 		     * 0x8 0x10 0x1c 0x8
 		     */
 		    break;
-		case 0x34: parseUBAStatus3Message(); handled = true; break;
+		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
 	    }
 	    break;
 	case 0x09:
@@ -101,8 +101,16 @@ Message::parse()
 		case 0x06: parseRCTimeMessage(); handled = true; break;
 		case 0x1A: /* command for UBA3 */ handled = true; break;
 		case 0x35: /* command for UBA3 */ handled = true; break;
-		case 0x3E: parseRCHK1StatusMessage(); handled = true; break;
-		case 0x48: parseRCHK2StatusMessage(); handled = true; break;
+		case 0x3E:
+		    parseRCHKMonitorMessage("HK1", Database::SensorVorlaufHK1SollTemp,
+					    Database::SensorHK1Active);
+		    handled = true;
+		    break;
+		case 0x48:
+		    parseRCHKMonitorMessage("HK2", Database::SensorVorlaufHK2SollTemp,
+					    Database::SensorHK2Active);
+		    handled = true;
+		    break;
 		case 0x9D: /* command for WM10 */ handled = true; break;
 		case 0xA2: /* unknown, 11 zeros */ break;
 		case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
@@ -184,9 +192,9 @@ Message::printBoolAndAddToDb(int byte, int bit, const char *name,
 }
 
 void
-Message::parseUBAStatus1Message()
+Message::parseUBAMonitorFastMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(26, "Status1");
+    RETURN_ON_SIZE_MISMATCH(26, "Monitor Fast");
 
     printNumberAndAddToDb(1, 1, 1, "Kessel-Solltemperatur",
 			  "°C", Database::SensorKesselSollTemp);
@@ -196,6 +204,8 @@ Message::parseUBAStatus1Message()
 			  "°C", Database::NumericSensorLast);
     printNumberAndAddToDb(14, 2, 10, "Rücklauftemperatur",
 			  "°C", Database::SensorRuecklaufTemp);
+    printNumberAndAddToDb(26, 2, 10, "Ansauglufttemperatur",
+			  "°C", Database::SensorAnsaugluftTemp);
     printNumberAndAddToDb(4, 1, 1, "Max. Leistung", "%",
 			  Database::SensorMaxLeistung /* FIXME: remove */);
     printNumberAndAddToDb(5, 1, 1, "Mom. Leistung", "%",
@@ -222,13 +232,15 @@ Message::parseUBAStatus1Message()
 }
 
 void
-Message::parseUBAStatus2Message()
+Message::parseUBAMonitorSlowMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(26, "Status2");
+    RETURN_ON_SIZE_MISMATCH(26, "Monitor Slow");
 
     printNumberAndAddToDb(1, 2, 10, "Außentemperatur", "°C",
 			  Database::SensorAussenTemp);
     printNumberAndAddToDb(3, 2, 10, "Kesseltemperatur", "°C",
+			  Database::NumericSensorLast);
+    printNumberAndAddToDb(5, 2, 10, "Abgastemperatur", "°C",
 			  Database::NumericSensorLast);
     printNumberAndAddToDb(11, 3, 1, "Brennerstarts", "",
 			  Database::SensorBrennerstarts);
@@ -241,24 +253,51 @@ Message::parseUBAStatus2Message()
 }
 
 void
-Message::parseUBAStatus3Message()
+Message::parseUBAMonitorWWMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(17, "Status3");
+    DebugStream& debug = Options::dataDebug();
+
+    RETURN_ON_SIZE_MISMATCH(17, "Monitor WW");
 
     printNumberAndAddToDb(1, 1, 1, "Warmwasser-Solltemperatur", "°C",
 			  Database::SensorWarmwasserSollTemp);
-    printNumberAndAddToDb(2, 2, 10, "Warmwasser-Isttemperatur", "°C",
+    printNumberAndAddToDb(2, 2, 10, "Warmwasser-Isttemperatur (Messstelle 1)", "°C",
 			  Database::SensorWarmwasserIstTemp);
     printNumberAndAddToDb(11, 3, 10 * 60, "Warmwasserbereitungszeit", "h",
 			  Database::SensorWarmwasserbereitungsZeit);
     printNumberAndAddToDb(14, 3, 1, "Warmwasserbereitungen", "",
 			  Database::SensorWarmwasserBereitungen);
-    /* TODO */
-    printNumberAndAddToDb(4, 2, 10, "Mom. Wassertemperatur", "°C",
-			  Database::NumericSensorLast /* FIXME? */);
+    printNumberAndAddToDb(4, 2, 10, "Warmwasser-Isttemperatur (Messstelle 2)", "°C",
+			  Database::NumericSensorLast);
 
+    printBoolAndAddToDb(6, 0, "Tagbetrieb", Database::SensorTagbetrieb);
+    printBoolAndAddToDb(6, 1, "Einmalladung", Database::BooleanSensorLast);
+    printBoolAndAddToDb(6, 2, "Thermische Desinfektion", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 3, "Warmwasserbereitung", Database::SensorWarmwasserBereitung);
-    printBoolAndAddToDb(6, 5, "3-Wege-Ventil Heizen", Database::BooleanSensorLast);
+    printBoolAndAddToDb(6, 4, "Warmwassernachladung", Database::BooleanSensorLast);
+    printBoolAndAddToDb(6, 5, "Warmwassertemp OK", Database::SensorWarmwasserTempOK);
+
+    printBoolAndAddToDb(8, 2, "Zirkulation", Database::SensorZirkulation);
+
+    if (debug) {
+	debug << "DATA: Art des Warmwassersystems: ";
+	if (m_buffer[9] & (1 << 0)) {
+	    debug << "keins ";
+	}
+	if (m_buffer[9] & (1 << 1)) {
+	    debug << "Durchlauferhitzer ";
+	}
+	if (m_buffer[9] & (1 << 2)) {
+	    debug << "kleiner Speicher ";
+	}
+	if (m_buffer[9] & (1 << 3)) {
+	    debug << "großer Speicher ";
+	}
+	if (m_buffer[9] & (1 << 4)) {
+	    debug << "Speicherladesystem ";
+	}
+	debug << std::endl;
+    }
 }
 
 void
@@ -297,6 +336,18 @@ Message::parseRCTimeMessage()
 	    default: debug << "???" << BYTEFORMAT_DEC m_buffer[7];
 	}
 	debug << std::endl;
+
+	debug << "DATA: Konfiguration = ";
+	if (m_buffer[8] & (1 << 0)) {
+	    debug << "Sommerzeit ";
+	}
+	if (m_buffer[8] & (1 << 1)) {
+	    debug << "Funkuhr ";
+	}
+	if (m_buffer[8] & (1 << 4)) {
+	    debug << "Uhr läuft ";
+	}
+	debug << std::endl;
     }
 }
 
@@ -309,53 +360,59 @@ Message::parseRCOutdoorTempMessage()
 }
 
 void
-Message::parseRCHK1StatusMessage()
+Message::parseRCHKMonitorMessage(const char *name,
+				 Database::NumericSensors vorlaufSollSensor,
+				 Database::BooleanSensors aktivSensor)
 {
-    RETURN_ON_SIZE_MISMATCH(16, "RC HK1 Status");
+    std::string text;
+    DebugStream& debug = Options::dataDebug();
+
+    text = "RC ";
+    text += name;
+    text += " Monitor";
+
+    RETURN_ON_SIZE_MISMATCH(16, text);
 
     printNumberAndAddToDb(3, 1, 2, "Raum-Solltemperatur", "°C",
 			  Database::SensorRaumSollTemp);
     printNumberAndAddToDb(4, 2, 10, "Raum-Isttemperatur", "°C",
 			  Database::SensorRaumIstTemp);
 
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: Kennlinie HK1 "
-			     << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
-			     << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
-			     << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
-			     << "°C" << std::endl;
+    if (debug) {
+	debug << "DATA: Kennlinie " << name << " "
+	      << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
+	      << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
+	      << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
+	      << "°C" << std::endl;
+
+	debug << "DATA: Einschaltoptimierungszeit "
+	      << BYTEFORMAT_DEC m_buffer[6] << "min" << std::endl;
+	debug << "DATA: Ausschaltoptimierungszeit "
+	      << BYTEFORMAT_DEC m_buffer[7] << "min" << std::endl;
     }
 
-    printNumberAndAddToDb(15, 1, 1, "Vorlauf HK1 Solltemperatur", "°C",
-			  Database::SensorVorlaufHK1SollTemp);
-    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
+    text = "Vorlauf ";
+    text += name;
+    text += " Solltemperatur";
+    printNumberAndAddToDb(15, 1, 1, text.c_str(), "°C", vorlaufSollSensor);
+
     printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
-    printBoolAndAddToDb(14, 4, "Pumpe HK1", Database::SensorHK1Pumpe);
-}
-
-void
-Message::parseRCHK2StatusMessage()
-{
-    RETURN_ON_SIZE_MISMATCH(16, "RC HK2 Status");
-
-    printNumberAndAddToDb(3, 1, 2, "Raum-Solltemperatur", "°C",
-			  Database::SensorRaumSollTemp);
-    printNumberAndAddToDb(4, 2, 10, "Raum-Isttemperatur", "°C",
-			  Database::SensorRaumIstTemp);
-
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: Kennlinie HK2 "
-			     << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
-			     << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
-			     << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
-			     << "°C" << std::endl;
-    }
-
-    printNumberAndAddToDb(15, 1, 1, "Vorlauf HK2 Solltemperatur", "°C",
-			  Database::SensorVorlaufHK2SollTemp);
+    printBoolAndAddToDb(1, 0, "Ausschaltoptimierung", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 1, "Einschaltoptimierung", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 4, "Estrichtrocknung", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 5, "Ferienbetrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 6, "Frostschutz", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 7, "Manueller Betrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
+    printBoolAndAddToDb(2, 0, "Sommerbetrieb", Database::SensorSommerbetrieb);
     printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
-    printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
-    printBoolAndAddToDb(14, 4, "Pumpe HK2", Database::SensorHK2Pumpe);
+    printBoolAndAddToDb(2, 7, "Partybetrieb", Database::BooleanSensorLast);
+
+    text = "Schaltuhr ";
+    text += name;
+    printBoolAndAddToDb(14, 4, text.c_str(), aktivSensor);
 }
 
 void

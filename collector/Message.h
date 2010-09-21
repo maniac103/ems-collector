@@ -29,15 +29,16 @@ class Message
 	void parse();
 
     private:
-	void parseUBAStatus1Message();
-	void parseUBAStatus2Message();
-	void parseUBAStatus3Message();
+	void parseUBAMonitorFastMessage();
+	void parseUBAMonitorSlowMessage();
+	void parseUBAMonitorWWMessage();
 	void parseUBAUnknown1Message();
 
 	void parseRCTimeMessage();
 	void parseRCOutdoorTempMessage();
-	void parseRCHK1StatusMessage();
-	void parseRCHK2StatusMessage();
+	void parseRCHKMonitorMessage(const char *name,
+				     Database::NumericSensors vorlaufSollSensor,
+				     Database::BooleanSensors aktivSensor);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();

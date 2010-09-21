@@ -48,6 +48,7 @@ class Database {
 	    SensorBrennerstarts,
 	    SensorWarmwasserbereitungsZeit,
 	    SensorWarmwasserBereitungen,
+	    SensorAnsaugluftTemp,
 	    NumericSensorLast
 	} NumericSensors;
 
@@ -56,8 +57,8 @@ class Database {
 	    SensorBrenner,
 	    SensorZuendung,
 	    SensorHKPumpe,
-	    SensorHK1Pumpe,
-	    SensorHK2Pumpe,
+	    SensorHK1Active,
+	    SensorHK2Active,
 	    SensorHKWW,
 	    SensorZirkulation,
 	    Sensor3WegeHeizen,
@@ -65,6 +66,8 @@ class Database {
 	    SensorWarmwasserBereitung,
 	    SensorAutomatikbetrieb,
 	    SensorTagbetrieb,
+	    SensorSommerbetrieb,
+	    SensorWarmwasserTempOK,
 	    BooleanSensorLast
 	} BooleanSensors;
 

@@ -145,6 +145,8 @@ Database::createSensorRows()
 		  "Mischersteuerung", readingTypeNone, "");
     query.execute(SensorRuecklaufTemp, sensorTypeNumeric,
 		  "Rücklauftemperatur", readingTypeTemperature, "°C");
+    query.execute(SensorAnsaugluftTemp, sensorTypeNumeric,
+		  "Ansauglufttemperatur", readingTypeTemperature, "°C");
     query.execute(SensorAussenTemp, sensorTypeNumeric,
 		  "Außentemperatur", readingTypeTemperature, "°C");
     query.execute(SensorGedaempfteAussenTemp, sensorTypeNumeric,
@@ -182,6 +184,10 @@ Database::createSensorRows()
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
     query.execute(SensorAutomatikbetrieb, sensorTypeBoolean, "Automatikbetrieb");
     query.execute(SensorTagbetrieb, sensorTypeBoolean, "Tagbetrieb");
+    query.execute(SensorSommerbetrieb, sensorTypeBoolean, "Sommerbetrieb");
+    query.execute(SensorWarmwasserTempOK, sensorTypeBoolean, "Warmwassertemperatur OK");
+    query.execute(SensorHK1Active, sensorTypeBoolean, "HK1 aktiv");
+    query.execute(SensorHK2Active, sensorTypeBoolean, "HK2 aktiv");
 
     transaction.commit();
 }
