@@ -204,8 +204,6 @@ Message::parseUBAMonitorFastMessage()
 			  "°C", Database::NumericSensorLast);
     printNumberAndAddToDb(14, 2, 10, "Rücklauftemperatur",
 			  "°C", Database::SensorRuecklaufTemp);
-    printNumberAndAddToDb(26, 2, 10, "Ansauglufttemperatur",
-			  "°C", Database::SensorAnsaugluftTemp);
     printNumberAndAddToDb(4, 1, 1, "Max. Leistung", "%",
 			  Database::SensorMaxLeistung /* FIXME: remove */);
     printNumberAndAddToDb(5, 1, 1, "Mom. Leistung", "%",

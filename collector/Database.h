@@ -48,7 +48,6 @@ class Database {
 	    SensorBrennerstarts,
 	    SensorWarmwasserbereitungsZeit,
 	    SensorWarmwasserBereitungen,
-	    SensorAnsaugluftTemp,
 	    NumericSensorLast
 	} NumericSensors;
 

@@ -145,8 +145,6 @@ Database::createSensorRows()
 		  "Mischersteuerung", readingTypeNone, "");
     query.execute(SensorRuecklaufTemp, sensorTypeNumeric,
 		  "Rücklauftemperatur", readingTypeTemperature, "°C");
-    query.execute(SensorAnsaugluftTemp, sensorTypeNumeric,
-		  "Ansauglufttemperatur", readingTypeTemperature, "°C");
     query.execute(SensorAussenTemp, sensorTypeNumeric,
 		  "Außentemperatur", readingTypeTemperature, "°C");
     query.execute(SensorGedaempfteAussenTemp, sensorTypeNumeric,
