@@ -72,6 +72,7 @@ Database::createTables()
 	      << "  name VARCHAR(100) NOT NULL, "
 	      << "  reading_type TINYINT UNSIGNED, "
 	      << "  unit VARCHAR(10), "
+	      << "  precision TINYINT UNSIGNED, "
 	      << "  PRIMARY KEY (type)) "
 	      << "ENGINE MyISAM CHARACTER SET utf8";
 	query.execute();
@@ -120,47 +121,49 @@ Database::createSensorRows()
     mysqlpp::Transaction transaction(m_connection);
     mysqlpp::Query query = m_connection.query();
 
-    query << "insert into sensors values (%0q, %1q, %2q, %3q:reading_type, %4q:unit)";
+    query << "insert into sensors values (%0q, %1q, %2q, %3q:reading_type, %4q:unit, %5q:precision)";
     query.parse();
     query.template_defaults["unit"] = mysqlpp::null;
     query.template_defaults["reading_type"] = mysqlpp::null;
+    query.template_defaults["precision"] = mysqlpp::null;
+
     /* Numeric sensors */
     query.execute(SensorKesselSollTemp, sensorTypeNumeric,
-		  "Kessel-Soll-Temperatur", readingTypeTemperature, "°C");
+		  "Kessel-Soll-Temperatur", readingTypeTemperature, "°C", 0);
     query.execute(SensorKesselIstTemp, sensorTypeNumeric,
-		  "Kessel-Ist-Temperatur", readingTypeTemperature, "°C");
+		  "Kessel-Ist-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorWarmwasserSollTemp, sensorTypeNumeric,
-		  "Warmwasser-Soll-Temperatur", readingTypeTemperature, "°C");
+		  "Warmwasser-Soll-Temperatur", readingTypeTemperature, "°C", 0);
     query.execute(SensorWarmwasserIstTemp, sensorTypeNumeric,
-		  "Warmwasser-Ist-Temperatur", readingTypeTemperature, "°C");
+		  "Warmwasser-Ist-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorVorlaufHK1SollTemp, sensorTypeNumeric,
-		  "Vorlauf HK1-Soll-Temperatur", readingTypeTemperature, "°C");
+		  "Vorlauf HK1-Soll-Temperatur", readingTypeTemperature, "°C", 0);
     query.execute(SensorVorlaufHK1IstTemp, sensorTypeNumeric,
-		  "Vorlauf HK1-Ist-Temperatur", readingTypeTemperature, "°C");
+		  "Vorlauf HK1-Ist-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorVorlaufHK2SollTemp, sensorTypeNumeric,
-		  "Vorlauf HK2-Soll-Temperatur", readingTypeTemperature, "°C");
+		  "Vorlauf HK2-Soll-Temperatur", readingTypeTemperature, "°C", 0);
     query.execute(SensorVorlaufHK2IstTemp, sensorTypeNumeric,
-		  "Vorlauf HK2-Ist-Temperatur", readingTypeTemperature, "°C");
+		  "Vorlauf HK2-Ist-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorMischersteuerung, sensorTypeNumeric,
-		  "Mischersteuerung", readingTypeNone, "");
+		  "Mischersteuerung", readingTypeNone, "", 0);
     query.execute(SensorRuecklaufTemp, sensorTypeNumeric,
-		  "Rücklauftemperatur", readingTypeTemperature, "°C");
+		  "Rücklauftemperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorAussenTemp, sensorTypeNumeric,
-		  "Außentemperatur", readingTypeTemperature, "°C");
+		  "Außentemperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorGedaempfteAussenTemp, sensorTypeNumeric,
-		  "Gedämpfte Außentemperatur", readingTypeTemperature, "°C");
+		  "Gedämpfte Außentemperatur", readingTypeTemperature, "°C", 0);
     query.execute(SensorRaumSollTemp, sensorTypeNumeric,
-		  "Raum-Soll-Temperatur", readingTypeTemperature, "°C");
+		  "Raum-Soll-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorRaumIstTemp, sensorTypeNumeric,
-		  "Raum-Ist-Temperatur", readingTypeTemperature, "°C");
+		  "Raum-Ist-Temperatur", readingTypeTemperature, "°C", 1);
     query.execute(SensorMomLeistung, sensorTypeNumeric,
-		  "Momentane Leistung", readingTypePercent, "%");
+		  "Momentane Leistung", readingTypePercent, "%", 0);
     query.execute(SensorMaxLeistung, sensorTypeNumeric,
-		  "Maximale Leistung", readingTypePercent, "%");
+		  "Maximale Leistung", readingTypePercent, "%", 0);
     query.execute(SensorFlammenstrom, sensorTypeNumeric,
-		  "Flammenstrom", readingTypeCurrent, "µA");
+		  "Flammenstrom", readingTypeCurrent, "µA", 1);
     query.execute(SensorSystemdruck, sensorTypeNumeric,
-		  "Systemdruck", readingTypePressure, "bar");
+		  "Systemdruck", readingTypePressure, "bar", 1);
     query.execute(SensorBrennerstarts, sensorTypeNumeric,
 		  "Brennerstarts", readingTypeCount, "");
     query.execute(SensorBetriebszeit, sensorTypeNumeric,
