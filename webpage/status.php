@@ -18,14 +18,12 @@
 
 <?php
 include 'current_sensor_values.php.inc';
-function print_cell($name, $value, $color) {
+function print_cell($name, $value, $color = "") {
   print "<tr>\n";
   if ($color == "green") {
     $color = "style=\"background-color: rgb(0,200,0); color: rgb(255,255,255);\"";
   } else if ($color == "red") {
     $color = "style=\"background-color: rgb(200,0,0); color: rgb(255,255,255);\"";
-  } else {
-    $color = "";
   }
   print "<td width=147 height=18><p>" . $name . "</p></td>\n";
   print "<td width=129 align=center><p><span " . $color . ">" . $value . "</span></p></td>\n";
@@ -74,10 +72,11 @@ function print_cell($name, $value, $color) {
           <?php
             print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp]);
             print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
-            # TODO: Ladepumpe
+            $value = $sensors[Sensor3WegeWW] && $sensors[SensorHKPumpe];
+            print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
             $value = $sensors[SensorZirkulation];
             print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
-            # TODO: WW-Vorrang
+            print_cell("WW-Vorrang", $sensors[SensorWWVorrang] ? "- an -" : "- aus -");
           ?>
         </table>
       </td>

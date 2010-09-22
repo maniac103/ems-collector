@@ -37,6 +37,7 @@ define('SensorAutomatikbetrieb', 111);
 define('SensorTagbetrieb', 112);
 define('SensorSommerbetrieb', 113);
 define('SensorWarmwasserTempOK', 114);
+define('SensorWWVorrang', 115);
 
 define('ReadingTypeNone', 0);
 define('ReadingTypeTemperature', 1);
