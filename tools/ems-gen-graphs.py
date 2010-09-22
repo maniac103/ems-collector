@@ -1,14 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import MySQLdb
 import os
+import subprocess
 import sys
 import time
-
-conn = MySQLdb.connect(host = "localhost",
-                       user = "root",
-                       passwd = "pass",
-                       db = "ems_data")
 
 if len(sys.argv) != 3:
     sys.exit(1)
@@ -23,19 +18,14 @@ if not interval in ["day", "week", "month"]:
     sys.exit(1)
 
 def do_graphdata(sensor, filename):
-    cursor = conn.cursor()
-    query = """
-            select time, value from numeric_data
-            where sensor = %d and time >= adddate(now(), interval -1 %s)
-            """ % (sensor, interval)
-    cursor.execute(query)
-    results = cursor.fetchall()
     datafile = open(filename, "w")
-    datafile.write("time\tvalue\n")
-    for result in results:
-        datafile.write("%s\t%s\n" % (result[0], result[1]))
+    process = subprocess.Popen(["mysql", "-uroot", "-ppass", "ems_data" ], shell = False,
+                               stdin = subprocess.PIPE, stdout = datafile)
+    process.communicate("""
+        select time, value from numeric_data
+        where sensor = %d and time >= adddate(now(), interval -1 %s)
+        """ % (sensor, interval))
     datafile.close()
-    cursor.close()
 
 def do_plot(name, filename, definitions):
     i = 1
@@ -93,5 +83,3 @@ do_plot("Temperaturen", "kessel", definitions)
 definitions = [ [ 3, "Solltemperatur", "lines" ],
                 [ 4, "Isttemperatur", "lines smooth bezier" ] ]
 do_plot("Warmwasser", "ww", definitions)
-
-conn.close()
