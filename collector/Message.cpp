@@ -397,13 +397,11 @@ Message::parseRCHKMonitorMessage(const char *name,
     printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
     printBoolAndAddToDb(1, 0, "Ausschaltoptimierung", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 1, "Einschaltoptimierung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::SensorWWVorrang);
     printBoolAndAddToDb(1, 4, "Estrichtrocknung", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 5, "Ferienbetrieb", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 6, "Frostschutz", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 7, "Manueller Betrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::BooleanSensorLast);
     printBoolAndAddToDb(2, 0, "Sommerbetrieb", Database::SensorSommerbetrieb);
     printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
     printBoolAndAddToDb(2, 7, "Partybetrieb", Database::BooleanSensorLast);

@@ -187,6 +187,7 @@ Database::createSensorRows()
     query.execute(SensorTagbetrieb, sensorTypeBoolean, "Tagbetrieb");
     query.execute(SensorSommerbetrieb, sensorTypeBoolean, "Sommerbetrieb");
     query.execute(SensorWarmwasserTempOK, sensorTypeBoolean, "Warmwassertemperatur OK");
+    query.execute(SensorWWVorrang, sensorTypeBoolean, "Warmwasservorrang");
     query.execute(SensorHK1Active, sensorTypeBoolean, "HK1 aktiv");
     query.execute(SensorHK2Active, sensorTypeBoolean, "HK2 aktiv");
 

@@ -67,6 +67,7 @@ class Database {
 	    SensorTagbetrieb,
 	    SensorSommerbetrieb,
 	    SensorWarmwasserTempOK,
+	    SensorWWVorrang,
 	    BooleanSensorLast
 	} BooleanSensors;
 
