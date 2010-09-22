@@ -1,0 +1,11 @@
+body {
+  font-family: Arial,Helvetica,Geneva,Sans-serif,sans-serif;
+  color: rgb(255,255,255);
+  background-color: rgb(137,155,179);
+}
+h1 {
+  margin-bottom: 10pt;
+}
+h2 {
+  margin-top: 0pt;
+}

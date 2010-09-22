@@ -4,6 +4,8 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>Heizung</title>
 
+  <link href="style.css" type="text/css" rel="stylesheet"/>
+
   <script Language="JavaScript">
     function update() {
       window.location.reload();
