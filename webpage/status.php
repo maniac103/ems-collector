@@ -51,12 +51,15 @@ function print_cell($name, $value, $color) {
           <?php
             print_cell("Kessel IST", $sensors[SensorKesselIstTemp]);
             print_cell("Kessel SOLL", $sensors[SensorKesselSollTemp]);
-            print_cell("Vorlaufpumpe", $sensors[SensorHKPumpe] ? "- an -" : "- aus -");
+            $value = $sensors[SensorHKPumpe];
+            print_cell("Vorlaufpumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
             $value = $sensors[SensorBrenner];
-            print_cell("Brenner", $value ? "- an -" : "- aus -", $value ? "red" : "");
+            print_cell("Brenner",
+                       $value ? ($sensors[SensorWarmwasserbereitung] ? "WW-Bereitung" : "Heizen") : "- aus -",
+                       $value ? "red" : "");
             print_cell("Betriebsart", $sensors[SensorAutomatikbetrieb] ? "Automatik" : "Manuell");
             print_cell("Tag/Nachtbetrieb", $sensors[SensorTagbetrieb] ? "Tag" : "Nacht");
-            print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "ja" : "nein");
+            print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "aktiv" : "inaktiv");
           ?>
         </table>
       </td>
@@ -72,7 +75,8 @@ function print_cell($name, $value, $color) {
             print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp]);
             print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
             # TODO: Ladepumpe
-            print_cell("Zirkulationspumpe", $sensors[SensorZirkulation] ? "- an -" : "- aus -");
+            $value = $sensors[SensorZirkulation];
+            print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
             # TODO: WW-Vorrang
           ?>
         </table>
