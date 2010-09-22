@@ -44,14 +44,14 @@ def do_plot(name, filename, definitions):
 
     gnuplotfile = open("/tmp/gnuplot.scr", "w")
     gnuplotfile.write("""
-        set terminal png font 'times' 16 size 1000,600
+        set terminal png font 'arial' 12 size 1000,600
         set grid lc rgb '#aaaaaa' lt 1 lw 0,5
         set title '%s'
         set xdata time
         set xlabel "Datum"
         set timefmt "%%Y-%%m-%%d %%H:%%M:%%S"
         set format x "%s"
-        set xtics autofreq
+        set xtic autofreq rotate by -45
         set ytics autofreq
         set output '%s'
         \n
