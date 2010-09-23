@@ -51,7 +51,7 @@ function print_cell($name, $value, $color = "") {
           <?php
             print_cell("Kessel IST", $sensors[SensorKesselIstTemp]);
             print_cell("Kessel SOLL", $sensors[SensorKesselSollTemp]);
-            $value = $sensors[SensorHKPumpe];
+            $value = $sensors[SensorHKPumpe] && !$ensors[SensorHKWW];
             print_cell("Vorlaufpumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
             $value = $sensors[SensorBrenner];
             print_cell("Brenner",
@@ -74,7 +74,7 @@ function print_cell($name, $value, $color = "") {
           <?php
             print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp]);
             print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
-            $value = $sensors[Sensor3WegeWW] && $sensors[SensorHKPumpe];
+            $value = $sensors[SensorHKPumpe] && $sensors[SensorHKWW];
             print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
             $value = $sensors[SensorZirkulation];
             print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");

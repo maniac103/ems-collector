@@ -30,14 +30,14 @@ define('SensorHK1Active', 104);
 define('SensorHK2Active', 105);
 define('SensorHKWW', 106);
 define('SensorZirkulation', 107);
-define('Sensor3WegeHeizen', 108);
-define('Sensor3WegeWW', 109);
 define('SensorWarmwasserBereitung', 110);
 define('SensorAutomatikbetrieb', 111);
 define('SensorTagbetrieb', 112);
 define('SensorSommerbetrieb', 113);
 define('SensorWarmwasserTempOK', 114);
 define('SensorWWVorrang', 115);
+define('SensorHK1Pumpe', 116);
+define('SensorHK2Pumpe', 117);
 
 define('ReadingTypeNone', 0);
 define('ReadingTypeTemperature', 1);
