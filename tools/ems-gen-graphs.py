@@ -16,6 +16,23 @@ if not os.path.isdir(targetpath):
 if not interval in ["day", "week", "month"]:
     sys.exit(1)
 
+def flock(path, wait_delay = 1):
+    while True:
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+            time.sleep(wait_delay)
+            continue
+        else:
+            break
+    try:
+        yield fd
+    finally:
+        os.close(fd)
+        os.unlink(path)
+
 def do_graphdata(sensor, filename):
     datafile = open(filename, "w")
     process = subprocess.Popen(["mysql", "-uroot", "-ppass", "ems_data" ], shell = False,
@@ -67,21 +84,22 @@ def do_plot(name, filename, ylabel, definitions):
     for i in range(1, len(definitions) + 1) :
         os.remove("/tmp/file%d.dat" % i)
 
-definitions = [ [ 11, "Außentemperatur", "lines smooth bezier" ],
-                [ 12, "Ged. Außentemperatur", "lines" ] ]
-do_plot("Aussentemperatur", "aussentemp", "Temperatur (°C)", definitions)
+with flock("/tmp/graph-gen.lock"):
+    definitions = [ [ 11, "Außentemperatur", "lines smooth bezier" ],
+                    [ 12, "Ged. Außentemperatur", "lines" ] ]
+    do_plot("Aussentemperatur", "aussentemp", "Temperatur (°C)", definitions)
 
-definitions = [ [ 13, "Raum-Soll", "lines" ],
-                [ 14, "Raum-Ist", "lines smooth bezier" ] ]
-do_plot("Raumtemperatur", "raumtemp", "Temperatur (°C)", definitions)
+    definitions = [ [ 13, "Raum-Soll", "lines" ],
+                    [ 14, "Raum-Ist", "lines smooth bezier" ] ]
+    do_plot("Raumtemperatur", "raumtemp", "Temperatur (°C)", definitions)
 
-definitions = [ [ 1, "Kessel-Soll", "lines" ],
-                [ 2, "Kessel-Ist", "lines smooth bezier" ],
-                [ 6, "Vorlauf HK1", "lines smooth bezier" ],
-                [ 8, "Vorlauf HK2", "lines smooth bezier" ],
-                [ 10, "Rücklauf", "lines smooth bezier" ] ]
-do_plot("Temperaturen", "kessel", "Temperatur (°C)", definitions)
+    definitions = [ [ 1, "Kessel-Soll", "lines" ],
+                    [ 2, "Kessel-Ist", "lines smooth bezier" ],
+                    [ 6, "Vorlauf HK1", "lines smooth bezier" ],
+                    [ 8, "Vorlauf HK2", "lines smooth bezier" ],
+                    [ 10, "Rücklauf", "lines smooth bezier" ] ]
+    do_plot("Temperaturen", "kessel", "Temperatur (°C)", definitions)
 
-definitions = [ [ 3, "Solltemperatur", "lines" ],
-                [ 4, "Isttemperatur", "lines smooth bezier" ] ]
-do_plot("Warmwasser", "ww", "Temperatur (°C)", definitions)
+    definitions = [ [ 3, "Solltemperatur", "lines" ],
+                    [ 4, "Isttemperatur", "lines smooth bezier" ] ]
+    do_plot("Warmwasser", "ww", "Temperatur (°C)", definitions)
