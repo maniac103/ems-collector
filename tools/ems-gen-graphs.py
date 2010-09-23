@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-import time
 
 if len(sys.argv) != 3:
     sys.exit(1)
