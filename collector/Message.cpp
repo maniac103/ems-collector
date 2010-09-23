@@ -223,10 +223,8 @@ Message::parseUBAMonitorFastMessage()
     printBoolAndAddToDb(8, 2, "Brenner/Abluft", Database::SensorBrenner);
     printBoolAndAddToDb(8, 3, "Zündung", Database::SensorZuendung);
     printBoolAndAddToDb(8, 5, "HK Pumpe", Database::SensorHKPumpe);
-    printBoolAndAddToDb(8, 6, "HK/WW", Database::SensorHKWW);
+    printBoolAndAddToDb(8, 6, "3-Wege-Ventil auf WW", Database::SensorHKWW);
     printBoolAndAddToDb(8, 7, "Zirkulation", Database::SensorZirkulation);
-    printBoolAndAddToDb(7, 0, "3-Wege-Ventil Heizen", Database::Sensor3WegeHeizen);
-    printBoolAndAddToDb(7, 4, "3-Wege-Ventil WW", Database::Sensor3WegeWW);
 }
 
 void
@@ -418,6 +416,9 @@ Message::parseWMTemp1Message()
 
     printNumberAndAddToDb(1, 2, 10, "Vorlauf HK1 Isttemperatur", "°C",
 			  Database::SensorVorlaufHK1IstTemp);
+
+    /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
+    printBoolAndAddToDb(3, 2, "HK1 Pumpe", Database::SensorHK1Pumpe);
 }
 
 void
@@ -440,6 +441,9 @@ Message::parseMMTempMessage()
 			  Database::SensorVorlaufHK2IstTemp);
     printNumberAndAddToDb(5, 1, 1, "Mischersteuerung", "",
 			  Database::SensorMischersteuerung);
+
+    /* Byte 4 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
+    printBoolAndAddToDb(4, 2, "HK2 Pumpe", Database::SensorHK2Pumpe);
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: MM10 Flags "

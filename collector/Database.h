@@ -60,14 +60,16 @@ class Database {
 	    SensorHK2Active,
 	    SensorHKWW,
 	    SensorZirkulation,
-	    Sensor3WegeHeizen,
-	    Sensor3WegeWW,
+	    Sensor3WegeHeizen /* obsolete */,
+	    Sensor3WegeWW /* obsolete */,
 	    SensorWarmwasserBereitung,
 	    SensorAutomatikbetrieb,
 	    SensorTagbetrieb,
 	    SensorSommerbetrieb,
 	    SensorWarmwasserTempOK,
 	    SensorWWVorrang,
+	    SensorHK1Pumpe,
+	    SensorHK2Pumpe,
 	    BooleanSensorLast
 	} BooleanSensors;
 

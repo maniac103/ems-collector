@@ -178,10 +178,8 @@ Database::createSensorRows()
     query.execute(SensorBrenner, sensorTypeBoolean, "Brenner");
     query.execute(SensorZuendung, sensorTypeBoolean, "Zündung");
     query.execute(SensorHKPumpe, sensorTypeBoolean, "HK Pumpe");
-    query.execute(SensorHKWW, sensorTypeBoolean, "HK/WW");
+    query.execute(SensorHKWW, sensorTypeBoolean, "3-Wege-Ventil");
     query.execute(SensorZirkulation, sensorTypeBoolean, "Zirkulation");
-    query.execute(Sensor3WegeHeizen, sensorTypeBoolean, "3-Wege-Ventil Heizen");
-    query.execute(Sensor3WegeWW, sensorTypeBoolean, "3-Wege-Ventil Warmwasser");
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
     query.execute(SensorAutomatikbetrieb, sensorTypeBoolean, "Automatikbetrieb");
     query.execute(SensorTagbetrieb, sensorTypeBoolean, "Tagbetrieb");
@@ -190,6 +188,8 @@ Database::createSensorRows()
     query.execute(SensorWWVorrang, sensorTypeBoolean, "Warmwasservorrang");
     query.execute(SensorHK1Active, sensorTypeBoolean, "HK1 aktiv");
     query.execute(SensorHK2Active, sensorTypeBoolean, "HK2 aktiv");
+    query.execute(SensorHK1Pumpe, sensorTypeBoolean, "HK1 Pumpe");
+    query.execute(SensorHK2Pumpe, sensorTypeBoolean, "HK2 Pumpe");
 
     transaction.commit();
 }
