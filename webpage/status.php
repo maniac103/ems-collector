@@ -19,7 +19,11 @@
 </head>
 
 <?php
-include 'current_sensor_values.php.inc';
+include 'sensor_utils.php.inc';
+
+date_default_timezone_set("Europe/Berlin");
+$sensors = get_current_sensor_values();
+
 function print_cell($name, $value, $color = "") {
   print "<tr>\n";
   if ($color == "green") {
