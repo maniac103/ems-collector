@@ -64,6 +64,9 @@ def do_plot(name, filename, ylabel, definitions):
     process.stdin.close()
     process.wait()
 
+    for i in range(1, len(definitions) + 1) :
+        os.remove("/tmp/file%d.dat" % i)
+
 definitions = [ [ 11, "Außentemperatur", "lines smooth bezier" ],
                 [ 12, "Ged. Außentemperatur", "lines" ] ]
 do_plot("Aussentemperatur", "aussentemp", "Temperatur (°C)", definitions)
