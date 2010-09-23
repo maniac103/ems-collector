@@ -55,12 +55,14 @@ function get_current_sensor_values() {
 function get_min_max($sensor, $interval) {
   $connection = open_db();
 
-  $query = "select s.reading_type, s.precision, v.time, v.value, s.unit from sensors s
-            inner join (select sensor, time, OPERATION(value) value from numeric_data
-            where sensor = " . $sensor . " on s.type = v.sensor;";
+  $query = "select s.reading_type, s.precision, unix_timestamp(v.time) time, v.value, s.unit from sensors s
+            inner join (select sensor, time, value from numeric_data
+            where sensor = " . $sensor . " and time >= adddate(now(), interval -1 " . $interval . ")
+            order by value DIRECTION limit 1) v
+            on s.type = v.sensor;";
 
-  $min = mysql_fetch_object(mysql_query(str_replace("OPERATION", "min", $query)));
-  $max = mysql_fetch_object(mysql_query(str_replace("OPERATION", "max", $query)));
+  $min = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "asc", $query)));
+  $max = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "desc", $query)));
 
   $retval = array();
   $retval["min_time"] = $min->time;

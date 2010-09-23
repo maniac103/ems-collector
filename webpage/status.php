@@ -20,8 +20,10 @@
 
 <?php
 include 'sensor_utils.php.inc';
+include 'utils.php.inc';
 
-date_default_timezone_set("Europe/Berlin");
+set_loc_settings();
+
 $sensors = get_current_sensor_values();
 
 function print_cell($name, $value, $color = "") {
@@ -40,7 +42,7 @@ function print_cell($name, $value, $color = "") {
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
   <h2>
     <?php
-      print "Momentaner Status (" . strftime("%a, %d.%m.%Y, %H:%M:%S", time()) . ")"
+      print "Momentaner Status (" . format_timestamp(time(), TRUE) . ")"
     ?>
   </h2>
   <table border=0 cellspacing=0 cellpadding=0>
