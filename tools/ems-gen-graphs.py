@@ -1,8 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import contextlib
+import errno
 import os
 import subprocess
 import sys
+import time
 
 if len(sys.argv) != 3:
     sys.exit(1)
@@ -16,6 +19,7 @@ if not os.path.isdir(targetpath):
 if not interval in ["day", "week", "month"]:
     sys.exit(1)
 
+@contextlib.contextmanager
 def flock(path, wait_delay = 1):
     while True:
         try:
