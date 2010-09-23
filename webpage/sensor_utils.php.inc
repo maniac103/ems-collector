@@ -61,14 +61,21 @@ function get_min_max($sensor, $interval) {
             order by value DIRECTION limit 1) v
             on s.type = v.sensor;";
 
+  $avg_query = "select s.reading_type, s.precision, v.value, s.unit from sensors s
+                inner join (select sensor, avg(value) value from numeric_data
+                where sensor = " . $sensor . " and time >= adddate(now(), interval -1 " . $interval .")) v
+                on s.type = v.sensor;";
+
   $min = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "asc", $query)));
   $max = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "desc", $query)));
+  $avg = mysql_fetch_object(mysql_query($avg_query));
 
   $retval = array();
   $retval["min_time"] = $min->time;
   $retval["min"] = format_value($min);
   $retval["max_time"] = $max->time;
   $retval["max"] = format_value($max);
+  $retval["avg"] = format_value($avg);
 
   mysql_close($connection);
 

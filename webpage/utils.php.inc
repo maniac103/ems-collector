@@ -26,6 +26,9 @@ function print_min_max_table($name, $data) {
   print "<td width=147 height=18><p>Maximum</p></td>\n";
   print "<td width=300 align=center><p>" . $data["max"] . " (" .
         format_timestamp($data["max_time"], TRUE) . ")</p></td>\n";
+  print "</tr><tr>\n";
+  print "<td width=147 height=18><p>Durchschnitt</p></td>\n";
+  print "<td width=300 align=center><p>" . $data["avg"] . "</p></td>\n";
   print "</tr></table>\n";
 }
 
