@@ -43,7 +43,7 @@ def do_plot(name, filename, ylabel, definitions):
         timeformat = "%d.%m"
 
     process = subprocess.Popen("gnuplot", shell = False, stdin = subprocess.PIPE)
-    process.stdin.write("set terminal png font 'arial' 12 size 1000,600\n")
+    process.stdin.write("set terminal png font 'arial' 12 size 800, 450\n")
     process.stdin.write("set grid lc rgb '#aaaaaa' lt 1 lw 0,5\n")
     process.stdin.write("set title '%s'\n" % name)
     process.stdin.write("set xdata time\n")

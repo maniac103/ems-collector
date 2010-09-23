@@ -18,14 +18,24 @@ $raumtemp = get_min_max(SensorRaumIstTemp, "day");
 ?>
 
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
-  <h2>Letzter Tag</h2>
-  <table border=0 cellspacing=0 cellpadding=0>
+  <table style="width:800; text-align:center;">
     <tr><td>
-      <?php print_min_max_table("Außentemperatur", $aussentemp); ?>
+      <h2>Letzter Tag</h2>
     </td></tr>
-    <tr height=6></tr>
     <tr><td>
-      <?php print_min_max_table("Raumtemperatur", $raumtemp); ?>
+      <?php include 'menu.inc'; ?>
+    </td></tr>
+    <tr height=10></tr>
+    <tr><td>
+      <table border=0 cellspacing=0 cellpadding=0 width="100%">
+        <tr><td>
+          <?php print_min_max_table("Außentemperatur", $aussentemp); ?>
+        </td></tr>
+        <tr height=6></tr>
+        <tr><td>
+          <?php print_min_max_table("Raumtemperatur", $raumtemp); ?>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
   <h3>Graphen</h3>
