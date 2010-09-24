@@ -3,9 +3,7 @@
 include 'constants.php.inc';
 
 function open_db() {
-  $connection = mysql_connect("localhost", "root", "pass");
-  mysql_select_db("ems_data");
-  return $connection;
+  return new PDO('mysql:dbname=ems_data;host=localhost', 'root', 'pass');
 }
 
 function format_value($row) {
@@ -34,20 +32,20 @@ function get_current_sensor_values() {
 
   $values = array();
 
-  $numeric = mysql_query(str_replace("TABLE", "numeric_data", $query));
-  while ($row = mysql_fetch_object($numeric)) {
+  $numeric = $connection->query(str_replace("TABLE", "numeric_data", $query));
+  $numeric->setFetchMode(PDO::FETCH_OBJ);
+  foreach ($numeric as $row) {
     $type = (int) $row->type;
     $values[$type] = format_value($row);
   }
 
-  $boolean = mysql_query(str_replace("TABLE", "boolean_data", $query));
-  while ($row = mysql_fetch_object($boolean)) {
+  $boolean = $connection->query(str_replace("TABLE", "boolean_data", $query));
+  $boolean->setFetchMode(PDO::FETCH_OBJ);
+  foreach ($boolean as $row) {
     $type = (int) $row->type;
     $value = (boolean) $row->value;
     $values[$type] = $value;
   }
-
-  mysql_close($connection);
 
   return $values;
 }
@@ -66,9 +64,9 @@ function get_min_max($sensor, $time_clause) {
                 where sensor = " . $sensor . " and " . $time_clause . ") v
                 on s.type = v.sensor;";
 
-  $min = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "asc", $query)));
-  $max = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "desc", $query)));
-  $avg = mysql_fetch_object(mysql_query($avg_query));
+  $min = $connection->query(str_replace("DIRECTION", "asc", $query))->fetch(PDO::FETCH_OBJ);
+  $max = $connection->query(str_replace("DIRECTION", "desc", $query))->fetch(PDO::FETCH_OBJ);
+  $avg = $connection->query($avg_query)->fetch(PDO::FETCH_OBJ);
 
   $retval = array();
   $retval["min_time"] = $min->time;
@@ -76,8 +74,6 @@ function get_min_max($sensor, $time_clause) {
   $retval["max_time"] = $max->time;
   $retval["max"] = format_value($max);
   $retval["avg"] = format_value($avg);
-
-  mysql_close($connection);
 
   return $retval;
 }

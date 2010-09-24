@@ -36,12 +36,12 @@ function print_header($name) {
 function print_cell($name, $value, $color = "") {
   print "<tr>\n";
   if ($color == "green") {
-    $color = "style=\"background-color: rgb(0,200,0); color: rgb(255,255,255);\"";
+    $color = " style=\"background-color: rgb(0,200,0); color: rgb(255,255,255);\"";
   } else if ($color == "red") {
-    $color = "style=\"background-color: rgb(200,0,0); color: rgb(255,255,255);\"";
+    $color = " style=\"background-color: rgb(200,0,0); color: rgb(255,255,255);\"";
   }
   print "<td width=147 height=18><p>" . $name . "</p></td>\n";
-  print "<td width=129 align=center><p><span " . $color . ">" . $value . "</span></p></td>\n";
+  print "<td width=129 align=center><p><span" . $color . ">" . $value . "</span></p></td>\n";
   print "</tr>\n";
 }
 ?>
