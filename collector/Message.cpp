@@ -259,7 +259,7 @@ Message::parseUBAMonitorWWMessage()
 			  Database::SensorWarmwasserSollTemp);
     printNumberAndAddToDb(2, 2, 10, "Warmwasser-Isttemperatur (Messstelle 1)", "°C",
 			  Database::SensorWarmwasserIstTemp);
-    printNumberAndAddToDb(11, 3, 10 * 60, "Warmwasserbereitungszeit", "h",
+    printNumberAndAddToDb(11, 3, 60, "Warmwasserbereitungszeit", "h",
 			  Database::SensorWarmwasserbereitungsZeit);
     printNumberAndAddToDb(14, 3, 1, "Warmwasserbereitungen", "",
 			  Database::SensorWarmwasserBereitungen);
