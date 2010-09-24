@@ -63,11 +63,11 @@ function print_cell($name, $value, $color = "") {
               print_header("Heizung");
               print_cell("Kessel IST", $sensors[SensorKesselIstTemp]);
               print_cell("Kessel SOLL", $sensors[SensorKesselSollTemp]);
-              $value = $sensors[SensorHKPumpe] && !$ensors[SensorHKWW];
+              $value = $sensors[SensorHKPumpe] && !$sensors[SensorHKWW];
               print_cell("Vorlaufpumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               $value = $sensors[SensorBrenner];
               print_cell("Brenner",
-                         $value ? ($sensors[SensorWarmwasserbereitung] ? "WW-Bereitung" : "Heizen") : "- aus -",
+                         $value ? ($sensors[SensorWarmwasserBereitung] ? "WW-Bereitung" : "Heizen") : "- aus -",
                          $value ? "red" : "");
               print_cell("Betriebsart", $sensors[SensorAutomatikbetrieb] ? "Automatik" : "Manuell");
               print_cell("Tag/Nachtbetrieb", $sensors[SensorTagbetrieb] ? "Tag" : "Nacht");
