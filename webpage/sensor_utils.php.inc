@@ -16,7 +16,7 @@ function format_value($row) {
     $value = sprintf("%dh %dmin", $hours, $mins);
   } else {
     $precision = ($row->precision == NULL) ? 0 : (int) $row->precision;
-    $value = number_format($value, $precision) . $row->unit;
+    $value = sprintf("%." . $precision . "f", $value) . $row->unit;
   }
   return $value;
 }
