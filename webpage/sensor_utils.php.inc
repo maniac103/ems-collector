@@ -52,18 +52,18 @@ function get_current_sensor_values() {
   return $values;
 }
 
-function get_min_max($sensor, $interval) {
+function get_min_max($sensor, $time_clause) {
   $connection = open_db();
 
   $query = "select s.reading_type, s.precision, unix_timestamp(v.time) time, v.value, s.unit from sensors s
             inner join (select sensor, time, value from numeric_data
-            where sensor = " . $sensor . " and time >= adddate(now(), interval -1 " . $interval . ")
+            where sensor = " . $sensor . " and " . $time_clause . "
             order by value DIRECTION limit 1) v
             on s.type = v.sensor;";
 
   $avg_query = "select s.reading_type, s.precision, v.value, s.unit from sensors s
                 inner join (select sensor, avg(value) value from numeric_data
-                where sensor = " . $sensor . " and time >= adddate(now(), interval -1 " . $interval .")) v
+                where sensor = " . $sensor . " and " . $time_clause . ") v
                 on s.type = v.sensor;";
 
   $min = mysql_fetch_object(mysql_query(str_replace("DIRECTION", "asc", $query)));
@@ -80,6 +80,21 @@ function get_min_max($sensor, $interval) {
   mysql_close($connection);
 
   return $retval;
+}
+
+function get_min_max_interval($sensor, $interval) {
+  $time_clause = "time >= adddate(now(), interval -1 " . $interval . ")";
+  return get_min_max($sensor, $time_clause);
+}
+
+function get_min_max_for_day($sensor, $days_ago) {
+  if ($days_ago == 0) {
+    $time_clause = "time >= curdate()";
+  } else {
+    $time_clause = "time >= date_sub(curdate(), interval " . $days_ago . " day) and " .
+                   "time < date_sub(curdate(), interval " . ($days_ago - 1) . " day)";
+  }
+  return get_min_max($sensor, $time_clause);
 }
 
 ?>

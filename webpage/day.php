@@ -13,8 +13,11 @@ include 'utils.php.inc';
 
 set_loc_settings();
 
-$aussentemp = get_min_max(SensorAussenTemp, "day");
-$raumtemp = get_min_max(SensorRaumIstTemp, "day");
+$aussentemp = get_min_max_interval(SensorAussenTemp, "day");
+$aussentemp_today = get_min_max_for_day(SensorAussenTemp, 0);
+$aussentemp_yesterday = get_min_max_for_day(SensorAussenTemp, 1);
+$raumtemp = get_min_max_interval(SensorRaumIstTemp, "day");
+
 ?>
 
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
@@ -29,11 +32,19 @@ $raumtemp = get_min_max(SensorRaumIstTemp, "day");
     <tr><td>
       <table border=0 cellspacing=0 cellpadding=0 width="100%">
         <tr><td>
-          <?php print_min_max_table("Außentemperatur", $aussentemp); ?>
+          <?php print_min_max_table("Außentemperatur in den letzten 24h", $aussentemp); ?>
         </td></tr>
         <tr height=6></tr>
         <tr><td>
-          <?php print_min_max_table("Raumtemperatur", $raumtemp); ?>
+          <?php print_min_max_table("Außentemperatur heute", $aussentemp_today, TRUE); ?>
+        </td></tr>
+        <tr height=6></tr>
+        <tr><td>
+          <?php print_min_max_table("Außentemperatur gestern", $aussentemp_yesterday, TRUE); ?>
+        </td></tr>
+        <tr height=6></tr>
+        <tr><td>
+          <?php print_min_max_table("Raumtemperatur in den letzten 24h", $raumtemp); ?>
         </td></tr>
       </table>
     </td></tr>

@@ -13,8 +13,8 @@ include 'utils.php.inc';
 
 set_loc_settings();
 
-$aussentemp = get_min_max(SensorAussenTemp, "week");
-$raumtemp = get_min_max(SensorRaumIstTemp, "week");
+$aussentemp = get_min_max_interval(SensorAussenTemp, "week");
+$raumtemp = get_min_max_interval(SensorRaumIstTemp, "week");
 ?>
 
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
