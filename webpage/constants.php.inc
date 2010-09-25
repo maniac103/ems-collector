@@ -22,6 +22,7 @@ define('SensorBetriebszeit', 19);
 define('SensorBrennerstarts', 20);
 define('SensorWarmwasserbereitungsZeit', 21);
 define('SensorWarmwasserBereitungen', 22);
+define('SensorHeizZeit', 23);
 define('SensorFlamme', 100);
 define('SensorBrenner', 101);
 define('SensorZuendung', 102);

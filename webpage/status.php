@@ -25,6 +25,7 @@ include 'utils.php.inc';
 set_loc_settings();
 
 $sensors = get_current_sensor_values();
+$changes = get_sensor_changes_for_day(0);
 
 function print_header($name) {
   print "<table border=1 cellspacing=3 cellpadding=2 width=\"100%\">\n";
@@ -69,6 +70,8 @@ function print_cell($name, $value, $color = "") {
               print_cell("Brenner",
                          $value ? ($sensors[SensorWarmwasserBereitung] ? "WW-Bereitung" : "Heizen") : "- aus -",
                          $value ? "red" : "");
+              $value = $sensors[SensorMomLeistung] . " / " . $sensors[SensorMaxLeistung];
+              print_cell("Momentane Leistung", $value);
               print_cell("Betriebsart", $sensors[SensorAutomatikbetrieb] ? "Automatik" : "Manuell");
               print_cell("Tag/Nachtbetrieb", $sensors[SensorTagbetrieb] ? "Tag" : "Nacht");
               print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "aktiv" : "inaktiv");
@@ -112,6 +115,20 @@ function print_cell($name, $value, $color = "") {
               # TODO: Fehler
             ?>
             </table>
+          </td>
+        </tr>
+        <tr height=6></tr>
+          <td width=300></td>
+          <td width=20></td>
+          <td>
+            <?php
+              print_header("Heutige Aktivität");
+              print_cell("Brennerlaufzeit", $changes[SensorBetriebszeit]);
+              print_cell("Brennerstarts", $changes[SensorBrennerstarts]);
+              print_cell("Heizungs-Brennerlaufzeit", $changes[SensorHeizZeit]);
+              print_cell("Warmwasserbereitungszeit", $changes[SensorWarmwasserbereitungsZeit]);
+              print_cell("Warmwasserbereitungen", $changes[SensorWarmwasserBereitungen]);
+            ?>
           </td>
         </tr>
       </table>

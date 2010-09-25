@@ -11,7 +11,11 @@ function format_value($row) {
   if ($row->reading_type == ReadingTypeTime && $row->unit == "h") {
     $hours = (int) floor($value);
     $mins = (int) round(60 * ($value - $hours));
-    $value = sprintf("%dh %dmin", $hours, $mins);
+    if ($hours > 0) {
+      $value = sprintf("%dh %dmin", $hours, $mins);
+    } else {
+      $value = $mins . "min";
+    }
   } else {
     $precision = ($row->precision == NULL) ? 0 : (int) $row->precision;
     $value = sprintf("%." . $precision . "f", $value) . $row->unit;
@@ -20,7 +24,6 @@ function format_value($row) {
 }
 
 function get_current_sensor_values() {
-  global $sensors;
   $connection = open_db();
 
   $query = "select s.type, s.reading_type, s.precision, v.value, s.unit from sensors s
@@ -91,6 +94,32 @@ function get_min_max_for_day($sensor, $days_ago) {
                    "time < date_sub(curdate(), interval " . ($days_ago - 1) . " day)";
   }
   return get_min_max($sensor, $time_clause);
+}
+
+function get_sensor_changes_for_day($days_ago) {
+  $connection = open_db();
+
+  $upper = ($days_ago > 0) ? " where time < date_sub(curdate(), interval " . ($days_ago - 1) . " day)" : "";
+  $lower = " where time < date_sub(curdate(), interval " . $days_ago . " day)";
+  $query = "select s.type, s.reading_type, s.precision, (upper.value - lower.value) value, s.unit from sensors s
+            inner join (select v.sensor, v.value from numeric_data v
+                        inner join (select sensor, max(time) maxtime from numeric_data" . $upper . " group by sensor) uppertimes
+                        on v.sensor = uppertimes.sensor and v.time = uppertimes.maxtime) upper
+            on upper.sensor = s.type
+            inner join (select v.sensor, v.value from numeric_data v
+                        inner join (select sensor, max(time) maxtime from numeric_data" . $lower . " group by sensor) lowertimes
+                        on v.sensor = lowertimes.sensor and v.time = lowertimes.maxtime) lower
+            on lower.sensor = s.type;";
+
+  $values = array();
+  $results = $connection->query($query);
+  $results->setFetchMode(PDO::FETCH_OBJ);
+  foreach ($results as $row) {
+    $type = (int) $row->type;
+    $values[$type] = format_value($row);
+  }
+
+  return $values;
 }
 
 ?>
