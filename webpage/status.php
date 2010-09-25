@@ -40,7 +40,12 @@ function print_cell($name, $value, $color = "") {
     $color = " style=\"background-color: rgb(0,200,0); color: rgb(255,255,255);\"";
   } else if ($color == "red") {
     $color = " style=\"background-color: rgb(200,0,0); color: rgb(255,255,255);\"";
+  } else if ($color == "yellow") {
+    $color = " style=\"background-color: rgb(200,200,0); color: rgb(255,255,255);\"";
+  } else {
+    $color = "";
   }
+
   print "<td width=147 height=18><p>" . $name . "</p></td>\n";
   print "<td width=129 align=center><p><span" . $color . ">" . $value . "</span></p></td>\n";
   print "</tr>\n";
@@ -70,11 +75,13 @@ function print_cell($name, $value, $color = "") {
               print_cell("Brenner",
                          $value ? ($sensors[SensorWarmwasserBereitung] ? "WW-Bereitung" : "Heizen") : "- aus -",
                          $value ? "red" : "");
+              $value = $sensors[SensorFlamme] ? " - an, " . $sensors[SensorFlammenstrom] . " -" : " - aus -";
+              print_cell("Flamme", $value, $sensors[SensorFlamme] ? "red" : "");
               $value = $sensors[SensorMomLeistung] . " / " . $sensors[SensorMaxLeistung];
               print_cell("Momentane Leistung", $value);
               print_cell("Betriebsart", $sensors[SensorAutomatikbetrieb] ? "Automatik" : "Manuell");
               print_cell("Tag/Nachtbetrieb", $sensors[SensorTagbetrieb] ? "Tag" : "Nacht");
-              print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "aktiv" : "inaktiv");
+              print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "- aktiv -" : "- inaktiv -");
             ?>
             </table>
           </td>
@@ -84,11 +91,47 @@ function print_cell($name, $value, $color = "") {
               print_header("Warmwasser");
               print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp]);
               print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
+              $value = $sensors[SensorWarmwasserTempOK];
+              print_cell("Warmwasser warm", $value ? "- ja -" : "- nein -", $value ? "" : "yellow");
               $value = $sensors[SensorHKPumpe] && $sensors[SensorHKWW];
               print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               $value = $sensors[SensorZirkulation];
               print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               print_cell("WW-Vorrang", $sensors[SensorWWVorrang] ? "- an -" : "- aus -");
+            ?>
+            </table>
+          </td>
+        </tr>
+        <tr height=6></tr>
+        <tr>
+          <td>
+            <?php
+              print_header("Heizkreise");
+              $value = $sensors[SensorVorlaufHK1SollTemp] . " / " . $sensors[SensorVorlaufHK1IstTemp];
+              print_cell("Heizkreis 1 Soll/Ist", $value);
+              $value = $sensors[SensorHK1Active] ? ($sensors[SensorHK1Pumpe] ? "- aktiv, Pumpe aktiv -" :
+                                                                               " - aktiv -") :
+                                                   "- inaktiv -";
+              print_cell("Heizkreis 1 aktiv", $value, $sensors[SensorHK1Active] ? "green" : "");
+              $value = $sensors[SensorVorlaufHK2SollTemp] . " / " . $sensors[SensorVorlaufHK2IstTemp];
+              print_cell("Heizkreis 2 Soll/Ist", $value);
+              $value = $sensors[SensorHK2Active] ? ($sensors[SensorHK2Pumpe] ? "- aktiv, Pumpe aktiv -" :
+                                                                               " - aktiv -") :
+                                                   "- inaktiv -";
+              print_cell("Heizkreis 2 aktiv", $value, $sensors[SensorHK2Active] ? "green" : "");
+              print_cell("Mischersteuerung HK2", $sensors[SensorMischersteuerung]);
+            ?>
+            </table>
+          </td>
+          <td width=20></td>
+          <td>
+            <?php
+              print_header("Heutige Aktivität");
+              print_cell("Brennerlaufzeit", $changes[SensorBetriebszeit]);
+              print_cell("Brennerstarts", $changes[SensorBrennerstarts]);
+              print_cell("Heizungs-Brennerlaufzeit", $changes[SensorHeizZeit]);
+              print_cell("Warmwasserbereitungszeit", $changes[SensorWarmwasserbereitungsZeit]);
+              print_cell("Warmwasserbereitungen", $changes[SensorWarmwasserBereitungen]);
             ?>
             </table>
           </td>
@@ -115,20 +158,6 @@ function print_cell($name, $value, $color = "") {
               # TODO: Fehler
             ?>
             </table>
-          </td>
-        </tr>
-        <tr height=6></tr>
-          <td width=300></td>
-          <td width=20></td>
-          <td>
-            <?php
-              print_header("Heutige Aktivität");
-              print_cell("Brennerlaufzeit", $changes[SensorBetriebszeit]);
-              print_cell("Brennerstarts", $changes[SensorBrennerstarts]);
-              print_cell("Heizungs-Brennerlaufzeit", $changes[SensorHeizZeit]);
-              print_cell("Warmwasserbereitungszeit", $changes[SensorWarmwasserbereitungsZeit]);
-              print_cell("Warmwasserbereitungen", $changes[SensorWarmwasserBereitungen]);
-            ?>
           </td>
         </tr>
       </table>
