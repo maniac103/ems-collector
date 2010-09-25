@@ -168,6 +168,8 @@ Database::createSensorRows()
 		  "Brennerstarts", readingTypeCount, "");
     query.execute(SensorBetriebszeit, sensorTypeNumeric,
 		  "Betriebszeit", readingTypeTime, "h");
+    query.execute(SensorHeizZeit, sensorTypeNumeric,
+		  "Heizzeit", readingTypeTime, "h");
     query.execute(SensorWarmwasserbereitungsZeit, sensorTypeNumeric,
 		  "Warmwasserbereitungszeit", readingTypeTime, "h");
     query.execute(SensorWarmwasserBereitungen, sensorTypeNumeric,

@@ -45,11 +45,12 @@ class Database {
 	    SensorFlammenstrom = 17,
 	    SensorSystemdruck = 18,
 	    SensorBetriebszeit = 19,
+	    SensorHeizZeit = 23,
 	    SensorBrennerstarts = 20,
 	    SensorWarmwasserbereitungsZeit = 21,
 	    SensorWarmwasserBereitungen = 22,
 	    /* not valid for DB */
-	    NumericSensorLast = 23
+	    NumericSensorLast = 24
 	} NumericSensors;
 
 	typedef enum {

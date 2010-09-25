@@ -242,8 +242,8 @@ Message::parseUBAMonitorSlowMessage()
 			  Database::SensorBrennerstarts);
     printNumberAndAddToDb(14, 3, 60, "Betriebszeit total", "h",
 			  Database::SensorBetriebszeit);
-    printNumberAndAddToDb(20, 3, 60, "Betriebszeit 1", "h",
-			  Database::NumericSensorLast);
+    printNumberAndAddToDb(20, 3, 60, "Betriebszeit Heizen", "h",
+			  Database::SensorHeizZeit);
     printNumberAndAddToDb(23, 3, 60, "Betriebszeit 2", "h",
 			  Database::NumericSensorLast);
 }
