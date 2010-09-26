@@ -109,13 +109,13 @@ function print_cell($name, $value, $color = "") {
               print_header("Heizkreise");
               $value = $sensors[SensorVorlaufHK1SollTemp] . " / " . $sensors[SensorVorlaufHK1IstTemp];
               print_cell("Heizkreis 1 Soll/Ist", $value);
-              $value = $sensors[SensorHK1Active] ? ($sensors[SensorHK1Pumpe] ? "- aktiv, Pumpe aktiv -" :
+              $value = $sensors[SensorHK1Active] ? ($sensors[SensorHK1Pumpe] ? "- Pumpe aktiv -" :
                                                                                " - aktiv -") :
                                                    "- inaktiv -";
               print_cell("Status Heizkreis 1", $value, $sensors[SensorHK1Active] ? "green" : "");
               $value = $sensors[SensorVorlaufHK2SollTemp] . " / " . $sensors[SensorVorlaufHK2IstTemp];
               print_cell("Heizkreis 2 Soll/Ist", $value);
-              $value = $sensors[SensorHK2Active] ? ($sensors[SensorHK2Pumpe] ? "- aktiv, Pumpe aktiv -" :
+              $value = $sensors[SensorHK2Active] ? ($sensors[SensorHK2Pumpe] ? "- Pumpe aktiv -" :
                                                                                " - aktiv -") :
                                                    "- inaktiv -";
               print_cell("Status Heizkreis 2", $value, $sensors[SensorHK2Active] ? "green" : "");
