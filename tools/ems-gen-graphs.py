@@ -44,11 +44,13 @@ def do_graphdata(sensor, filename):
     process.communicate("""
         set @starttime = subdate(now(), interval 1 %s);
         set @endtime = now();
-        select if(starttime < @starttime, @starttime, starttime) time, value from numeric_data
-            where sensor=%d and endtime >= @starttime limit 1
-        union all
-        select endtime time, value from numeric_data
-            where sensor=%d and endtime >= @starttime;
+        select time, value from (
+            select adddate(if(starttime < @starttime, @starttime, starttime), interval 1 second) time, value from numeric_data
+            where sensor = %d and endtime >= @starttime
+            union all
+            select if(endtime > @endtime, @endtime, endtime) time, value from numeric_data
+            where sensor = %d and endtime >= @starttime)
+        t1 order by time;
         """ % (interval, sensor, sensor))
     datafile.close()
 
