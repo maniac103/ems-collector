@@ -6,30 +6,39 @@
 #include "Options.h"
 
 const char * Database::dbName = "ems_data";
+const char * Database::numericTableName = "numeric_data";
+const char * Database::booleanTableName = "boolean_data";
+const char * Database::stateTableName = "state_data";
 
-sql_create_3(NumericSensorValue, 1, 3,
+sql_create_4(NumericSensorValue, 1, 4,
 	     mysqlpp::sql_smallint, sensor,
 	     mysqlpp::sql_float, value,
-	     mysqlpp::sql_timestamp, time);
-sql_create_3(BooleanSensorValue, 1, 3,
+	     mysqlpp::sql_datetime, starttime,
+	     mysqlpp::sql_datetime, endtime);
+sql_create_4(BooleanSensorValue, 1, 4,
 	     mysqlpp::sql_smallint, sensor,
 	     mysqlpp::sql_bool, value,
-	     mysqlpp::sql_timestamp, time);
+	     mysqlpp::sql_datetime, starttime,
+	     mysqlpp::sql_datetime, endtime);
+sql_create_4(StateSensorValue, 1, 4,
+	     mysqlpp::sql_smallint, sensor,
+	     mysqlpp::sql_varchar, value,
+	     mysqlpp::sql_datetime, starttime,
+	     mysqlpp::sql_datetime, endtime);
 
 Database::Database() :
-    m_connection(),
-    m_transaction(NULL)
+    m_connection()
 {
 }
 
 Database::Database(const std::string& server, const std::string& user, const std::string& password) :
-    m_connection(NULL, server.c_str(), user.c_str(), password.c_str()),
-    m_transaction(NULL)
+    m_connection(NULL, server.c_str(), user.c_str(), password.c_str())
 {
     bool success = false;
 
-    NumericSensorValue::table("numeric_data");
-    BooleanSensorValue::table("boolean_data");
+    NumericSensorValue::table(numericTableName);
+    BooleanSensorValue::table(booleanTableName);
+    StateSensorValue::table(stateTableName);
 
     try {
 	m_connection.select_db(dbName);
@@ -56,7 +65,6 @@ Database::Database(const std::string& server, const std::string& user, const std
 
 Database::~Database()
 {
-    finishTransaction(false);
 }
 
 bool
@@ -72,7 +80,7 @@ Database::createTables()
 	      << "  name VARCHAR(100) NOT NULL, "
 	      << "  reading_type TINYINT UNSIGNED, "
 	      << "  unit VARCHAR(10), "
-	      << "  precision TINYINT UNSIGNED, "
+	      << "  `precision` TINYINT UNSIGNED, "
 	      << "  PRIMARY KEY (type)) "
 	      << "ENGINE MyISAM CHARACTER SET utf8";
 	query.execute();
@@ -81,22 +89,44 @@ Database::createTables()
 	createSensorRows();
 
 	/* Create numeric sensor data table */
-	query << "CREATE TABLE numeric_data ("
+	query << "CREATE TABLE " << numericTableName << " ("
+	      << "  id INT AUTO_INCREMENT, "
 	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
 	      << "  value FLOAT NOT NULL, "
-	      << "  time TIMESTAMP NOT NULL, "
-	      << "  KEY time (time), "
-	      << "  KEY sensor_time (sensor, time)) "
+	      << "  starttime DATETIME NOT NULL, "
+	      << "  endtime DATETIME NOT NULL, "
+	      << "  PRIMARY KEY (id), "
+	      << "  KEY start_time (starttime), "
+	      << "  KEY end_time (endtime), "
+	      << "  KEY sensor (sensor)) "
 	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
 	query.execute();
 
 	/* Create boolean sensor data table */
-	query << "CREATE TABLE boolean_data ("
+	query << "CREATE TABLE " << booleanTableName << " ("
+	      << "  id INT AUTO_INCREMENT, "
 	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
 	      << "  value TINYINT NOT NULL, "
-	      << "  time TIMESTAMP NOT NULL, "
-	      << "  KEY time (time), "
-	      << "  KEY sensor_time (sensor, time)) "
+	      << "  starttime DATETIME NOT NULL, "
+	      << "  endtime DATETIME NOT NULL, "
+	      << "  PRIMARY KEY (id), "
+	      << "  KEY start_time (starttime), "
+	      << "  KEY end_time (endtime), "
+	      << "  KEY sensor (sensor)) "
+	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
+	query.execute();
+
+	/* Create state sensor data table */
+	query << "CREATE TABLE " << stateTableName << " ("
+	      << "  id INT AUTO_INCREMENT, "
+	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
+	      << "  value VARCHAR(100) NOT NULL, "
+	      << "  starttime DATETIME NOT NULL, "
+	      << "  endtime DATETIME NOT NULL, "
+	      << "  PRIMARY KEY (id), "
+	      << "  KEY start_time (starttime), "
+	      << "  KEY end_time (endtime), "
+	      << "  KEY sensor (sensor)) "
 	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
 	query.execute();
     } catch (const mysqlpp::BadQuery& er) {
@@ -118,7 +148,6 @@ Database::createTables()
 void
 Database::createSensorRows()
 {
-    mysqlpp::Transaction transaction(m_connection);
     mysqlpp::Query query = m_connection.query();
 
     query << "insert into sensors values (%0q, %1q, %2q, %3q:reading_type, %4q:unit, %5q:precision)";
@@ -167,11 +196,11 @@ Database::createSensorRows()
     query.execute(SensorBrennerstarts, sensorTypeNumeric,
 		  "Brennerstarts", readingTypeCount, "");
     query.execute(SensorBetriebszeit, sensorTypeNumeric,
-		  "Betriebszeit", readingTypeTime, "h");
+		  "Betriebszeit", readingTypeTime, "min");
     query.execute(SensorHeizZeit, sensorTypeNumeric,
-		  "Heizzeit", readingTypeTime, "h");
+		  "Heizzeit", readingTypeTime, "min");
     query.execute(SensorWarmwasserbereitungsZeit, sensorTypeNumeric,
-		  "Warmwasserbereitungszeit", readingTypeTime, "h");
+		  "Warmwasserbereitungszeit", readingTypeTime, "min");
     query.execute(SensorWarmwasserBereitungen, sensorTypeNumeric,
 		  "Warmwasserbereitungen", readingTypeCount, "");
 
@@ -179,8 +208,8 @@ Database::createSensorRows()
     query.execute(SensorFlamme, sensorTypeBoolean, "Flamme");
     query.execute(SensorBrenner, sensorTypeBoolean, "Brenner");
     query.execute(SensorZuendung, sensorTypeBoolean, "Zündung");
-    query.execute(SensorHKPumpe, sensorTypeBoolean, "HK Pumpe");
-    query.execute(SensorHKWW, sensorTypeBoolean, "3-Wege-Ventil");
+    query.execute(SensorKesselPumpe, sensorTypeBoolean, "Kessel-Pumpe");
+    query.execute(Sensor3WegeVentil, sensorTypeBoolean, "3-Wege-Ventil");
     query.execute(SensorZirkulation, sensorTypeBoolean, "Zirkulation");
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
     query.execute(SensorAutomatikbetrieb, sensorTypeBoolean, "Automatikbetrieb");
@@ -193,7 +222,9 @@ Database::createSensorRows()
     query.execute(SensorHK1Pumpe, sensorTypeBoolean, "HK1 Pumpe");
     query.execute(SensorHK2Pumpe, sensorTypeBoolean, "HK2 Pumpe");
 
-    transaction.commit();
+    /* State sensors */
+    query.execute(SensorServiceCode, sensorTypeState, "Servicecode");
+    query.execute(SensorFehlerCode, sensorTypeState, "Fehlercode");
 }
 
 bool
@@ -219,6 +250,7 @@ Database::checkAndUpdateRateLimit(unsigned int sensor, time_t now)
     return true;
 }
 
+
 void
 Database::addSensorValue(NumericSensors sensor, float value)
 {
@@ -228,10 +260,26 @@ Database::addSensorValue(NumericSensors sensor, float value)
     }
 
     mysqlpp::Query query = m_connection.query();
-    NumericSensorValue row(sensor, value, mysqlpp::sql_timestamp(now));
+    std::map<unsigned int, float>::iterator cacheIter = m_numericCache.find(sensor);
+    std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
+    bool valueChanged = cacheIter == m_numericCache.end() || cacheIter->second != value;
+    bool idValid = idIter != m_lastInsertIds.end() && idIter->second != 0;
+    mysqlpp::sql_datetime timestamp(now);
 
-    query.insert(row);
-    query.execute();
+    if (idValid) {
+	query << "update " << numericTableName << " set endtime ='" << timestamp
+	      << "' where id = " << idIter->second;
+	query.execute();
+    }
+
+    if (valueChanged || !idValid) {
+	NumericSensorValue row(sensor, value, timestamp, timestamp);
+	query.insert(row);
+	query.execute();
+
+	m_lastInsertIds[sensor] = query.insert_id();
+	m_numericCache[sensor] = value;
+    }
 }
 
 void
@@ -243,21 +291,56 @@ Database::addSensorValue(BooleanSensors sensor, bool value)
     }
 
     mysqlpp::Query query = m_connection.query();
-    BooleanSensorValue row(sensor, value, mysqlpp::sql_timestamp(now));
+    std::map<unsigned int, bool>::iterator cacheIter = m_booleanCache.find(sensor);
+    std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
+    bool valueChanged = cacheIter == m_booleanCache.end() || cacheIter->second != value;
+    bool idValid = idIter != m_lastInsertIds.end() && idIter->second != 0;
+    mysqlpp::sql_datetime timestamp(now);
 
-    query.insert(row);
-    query.execute();
+    if (idValid) {
+	query << "update " << booleanTableName << " set endtime ='" << timestamp
+	      << "' where id = " << idIter->second;
+	query.execute();
+    }
+
+    if (valueChanged || !idValid) {
+	BooleanSensorValue row(sensor, value, timestamp, timestamp);
+	query.insert(row);
+	query.execute();
+
+	m_lastInsertIds[sensor] = query.insert_id();
+	m_booleanCache[sensor] = value;
+    }
 }
 
 void
-Database::finishTransaction(bool commit)
+Database::addSensorValue(StateSensors sensor, const std::string& value)
 {
-    if (m_transaction) {
-	if (isConnected() && commit) {
-	    m_transaction->commit();
-	}
-	delete m_transaction;
-	m_transaction = NULL;
+    time_t now = time(NULL);
+    if (!isConnected() || !checkAndUpdateRateLimit(sensor, now)) {
+	return;
+    }
+
+    mysqlpp::Query query = m_connection.query();
+    std::map<unsigned int, std::string>::iterator cacheIter = m_stateCache.find(sensor);
+    std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
+    bool valueChanged = cacheIter == m_stateCache.end() || cacheIter->second != value;
+    bool idValid = idIter != m_lastInsertIds.end() && idIter->second != 0;
+    mysqlpp::sql_datetime timestamp(now);
+
+    if (idValid) {
+	query << "update " << stateTableName << " set endtime ='" << timestamp
+	      << "' where id = " << idIter->second;
+	query.execute();
+    }
+
+    if (valueChanged || !idValid) {
+	StateSensorValue row(sensor, value, timestamp, timestamp);
+	query.insert(row);
+	query.execute();
+
+	m_lastInsertIds[sensor] = query.insert_id();
+	m_stateCache[sensor] = value;
     }
 }
 

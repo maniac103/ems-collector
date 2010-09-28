@@ -3,7 +3,6 @@
 
 #include <map>
 #include <mysql++/connection.h>
-#include <mysql++/transaction.h>
 
 class Database {
     public:
@@ -14,15 +13,6 @@ class Database {
 	bool isConnected() const {
 	    return m_connection.connected();
 	}
-
-	void startTransaction() {
-	    finishTransaction(false);
-	    if (isConnected()) {
-		m_transaction = new mysqlpp::Transaction(m_connection);
-	    }
-	}
-
-	void finishTransaction(bool commit = true);
 
     public:
 	typedef enum {
@@ -57,8 +47,9 @@ class Database {
 	    SensorFlamme = 100,
 	    SensorBrenner = 101,
 	    SensorZuendung = 102,
-	    SensorHKPumpe = 103,
-	    SensorHKWW = 106,
+	    SensorKesselPumpe = 103,
+	    /* 0 = HK, 1 = WW */
+	    Sensor3WegeVentil = 106,
 	    SensorHK1Active = 104,
 	    SensorHK2Active = 105,
 	    SensorHK1Pumpe = 116,
@@ -74,8 +65,16 @@ class Database {
 	    BooleanSensorLast = 118
 	} BooleanSensors;
 
+	typedef enum {
+	    SensorServiceCode = 200,
+	    SensorFehlerCode = 201,
+	    /* not valid for DB */
+	    StateSensorLast = 202
+	} StateSensors;
+
 	void addSensorValue(NumericSensors sensor, float value);
 	void addSensorValue(BooleanSensors sensor, bool value);
+	void addSensorValue(StateSensors sensor, const std::string& value);
 
     private:
 	bool createTables();
@@ -84,9 +83,13 @@ class Database {
 
     private:
 	static const char *dbName;
+	static const char *numericTableName;
+	static const char *booleanTableName;
+	static const char *stateTableName;
 
 	static const unsigned int sensorTypeNumeric = 1;
 	static const unsigned int sensorTypeBoolean = 2;
+	static const unsigned int sensorTypeState = 3;
 
 	static const unsigned int readingTypeNone = 0;
 	static const unsigned int readingTypeTemperature = 1;
@@ -97,8 +100,12 @@ class Database {
 	static const unsigned int readingTypeCount = 6;
 
 	std::map<unsigned int, time_t> m_lastWrites;
+	std::map<unsigned int, float> m_numericCache;
+	std::map<unsigned int, bool> m_booleanCache;
+	std::map<unsigned int, std::string> m_stateCache;
+	std::map<unsigned int, mysqlpp::ulonglong> m_lastInsertIds;
+
 	mysqlpp::Connection m_connection;
-	mysqlpp::Transaction *m_transaction;
 };
 
 #endif /* __DATABASE_H__ */

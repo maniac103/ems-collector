@@ -69,7 +69,7 @@ function print_cell($name, $value, $color = "") {
               print_header("Heizung");
               print_cell("Kessel IST", $sensors[SensorKesselIstTemp]);
               print_cell("Kessel SOLL", $sensors[SensorKesselSollTemp]);
-              $value = $sensors[SensorHKPumpe] && !$sensors[SensorHKWW];
+              $value = $sensors[SensorKesselPumpe] && !$sensors[Sensor3WegeVentil];
               print_cell("Vorlaufpumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               $value = $sensors[SensorBrenner];
               print_cell("Brenner",
@@ -93,7 +93,7 @@ function print_cell($name, $value, $color = "") {
               print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
               $value = $sensors[SensorWarmwasserTempOK];
               print_cell("Warmwasser warm", $value ? "- ja -" : "- nein -", $value ? "" : "yellow");
-              $value = $sensors[SensorHKPumpe] && $sensors[SensorHKWW];
+              $value = $sensors[SensorKesselPumpe] && $sensors[Sensor3WegeVentil];
               print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               $value = $sensors[SensorZirkulation];
               print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
@@ -155,6 +155,8 @@ function print_cell($name, $value, $color = "") {
               print_cell("Brennerlaufzeit", $sensors[SensorBetriebszeit]);
               print_cell("Brennerstarts", $sensors[SensorBrennerstarts]);
               print_cell("Systemdruck", $sensors[SensorSystemdruck]);
+              print_cell("Servicecode", $sensors[SensorServiceCode]);
+              print_cell("Fehlercode", $sensors[SensorFehlerCode]);
               # TODO: Fehler
             ?>
             </table>

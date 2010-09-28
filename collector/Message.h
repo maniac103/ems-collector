@@ -50,6 +50,8 @@ class Message
 				   Database::NumericSensors sensor);
 	void printBoolAndAddToDb(int byte, int bit, const char *name,
 				 Database::BooleanSensors sensor);
+	void printStateAndAddToDb(const std::string& value, const char *name,
+				  Database::StateSensors sensor);
 
     private:
 	Database& m_db;

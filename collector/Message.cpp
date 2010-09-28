@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <cassert>
 #include "Message.h"
@@ -56,8 +57,6 @@ Message::parse()
 
     /* strip source, dest, type */
     m_buffer.erase(m_buffer.begin(), m_buffer.begin() + 3);
-
-    m_db.startTransaction();
 
     switch (source) {
 	case 0x08:
@@ -131,8 +130,6 @@ Message::parse()
 	    break;
     }
 
-    m_db.finishTransaction(handled);
-
     if (!handled) {
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
@@ -192,8 +189,23 @@ Message::printBoolAndAddToDb(int byte, int bit, const char *name,
 }
 
 void
+Message::printStateAndAddToDb(const std::string& value, const char *name,
+			      Database::StateSensors sensor)
+{
+    if (Options::dataDebug()) {
+	Options::dataDebug() << "DATA: " << name << " = " << value << std::endl;
+    }
+
+    if (sensor != Database::StateSensorLast) {
+	m_db.addSensorValue(sensor, value);
+    }
+}
+
+void
 Message::parseUBAMonitorFastMessage()
 {
+    std::ostringstream ss;
+
     RETURN_ON_SIZE_MISMATCH(26, "Monitor Fast");
 
     printNumberAndAddToDb(1, 1, 1, "Kessel-Solltemperatur",
@@ -213,17 +225,17 @@ Message::parseUBAMonitorFastMessage()
     printNumberAndAddToDb(18, 1, 10, "Systemdruck", "bar",
 			  Database::SensorSystemdruck);
 
-    DebugStream& debug = Options::dataDebug();
-    if (debug) {
-	debug << "DATA: Servicecode = " << m_buffer[19] << m_buffer[20] << std::endl;
-	debug << "DATA: Fehlercode = " << BYTEFORMAT_DEC m_buffer[22] << std::endl;
-    }
+    ss << m_buffer[19] << m_buffer[20];
+    printStateAndAddToDb(ss.str(), "Servicecode", Database::SensorServiceCode);
+    ss.str(std::string());
+    ss << BYTEFORMAT_DEC m_buffer[22];
+    printStateAndAddToDb(ss.str(), "Fehlercode", Database::SensorFehlerCode);
 
     printBoolAndAddToDb(8, 0, "Flamme", Database::SensorFlamme);
     printBoolAndAddToDb(8, 2, "Brenner/Abluft", Database::SensorBrenner);
     printBoolAndAddToDb(8, 3, "Zündung", Database::SensorZuendung);
-    printBoolAndAddToDb(8, 5, "HK Pumpe", Database::SensorHKPumpe);
-    printBoolAndAddToDb(8, 6, "3-Wege-Ventil auf WW", Database::SensorHKWW);
+    printBoolAndAddToDb(8, 5, "Kessel-Pumpe", Database::SensorKesselPumpe);
+    printBoolAndAddToDb(8, 6, "3-Wege-Ventil auf WW", Database::Sensor3WegeVentil);
     printBoolAndAddToDb(8, 7, "Zirkulation", Database::SensorZirkulation);
 }
 
@@ -240,11 +252,11 @@ Message::parseUBAMonitorSlowMessage()
 			  Database::NumericSensorLast);
     printNumberAndAddToDb(11, 3, 1, "Brennerstarts", "",
 			  Database::SensorBrennerstarts);
-    printNumberAndAddToDb(14, 3, 60, "Betriebszeit total", "h",
+    printNumberAndAddToDb(14, 3, 1, "Betriebszeit total", "min",
 			  Database::SensorBetriebszeit);
-    printNumberAndAddToDb(20, 3, 60, "Betriebszeit Heizen", "h",
+    printNumberAndAddToDb(20, 3, 1, "Betriebszeit Heizen", "min",
 			  Database::SensorHeizZeit);
-    printNumberAndAddToDb(23, 3, 60, "Betriebszeit 2", "h",
+    printNumberAndAddToDb(23, 3, 1, "Betriebszeit 2", "min",
 			  Database::NumericSensorLast);
 }
 
@@ -259,7 +271,7 @@ Message::parseUBAMonitorWWMessage()
 			  Database::SensorWarmwasserSollTemp);
     printNumberAndAddToDb(2, 2, 10, "Warmwasser-Isttemperatur (Messstelle 1)", "°C",
 			  Database::SensorWarmwasserIstTemp);
-    printNumberAndAddToDb(11, 3, 60, "Warmwasserbereitungszeit", "h",
+    printNumberAndAddToDb(11, 3, 1, "Warmwasserbereitungszeit", "min",
 			  Database::SensorWarmwasserbereitungsZeit);
     printNumberAndAddToDb(14, 3, 1, "Warmwasserbereitungen", "",
 			  Database::SensorWarmwasserBereitungen);

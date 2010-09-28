@@ -17,7 +17,6 @@ $aussentemp = get_min_max_interval(SensorAussenTemp, "day");
 $aussentemp_today = get_min_max_for_day(SensorAussenTemp, 0);
 $aussentemp_yesterday = get_min_max_for_day(SensorAussenTemp, 1);
 $raumtemp = get_min_max_interval(SensorRaumIstTemp, "day");
-
 ?>
 
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>

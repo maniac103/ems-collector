@@ -42,9 +42,14 @@ def do_graphdata(sensor, filename):
     process = subprocess.Popen(["mysql", "-uroot", "-ppass", "ems_data" ], shell = False,
                                stdin = subprocess.PIPE, stdout = datafile)
     process.communicate("""
-        select time, value from numeric_data
-        where sensor = %d and time >= adddate(now(), interval -1 %s)
-        """ % (sensor, interval))
+        set @starttime = subdate(now(), interval 1 %s);
+        set @endtime = now();
+        select if(starttime < @starttime, @starttime, starttime) time, value from numeric_data
+            where sensor=%d and endtime >= @starttime limit 1
+        union all
+        select endtime time, value from numeric_data
+            where sensor=%d and endtime >= @starttime;
+        """ % (interval, sensor, sensor))
     datafile.close()
 
 def do_plot(name, filename, ylabel, definitions):
