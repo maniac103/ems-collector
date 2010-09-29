@@ -39,7 +39,7 @@ def flock(path, wait_delay = 1):
 
 def do_graphdata(sensor, filename):
     datafile = open(filename, "w")
-    process = subprocess.Popen(["mysql", "-uroot", "-ppass", "ems_data" ], shell = False,
+    process = subprocess.Popen(["mysql", "-A", "-uroot", "-ppass", "ems_data" ], shell = False,
                                stdin = subprocess.PIPE, stdout = datafile)
     process.communicate("""
         set @starttime = subdate(now(), interval 1 %s);
