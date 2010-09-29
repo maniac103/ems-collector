@@ -79,8 +79,9 @@ function print_cell($name, $value, $color = "") {
               print_cell("Flamme", $value, $sensors[SensorFlamme] ? "red" : "");
               $value = $sensors[SensorMomLeistung] . " / " . $sensors[SensorMaxLeistung];
               print_cell("Momentane Leistung", $value);
-              print_cell("Betriebsart", $sensors[SensorAutomatikbetrieb] ? "Automatik" : "Manuell");
-              print_cell("Tag/Nachtbetrieb", $sensors[SensorTagbetrieb] ? "Tag" : "Nacht");
+              $value = ($sensors[SensorTagbetrieb] ? "Tag" : "Nacht") . " (" .
+                       ($sensors[SensorAutomatikbetrieb] ? "Auto" : "Manuell") . ")";
+              print_cell("Betriebsart", $value);
               print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "- aktiv -" : "- inaktiv -");
             ?>
             </table>
