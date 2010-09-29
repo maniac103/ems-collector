@@ -110,8 +110,8 @@ function get_min_max_for_day($sensor, $days_ago) {
 function get_sensor_changes_for_day($days_ago) {
   $connection = open_db();
 
-  $upper = ($days_ago > 0) ? " where endtime < date_sub(curdate(), interval " . ($days_ago - 1) . " day)" : "";
-  $lower = " where endtime < date_sub(curdate(), interval " . $days_ago . " day)";
+  $upper = ($days_ago > 0) ? " where endtime < subdate(curdate(), interval " . ($days_ago - 1) . " day)" : "";
+  $lower = " where endtime < subdate(curdate(), interval " . $days_ago . " day)";
   $query = "select s.type, s.reading_type, s.precision, (upper.value - lower.value) value, s.unit from sensors s
             inner join (select v.sensor, v.value from numeric_data v
                         inner join (select sensor, max(endtime) maxtime from numeric_data" . $upper . " group by sensor) uppertimes
