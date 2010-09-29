@@ -88,24 +88,6 @@ function print_cell($name, $value, $color = "") {
           <td width=20></td>
           <td width=390>
             <?php
-              print_header("Warmwasser");
-              print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp]);
-              print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
-              $value = $sensors[SensorWarmwasserTempOK];
-              print_cell("Warmwasser warm", $value ? "- ja -" : "- nein -", $value ? "" : "yellow");
-              $value = $sensors[SensorKesselPumpe] && $sensors[Sensor3WegeVentil];
-              print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
-              $value = $sensors[SensorZirkulation];
-              print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
-              print_cell("WW-Vorrang", $sensors[SensorWWVorrang] ? "- an -" : "- aus -");
-            ?>
-            </table>
-          </td>
-        </tr>
-        <tr height=6></tr>
-        <tr>
-          <td>
-            <?php
               print_header("Heizkreise");
               $value = $sensors[SensorVorlaufHK1SollTemp] . " / " . $sensors[SensorVorlaufHK1IstTemp];
               print_cell("Heizkreis 1 Soll/Ist", $value);
@@ -120,11 +102,42 @@ function print_cell($name, $value, $color = "") {
                                                    "- inaktiv -";
               print_cell("Status Heizkreis 2", $value, $sensors[SensorHK2Active] ? "green" : "");
               print_cell("Mischersteuerung HK2", $sensors[SensorMischersteuerung]);
+              print_cell("Rücklauf IST", $sensors[SensorRuecklaufTemp]);
+            ?>
+            </table>
+          </td>
+        </tr>
+        <tr height=6></tr>
+        <tr valign="top">
+          <td width=390>
+            <?php
+              print_header("Warmwasser");
+              print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp],
+                         $sensors[SensorWarmwasserTempOK] ? "" : "yellow");
+              print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
+              $value = $sensors[SensorKesselPumpe] && $sensors[Sensor3WegeVentil];
+              print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
+              $value = $sensors[SensorZirkulation];
+              print_cell("Zirkulationspumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
+              print_cell("WW-Vorrang", $sensors[SensorWWVorrang] ? "- an -" : "- aus -");
             ?>
             </table>
           </td>
           <td width=20></td>
-          <td>
+          <td width=390>
+            <?php
+              print_header("Sonstige Temperaturen");
+              print_cell("Außen", $sensors[SensorAussenTemp]);
+              print_cell("Außen gedämpft", $sensors[SensorGedaempfteAussenTemp]);
+              print_cell("Raumtemp. IST", $sensors[SensorRaumIstTemp]);
+              print_cell("Raumtemp. SOLL", $sensors[SensorRaumSollTemp]);
+            ?>
+            </table>
+          </td>
+        </tr>
+        <tr height=6></tr>
+        <tr valign="top">
+          <td width=390>
             <?php
               print_header("Heutige Aktivität");
               print_cell("Brennerlaufzeit", $changes[SensorBetriebszeit]);
@@ -135,21 +148,8 @@ function print_cell($name, $value, $color = "") {
             ?>
             </table>
           </td>
-        </tr>
-        <tr height=6></tr>
-        <tr valign="top">
-          <td>
-            <?php
-              print_header("Sonstige Temperaturen");
-              print_cell("Außen", $sensors[SensorAussenTemp]);
-              print_cell("Außen gedämpft", $sensors[SensorGedaempfteAussenTemp]);
-              print_cell("Raumtemp. IST", $sensors[SensorRaumIstTemp]);
-              print_cell("Raumtemp. SOLL", $sensors[SensorRaumSollTemp]);
-            ?>
-            </table>
-          </td>
           <td width=20></td>
-          <td>
+          <td width=390>
             <?php
               print_header("Betriebsstatus");
               print_cell("Brennerlaufzeit", $sensors[SensorBetriebszeit]);
