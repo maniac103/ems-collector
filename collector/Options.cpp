@@ -5,6 +5,8 @@
 #include <boost/program_options.hpp>
 #include "Options.h"
 
+namespace bpo = boost::program_options;
+
 std::string Options::m_deviceName;
 unsigned int Options::m_rateLimit = 0;
 DebugStream Options::m_debugStreams[DebugCount];
@@ -16,7 +18,7 @@ std::string Options::m_dbPass;
 
 static void
 usage(std::ostream& stream, const char *programName,
-      boost::program_options::options_description& options)
+      bpo::options_description& options)
 {
     stream << "Usage: " << programName << " [options] <serial_device>" << std::endl;
     stream << options << std::endl;
@@ -26,63 +28,76 @@ Options::ParseResult
 Options::parse(int argc, char *argv[])
 {
     std::string defaultPidFilePath;
-    
+    std::string config;
+
     defaultPidFilePath = "/var/run/";
     defaultPidFilePath += argv[0];
     defaultPidFilePath += ".pid";
 
-    boost::program_options::options_description general("General options");
+    bpo::options_description general("General options");
     general.add_options()
 	("help,h", "Show this help message")
-	("ratelimit,r", boost::program_options::value<unsigned int>(&m_rateLimit)->default_value(60),
+	("ratelimit,r", bpo::value<unsigned int>(&m_rateLimit)->default_value(60),
 	 "Rate limit (in s) for writing sensors into DB")
-	("debug,d", boost::program_options::value<std::string>()->default_value("none"),
+	("debug,d", bpo::value<std::string>()->default_value("none"),
 	 "Comma separated list of debug flags (all, serial, message, data, none) "
 	 " and their files, e.g. message=/tmp/messages.txt");
 
-    boost::program_options::options_description daemon("Daemon options");
+    bpo::options_description daemon("Daemon options");
     daemon.add_options()
-	("pid-file,p",
-	 boost::program_options::value<std::string>(&m_pidFilePath)->default_value(defaultPidFilePath),
+	("pid-file,P",
+	 bpo::value<std::string>(&m_pidFilePath)->default_value(defaultPidFilePath),
 	 "Pid file path")
-	("foreground,f", "Run in foreground");
+	("foreground,f", "Run in foreground")
+	("config-file,c", bpo::value<std::string>(&config),
+	 "File name to read configuration from");
 
-    boost::program_options::options_description db("Database options");
+    bpo::options_description db("Database options");
     db.add_options()
-	("db-path", boost::program_options::value<std::string>(&m_dbPath),
+	("db-path", bpo::value<std::string>(&m_dbPath)->composing(),
 	 "Path or server:port specification of database server (none to not connect to DB)")
-	("db-user,u", boost::program_options::value<std::string>(&m_dbUser),
+	("db-user,u", bpo::value<std::string>(&m_dbUser)->composing(),
 	 "Database user name")
-	("db-pass,P", boost::program_options::value<std::string>(&m_dbPass),
+	("db-pass,p", bpo::value<std::string>(&m_dbPass)->composing(),
 	 "Database password");
 
-    boost::program_options::options_description hidden("Hidden options");
+    bpo::options_description hidden("Hidden options");
     hidden.add_options()
-	("device", boost::program_options::value<std::string>(&m_deviceName), "Serial device to use");
+	("device", bpo::value<std::string>(&m_deviceName), "Serial device to use");
 
-    boost::program_options::options_description options;
+    bpo::options_description options;
     options.add(general);
     options.add(daemon);
     options.add(db);
     options.add(hidden);
 
-    boost::program_options::options_description visible;
+    bpo::options_description configOptions;
+    configOptions.add(general);
+    configOptions.add(db);
+
+    bpo::options_description visible;
     visible.add(general);
     visible.add(daemon);
     visible.add(db);
 
-    boost::program_options::positional_options_description p;
+    bpo::positional_options_description p;
     p.add("device", 1);
 
-    boost::program_options::variables_map variables;
+    bpo::variables_map variables;
     try {
-	boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-				      options(options).positional(p).run(), variables);
-	boost::program_options::notify(variables);
-    } catch (boost::program_options::unknown_option& e) {
+	bpo::store(bpo::command_line_parser(argc, argv).options(options).positional(p).run(),
+		   variables);
+	bpo::notify(variables);
+
+	if (!config.empty()) {
+	    std::ifstream configFile(config.c_str());
+	    bpo::store(bpo::parse_config_file(configFile, configOptions), variables);
+	    bpo::notify(variables);
+	}
+    } catch (bpo::unknown_option& e) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
-    } catch (boost::program_options::multiple_occurrences& e) {
+    } catch (bpo::multiple_occurrences& e) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
     }
