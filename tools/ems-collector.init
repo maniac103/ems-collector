@@ -1,0 +1,131 @@
+#! /bin/bash
+#
+# ems-collector		starts up the EMS collector daemon
+#
+# Written by Danny Baumann on a skeleton by Jurgen DEBO
+#
+### BEGIN INIT INFO
+# Provides:          ems-collector
+# Required-Start:    $mysql $local_fs $remote_fs $named $network
+# Required-Stop:     $mysql $local_fs $remote_fs $named $network
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: EMS collector daemon
+# Description:       Starts and stops the EMS collector daemon,
+#		     used to collect data from a Buderus heating
+### END INIT INFO
+
+### LSB functions
+source /lib/lsb/init-functions
+### Default configuration
+SYSCONFIG="/etc/default/ems-collector"
+[ -r "$SYSCONFIG" ] && source "$SYSCONFIG"
+
+RETVAL=0
+PROGNAME="collectord"
+PROG="/usr/local/sbin/$PROGNAME"
+DESCR="EMS collector daemon"
+
+[ -x "$PROG" ] || exit 1
+
+start() {
+   echo -n $"Starting $DESCR ($PROGNAME): "
+   $PROG --pid-file $PIDFILE -c $CONFIGFILE $OPTIONS $SERIALDEVICE
+   RETVAL=$?
+   if [ $RETVAL -eq 0 ]; then
+     echo done.
+   else
+     echo failed!
+   fi
+}
+
+getpid() {
+   pidstr=`pgrep $PROGNAME`
+   pidarray=($pidstr)
+   pidcount=${#pidarray}
+   if [ ! -r "$PIDFILE" ] && [ $pidcount -ge 2 ]; then
+     pid=${pidarray[0]}
+   fi
+}
+
+stop() {
+   echo -n $"Stopping $DESCR ($PROGNAME): "
+   if [ -r "$PIDFILE" ]; then
+        pid=`cat $PIDFILE`
+        kill -s 3 $pid
+        RETVAL=$?
+   else
+        RETVAL=1
+   fi
+   if [ $RETVAL -eq 0 ]; then
+     rm -f $LOCKFILE
+     rm -f $PIDFILE
+     echo done.
+   else
+     echo failed!
+   fi
+   return $RETVAL
+}
+
+restart() {
+        stop
+        start
+}
+
+forcestop() {
+   echo -n $"Stopping $DESCR ($PROGNAME): "
+   kill -s 3 $pid
+   RETVAL=$?
+   if [ $RETVAL -eq 0 ]; then
+     rm -f $LOCKFILE
+     rm -f $PIDFILE
+     echo done.
+   else
+     echo failed!
+   fi
+   return $RETVAL
+}
+
+status() {
+   if [ -r "$PIDFILE" ]; then
+        pid=`cat $PIDFILE`
+   fi
+   if [ $pid ]; then
+        echo "$PROGNAME is running with pid $pid."
+   else
+        echo "$PROGNAME is not running."
+   fi
+}
+
+getpid
+
+case "$1" in
+  start)
+   start
+   ;;
+  stop)
+   stop
+   ;;
+  restart)
+   restart
+   RETVAL=$?
+   ;;
+  condrestart)
+   [ -e "$LOCKFILE" ] && restart
+   RETVAL=$?
+   ;;
+  status)
+   status
+   ;;
+  forcestop)
+   forcestop
+   ;;
+  *)
+   echo $"Usage: $0 {start|stop|forcestop|restart|condrestart|status}"
+   RETVAL=1
+esac
+
+exit $RETVAL
+

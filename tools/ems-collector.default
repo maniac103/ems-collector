@@ -1,0 +1,15 @@
+# Defaults file for EMS collector daemon
+# This is a POSIX shell fragment
+
+# config file location
+CONFIGFILE="/etc/ems-collector.conf"
+
+# Serial device file
+SERIALDEVICE="/dev/ttyUSB0"
+
+# Where to put the PID file
+PIDFILE="/var/run/ems-collector.pid"
+
+# Other options
+OPTIONS=""
+
