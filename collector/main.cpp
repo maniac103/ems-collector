@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	t.join();
     } catch (std::exception& e) {
 	std::cerr << "Exception: " << e.what() << std::endl;
+	return 1;
     }
 
     return 0;
