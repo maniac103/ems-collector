@@ -17,114 +17,76 @@
 #		     used to collect data from a Buderus heating
 ### END INIT INFO
 
-### LSB functions
-source /lib/lsb/init-functions
-### Default configuration
-SYSCONFIG="/etc/default/ems-collector"
-[ -r "$SYSCONFIG" ] && source "$SYSCONFIG"
-
-RETVAL=0
 PROGNAME="collectord"
 PROG="/usr/local/sbin/$PROGNAME"
 DESCR="EMS collector daemon"
 
-[ -x "$PROG" ] || exit 1
+### LSB functions
+source /lib/lsb/init-functions
+
+### Default configuration
+SYSCONFIG="/etc/default/ems-collector"
+[ -r "$SYSCONFIG" ] && source "$SYSCONFIG"
 
 start() {
-   echo -n $"Starting $DESCR ($PROGNAME): "
-   $PROG --pid-file $PIDFILE -c $CONFIGFILE $OPTIONS $SERIALDEVICE
-   RETVAL=$?
-   if [ $RETVAL -eq 0 ]; then
-     echo done.
-   else
-     echo failed!
-   fi
-}
-
-getpid() {
-   pidstr=`pgrep $PROGNAME`
-   pidarray=($pidstr)
-   pidcount=${#pidarray}
-   if [ ! -r "$PIDFILE" ] && [ $pidcount -ge 2 ]; then
-     pid=${pidarray[0]}
-   fi
+    log_daemon_msg "Starting $DESCR"
+    log_progress_msg "$PROGNAME"
+    $PROG --pid-file $PIDFILE -c $CONFIGFILE $OPTIONS $SERIALDEVICE
+    RETVAL=$?
+    log_end_msg $?
 }
 
 stop() {
-   echo -n $"Stopping $DESCR ($PROGNAME): "
-   if [ -r "$PIDFILE" ]; then
+    log_daemon_msg "Stopping $DESCR"
+    log_progress_msg "$PROGNAME"
+
+    if [ -r "$PIDFILE" ]; then
         pid=`cat $PIDFILE`
         kill -s 3 $pid
         RETVAL=$?
-   else
-        RETVAL=1
-   fi
-   if [ $RETVAL -eq 0 ]; then
-     rm -f $LOCKFILE
-     rm -f $PIDFILE
-     echo done.
-   else
-     echo failed!
-   fi
-   return $RETVAL
+
+        if [ $RETVAL -eq 0 ]; then
+            # remove pidfile that may be left stale
+            rm -f $PIDFILE
+        fi
+        log_end_msg $RETVAL
+    else
+        log_progress_msg "already stopped"
+        log_warning_msg
+        RETVAL=0
+    fi
 }
 
 restart() {
-        stop
-        start
+    stop
+    start
 }
 
-forcestop() {
-   echo -n $"Stopping $DESCR ($PROGNAME): "
-   kill -s 3 $pid
-   RETVAL=$?
-   if [ $RETVAL -eq 0 ]; then
-     rm -f $LOCKFILE
-     rm -f $PIDFILE
-     echo done.
-   else
-     echo failed!
-   fi
-   return $RETVAL
-}
-
-status() {
-   if [ -r "$PIDFILE" ]; then
-        pid=`cat $PIDFILE`
-   fi
-   if [ $pid ]; then
-        echo "$PROGNAME is running with pid $pid."
-   else
-        echo "$PROGNAME is not running."
-   fi
-}
-
-getpid
+RETVAL=0
 
 case "$1" in
-  start)
-   start
-   ;;
-  stop)
-   stop
-   ;;
-  restart)
-   restart
-   RETVAL=$?
-   ;;
-  condrestart)
-   [ -e "$LOCKFILE" ] && restart
-   RETVAL=$?
-   ;;
-  status)
-   status
-   ;;
-  forcestop)
-   forcestop
-   ;;
-  *)
-   echo $"Usage: $0 {start|stop|forcestop|restart|condrestart|status}"
-   RETVAL=1
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    condrestart)
+        if [ -e "$PIDFILE" ]; then
+            stop
+            start
+        fi
+        ;;
+    status)
+        status_of_proc -p $PIDFILE $PROG $PROGNAME || RETVAL=$?
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+        RETVAL=1
 esac
 
 exit $RETVAL
