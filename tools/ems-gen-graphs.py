@@ -7,6 +7,11 @@ import subprocess
 import sys
 import time
 
+mysql_socket_path = "/var/run/mysqld/mysqld.sock"
+mysql_user = "root"
+mysql_password = "pass"
+mysql_db_name = "ems_data"
+
 @contextlib.contextmanager
 def flock(path, wait_delay = 1):
     while True:
@@ -44,8 +49,8 @@ def get_time_format():
 
 def do_graphdata(sensor, filename):
     datafile = open(filename, "w")
-    process = subprocess.Popen(["mysql", "-A", "-uroot", "-ppass", "ems_data" ], shell = False,
-                               stdin = subprocess.PIPE, stdout = datafile)
+    process = subprocess.Popen(["mysql", "-A", "-u%s" % mysql_user, "-p%s" % mysql_password, mysql_db_name ],
+                               shell = False, stdin = subprocess.PIPE, stdout = datafile)
     process.communicate("""
         set @starttime = subdate(now(), interval %s);
         set @endtime = now();
@@ -104,7 +109,7 @@ if timespan_clause == None:
     sys.exit(1)
 
 retries = 30
-while not os.path.exists("/var/lib/mysql/mysql.sock") and retries > 0:
+while not os.path.exists(mysql_socket_path) and retries > 0:
     print "MySQL socket not found, waiting another %d seconds" % retries
     retries = retries - 1
     time.sleep(1)
