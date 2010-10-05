@@ -7,18 +7,6 @@ import subprocess
 import sys
 import time
 
-if len(sys.argv) != 3:
-    sys.exit(1)
-
-targetpath = sys.argv[1]
-interval = sys.argv[2]
-
-if not os.path.isdir(targetpath):
-    os.makedirs(targetpath)
-
-if not interval in ["day", "week", "month"]:
-    sys.exit(1)
-
 @contextlib.contextmanager
 def flock(path, wait_delay = 1):
     while True:
@@ -37,12 +25,29 @@ def flock(path, wait_delay = 1):
         os.close(fd)
         os.unlink(path)
 
+def check_interval():
+    timespans = {
+        "day"     : "1 day",
+        "halfweek": "3 day",
+        "week"    : "1 week",
+        "month"   : "1 month"
+    }
+    return timespans.get(interval, None)
+
+def get_time_format():
+    formats = {
+        "day"     : "%H:%M",
+        "halfweek": "%H:%M (%d.)",
+        "week"    : "%d.%m (%Hh)"
+    }
+    return formats.get(interval, "%d.%m")
+
 def do_graphdata(sensor, filename):
     datafile = open(filename, "w")
     process = subprocess.Popen(["mysql", "-A", "-uroot", "-ppass", "ems_data" ], shell = False,
                                stdin = subprocess.PIPE, stdout = datafile)
     process.communicate("""
-        set @starttime = subdate(now(), interval 1 %s);
+        set @starttime = subdate(now(), interval %s);
         set @endtime = now();
         select time, value from (
             select adddate(if(starttime < @starttime, @starttime, starttime), interval 1 second) time, value from numeric_data
@@ -51,7 +56,7 @@ def do_graphdata(sensor, filename):
             select if(endtime > @endtime, @endtime, endtime) time, value from numeric_data
             where sensor = %d and endtime >= @starttime)
         t1 order by time;
-        """ % (interval, sensor, sensor))
+        """ % (timespan_clause, sensor, sensor))
     datafile.close()
 
 def do_plot(name, filename, ylabel, definitions):
@@ -62,13 +67,6 @@ def do_plot(name, filename, ylabel, definitions):
 
     filename = filename + "-" + interval + ".png"
 
-    if interval == "day":
-        timeformat = "%H:%M"
-    elif interval == "week":
-        timeformat = "%d.%m (%Hh)"
-    else:
-        timeformat = "%d.%m"
-
     process = subprocess.Popen("gnuplot", shell = False, stdin = subprocess.PIPE)
     process.stdin.write("set terminal png font 'arial' 12 size 800, 450\n")
     process.stdin.write("set grid lc rgb '#aaaaaa' lt 1 lw 0,5\n")
@@ -77,7 +75,7 @@ def do_plot(name, filename, ylabel, definitions):
     process.stdin.write("set xlabel 'Datum'\n")
     process.stdin.write("set ylabel '%s'\n" % ylabel)
     process.stdin.write("set timefmt '%Y-%m-%d %H:%M:%S'\n")
-    process.stdin.write("set format x '%s'\n" % timeformat)
+    process.stdin.write("set format x '%s'\n" % get_time_format())
     process.stdin.write("set xtics autofreq rotate by -45\n")
     process.stdin.write("set ytics autofreq\n")
     process.stdin.write("set output '%s'\n" % os.path.join(targetpath, filename))
@@ -94,6 +92,29 @@ def do_plot(name, filename, ylabel, definitions):
 
     for i in range(1, len(definitions) + 1) :
         os.remove("/tmp/file%d.dat" % i)
+
+# main starts here
+
+if len(sys.argv) != 3:
+    sys.exit(1)
+
+interval = sys.argv[2]
+timespan_clause = check_interval()
+if timespan_clause == None:
+    sys.exit(1)
+
+retries = 30
+while not os.path.exists("/var/lib/mysql/mysql.sock") and retries > 0:
+    print "MySQL socket not found, waiting another %d seconds" % retries
+    retries = retries - 1
+    time.sleep(1)
+
+if retries == 0:
+    sys.exit(2)
+
+targetpath = sys.argv[1]
+if not os.path.isdir(targetpath):
+    os.makedirs(targetpath)
 
 with flock("/tmp/graph-gen.lock"):
     definitions = [ [ 11, "Außentemperatur", "lines smooth bezier" ],
