@@ -6,12 +6,12 @@
 #
 ### BEGIN INIT INFO
 # Provides:          ems-collector
-# Required-Start:    $mysql $local_fs $remote_fs $named $network
-# Required-Stop:     $mysql $local_fs $remote_fs $named $network
+# Required-Start:    mysql $time $local_fs $remote_fs
+# Required-Stop:     mysql $time $local_fs $remote_fs
 # Should-Start:
 # Should-Stop:
 # Default-Start:     2 3 4 5
-# Default-Stop:      1
+# Default-Stop:      0 1 6
 # Short-Description: EMS collector daemon
 # Description:       Starts and stops the EMS collector daemon,
 #		     used to collect data from a Buderus heating
