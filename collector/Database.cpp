@@ -96,9 +96,8 @@ Database::createTables()
 	      << "  starttime DATETIME NOT NULL, "
 	      << "  endtime DATETIME NOT NULL, "
 	      << "  PRIMARY KEY (id), "
-	      << "  KEY start_time (starttime), "
-	      << "  KEY end_time (endtime), "
-	      << "  KEY sensor (sensor)) "
+	      << "  KEY sensor_starttime (sensor, starttime), "
+	      << "  KEY sensor_endtime (sensor, endtime)) "
 	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
 	query.execute();
 
@@ -110,9 +109,8 @@ Database::createTables()
 	      << "  starttime DATETIME NOT NULL, "
 	      << "  endtime DATETIME NOT NULL, "
 	      << "  PRIMARY KEY (id), "
-	      << "  KEY start_time (starttime), "
-	      << "  KEY end_time (endtime), "
-	      << "  KEY sensor (sensor)) "
+	      << "  KEY sensor_starttime (sensor, starttime), "
+	      << "  KEY sensor_endtime (sensor, endtime)) "
 	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
 	query.execute();
 
@@ -124,9 +122,8 @@ Database::createTables()
 	      << "  starttime DATETIME NOT NULL, "
 	      << "  endtime DATETIME NOT NULL, "
 	      << "  PRIMARY KEY (id), "
-	      << "  KEY start_time (starttime), "
-	      << "  KEY end_time (endtime), "
-	      << "  KEY sensor (sensor)) "
+	      << "  KEY sensor_starttime (sensor, starttime), "
+	      << "  KEY sensor_endtime (sensor, endtime)) "
 	      << "ENGINE MyISAM PACK_KEYS 1 ROW_FORMAT DYNAMIC";
 	query.execute();
     } catch (const mysqlpp::BadQuery& er) {

@@ -64,7 +64,7 @@ function get_min_max($sensor, $start_clause, $end_clause) {
 
     $query = "select s.reading_type, s.precision, unix_timestamp(v.time) time, v.value, s.unit from sensors s
               inner join (select sensor, if(endtime > @endtime, @endtime, endtime) time, value from numeric_data
-                          where sensor = " . $sensor . " and endtime >= @starttime and starttime < @endtime
+                          where sensor = " . $sensor . " and starttime < @endtime and endtime >= @starttime
                           order by value DIRECTION limit 1) v
               on s.type = v.sensor;";
     $avg_query = "select s.reading_type, s.precision, v.value, s.unit from sensors s
@@ -73,7 +73,7 @@ function get_min_max($sensor, $start_clause, $end_clause) {
                               select sensor, value,
                                      if(starttime < @starttime, @starttime, starttime) starttime,
                                      if(endtime > @endtime, @endtime, endtime) endtime from numeric_data
-                              where sensor = " . $sensor . " and endtime >= @starttime and starttime < @endtime) t1) t2) v
+                              where sensor = " . $sensor . " and starttime < @endtime and endtime >= @starttime) t1) t2) v
                   on s.type = v.sensor;";
 
   $min = $connection->query(str_replace("DIRECTION", "asc", $query))->fetch(PDO::FETCH_OBJ);
