@@ -29,7 +29,7 @@ DESCR="EMS collector daemon"
 
 ### Default configuration
 SYSCONFIG="/etc/default/ems-collector"
-[ -r "$SYSCONFIG" ] && source "$SYSCONFIG"
+[ -r "$SYSCONFIG" ] && . "$SYSCONFIG"
 
 start() {
     log_daemon_msg "Starting $DESCR" "$PROGNAME"
