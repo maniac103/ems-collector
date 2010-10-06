@@ -42,8 +42,8 @@ def check_interval():
 def get_time_format():
     formats = {
         "day"     : "%H:%M",
-        "halfweek": "%H:%M (%d.)",
-        "week"    : "%d.%m (%Hh)"
+        "halfweek": "%H:%M (%a)",
+        "week"    : "%a, %Hh"
     }
     return formats.get(interval, "%d.%m")
 
