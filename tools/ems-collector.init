@@ -21,8 +21,11 @@ PROGNAME="collectord"
 PROG="/usr/local/sbin/$PROGNAME"
 DESCR="EMS collector daemon"
 
+### exit if program is missing
+[ -x "$PROG" ] || exit 0
+
 ### LSB functions
-source /lib/lsb/init-functions
+. /lib/lsb/init-functions
 
 ### Default configuration
 SYSCONFIG="/etc/default/ems-collector"
