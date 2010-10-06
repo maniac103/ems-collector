@@ -1,8 +1,8 @@
-#! /bin/bash
+#! /bin/sh
 #
-# ems-collector		starts up the EMS collector daemon
+# EMS collector daemon init script
 #
-# Written by Danny Baumann on a skeleton by Jurgen DEBO
+# Author: Danny Baumann <dannybaumann@web.de>
 #
 ### BEGIN INIT INFO
 # Provides:          ems-collector
