@@ -33,7 +33,7 @@ start() {
     log_progress_msg "$PROGNAME"
     $PROG --pid-file $PIDFILE -c $CONFIGFILE $OPTIONS $SERIALDEVICE
     RETVAL=$?
-    log_end_msg $?
+    log_end_msg $RETVAL
 }
 
 stop() {
