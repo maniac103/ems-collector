@@ -29,16 +29,14 @@ SYSCONFIG="/etc/default/ems-collector"
 [ -r "$SYSCONFIG" ] && source "$SYSCONFIG"
 
 start() {
-    log_daemon_msg "Starting $DESCR"
-    log_progress_msg "$PROGNAME"
+    log_daemon_msg "Starting $DESCR" "$PROGNAME"
     $PROG --pid-file $PIDFILE -c $CONFIGFILE $OPTIONS $SERIALDEVICE
     RETVAL=$?
     log_end_msg $RETVAL
 }
 
 stop() {
-    log_daemon_msg "Stopping $DESCR"
-    log_progress_msg "$PROGNAME"
+    log_daemon_msg "Stopping $DESCR" "$PROGNAME"
 
     if [ -r "$PIDFILE" ]; then
         pid=`cat $PIDFILE`
