@@ -38,7 +38,7 @@ Options::parse(int argc, char *argv[])
     general.add_options()
 	("help,h", "Show this help message")
 	("ratelimit,r", bpo::value<unsigned int>(&m_rateLimit)->default_value(60),
-	 "Rate limit (in s) for writing sensors into DB")
+	 "Rate limit (in s) for writing numeric sensor values into DB")
 	("debug,d", bpo::value<std::string>()->default_value("none"),
 	 "Comma separated list of debug flags (all, serial, message, data, none) "
 	 " and their files, e.g. message=/tmp/messages.txt");

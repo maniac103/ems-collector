@@ -283,7 +283,7 @@ void
 Database::addSensorValue(BooleanSensors sensor, bool value)
 {
     time_t now = time(NULL);
-    if (!isConnected() || !checkAndUpdateRateLimit(sensor, now)) {
+    if (!isConnected()) {
 	return;
     }
 
@@ -314,7 +314,7 @@ void
 Database::addSensorValue(StateSensors sensor, const std::string& value)
 {
     time_t now = time(NULL);
-    if (!isConnected() || !checkAndUpdateRateLimit(sensor, now)) {
+    if (!isConnected()) {
 	return;
     }
 
