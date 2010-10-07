@@ -228,7 +228,7 @@ Message::parseUBAMonitorFastMessage()
     ss << m_buffer[19] << m_buffer[20];
     printStateAndAddToDb(ss.str(), "Servicecode", Database::SensorServiceCode);
     ss.str(std::string());
-    ss << BYTEFORMAT_DEC m_buffer[22];
+    ss << std::dec << (m_buffer[21] << 8 | m_buffer[22]);
     printStateAndAddToDb(ss.str(), "Fehlercode", Database::SensorFehlerCode);
 
     printBoolAndAddToDb(8, 0, "Flamme", Database::SensorFlamme);
