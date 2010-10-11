@@ -209,15 +209,20 @@ Database::createSensorRows()
     query.execute(Sensor3WegeVentil, sensorTypeBoolean, "3-Wege-Ventil");
     query.execute(SensorZirkulation, sensorTypeBoolean, "Zirkulation");
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
-    query.execute(SensorAutomatikbetrieb, sensorTypeBoolean, "Automatikbetrieb");
-    query.execute(SensorTagbetrieb, sensorTypeBoolean, "Tagbetrieb");
+    query.execute(SensorWWTagbetrieb, sensorTypeBoolean, "WW-Tagbetrieb");
     query.execute(SensorSommerbetrieb, sensorTypeBoolean, "Sommerbetrieb");
     query.execute(SensorWarmwasserTempOK, sensorTypeBoolean, "Warmwassertemperatur OK");
     query.execute(SensorWWVorrang, sensorTypeBoolean, "Warmwasservorrang");
-    query.execute(SensorHK1Active, sensorTypeBoolean, "HK1 aktiv");
-    query.execute(SensorHK2Active, sensorTypeBoolean, "HK2 aktiv");
+    query.execute(SensorHK1Automatik, sensorTypeBoolean, "HK1 Automatikbetrieb");
+    query.execute(SensorHK1Tagbetrieb, sensorTypeBoolean, "HK1 Tagbetrieb");
     query.execute(SensorHK1Pumpe, sensorTypeBoolean, "HK1 Pumpe");
+    query.execute(SensorHK1Ferien, sensorTypeBoolean, "HK1 Ferien");
+    query.execute(SensorHK1Party, sensorTypeBoolean, "HK1 Party");
+    query.execute(SensorHK2Automatik, sensorTypeBoolean, "HK2 Automatikbetrieb");
+    query.execute(SensorHK2Tagbetrieb, sensorTypeBoolean, "HK2 Tagbetrieb");
     query.execute(SensorHK2Pumpe, sensorTypeBoolean, "HK2 Pumpe");
+    query.execute(SensorHK2Ferien, sensorTypeBoolean, "HK2 Ferien");
+    query.execute(SensorHK2Party, sensorTypeBoolean, "HK2 Party");
 
     /* State sensors */
     query.execute(SensorServiceCode, sensorTypeState, "Servicecode");

@@ -79,9 +79,6 @@ function print_cell($name, $value, $color = "") {
               print_cell("Flamme", $value, $sensors[SensorFlamme] ? "red" : "");
               $value = $sensors[SensorMomLeistung] . " / " . $sensors[SensorMaxLeistung];
               print_cell("Momentane Leistung", $value);
-              $value = ($sensors[SensorTagbetrieb] ? "Tag" : "Nacht") . " (" .
-                       ($sensors[SensorAutomatikbetrieb] ? "Auto" : "Manuell") . ")";
-              print_cell("Betriebsart", $value);
               print_cell("Sommerbetrieb", $sensors[SensorSommerbetrieb] ? "- aktiv -" : "- inaktiv -");
             ?>
             </table>
@@ -92,16 +89,32 @@ function print_cell($name, $value, $color = "") {
               print_header("Heizkreise");
               $value = $sensors[SensorVorlaufHK1SollTemp] . " / " . $sensors[SensorVorlaufHK1IstTemp];
               print_cell("Heizkreis 1 Soll/Ist", $value);
-              $value = $sensors[SensorHK1Active] ? ($sensors[SensorHK1Pumpe] ? "- Pumpe aktiv -" :
-                                                                               " - aktiv -") :
-                                                   "- inaktiv -";
-              print_cell("Status Heizkreis 1", $value, $sensors[SensorHK1Active] ? "green" : "");
+              if ($sensors[SensorHK1Party]) {
+                $value = "Party";
+              } else if ($sensors[SensorHK1Ferien]) {
+                $value = "Ferien";
+              } else {
+                $value = ($sensors[SensorHK1Automatik] ? "Auto" : "Manuell") . " (" .
+                         ($sensors[SensorHK1Tagbetrieb] ? "Tag" : "Nacht") . ")";
+              }
+              print_cell("Betriebsart HK1", $value);
+              print_cell("Pumpe HK1",
+                         $sensors[SensorHK1Pumpe] ? "- aktiv -" : "- inaktiv -", 
+                         $sensors[SensorHK1Pumpe] ? "green" : "");
               $value = $sensors[SensorVorlaufHK2SollTemp] . " / " . $sensors[SensorVorlaufHK2IstTemp];
               print_cell("Heizkreis 2 Soll/Ist", $value);
-              $value = $sensors[SensorHK2Active] ? ($sensors[SensorHK2Pumpe] ? "- Pumpe aktiv -" :
-                                                                               " - aktiv -") :
-                                                   "- inaktiv -";
-              print_cell("Status Heizkreis 2", $value, $sensors[SensorHK2Active] ? "green" : "");
+              if ($sensors[SensorHK2Party]) {
+                $value = "Party";
+              } else if ($sensors[SensorHK2Ferien]) {
+                $value = "Ferien";
+              } else {
+                $value = ($sensors[SensorHK2Automatik] ? "Auto" : "Manuell") . " (" .
+                         ($sensors[SensorHK2Tagbetrieb] ? "Tag" : "Nacht") . ")";
+              }
+              print_cell("Betriebsart HK2", $value);
+              print_cell("Pumpe HK2",
+                         $sensors[SensorHK2Pumpe] ? "- aktiv -" : "- inaktiv -", 
+                         $sensors[SensorHK2Pumpe] ? "green" : "");
               print_cell("Mischersteuerung HK2", $sensors[SensorMischersteuerung]);
               print_cell("Rücklauf IST", $sensors[SensorRuecklaufTemp]);
             ?>
@@ -116,6 +129,8 @@ function print_cell($name, $value, $color = "") {
               print_cell("Warmwasser IST", $sensors[SensorWarmwasserIstTemp],
                          $sensors[SensorWarmwasserTempOK] ? "" : "yellow");
               print_cell("Warmwasser SOLL", $sensors[SensorWarmwasserSollTemp]);
+              $value = $sensors[SensorWWTagbetrieb] ? "Tag" : "Nacht";
+              print_cell("Betriebsart", $value);
               $value = $sensors[SensorKesselPumpe] && $sensors[Sensor3WegeVentil];
               print_cell("WW-Pumpe", $value ? "- an -" : "- aus -", $value ? "green" : "");
               $value = $sensors[SensorZirkulation];

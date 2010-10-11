@@ -50,19 +50,24 @@ class Database {
 	    SensorKesselPumpe = 103,
 	    /* 0 = HK, 1 = WW */
 	    Sensor3WegeVentil = 106,
-	    SensorHK1Active = 104,
-	    SensorHK2Active = 105,
+	    SensorHK1Automatik = 122,
+	    SensorHK1Tagbetrieb = 104,
 	    SensorHK1Pumpe = 116,
+	    SensorHK1Ferien = 118,
+	    SensorHK1Party = 119,
+	    SensorHK2Automatik = 123,
+	    SensorHK2Tagbetrieb = 105,
 	    SensorHK2Pumpe = 117,
+	    SensorHK2Ferien = 120,
+	    SensorHK2Party = 121,
 	    SensorWarmwasserBereitung = 110,
 	    SensorWarmwasserTempOK = 114,
 	    SensorZirkulation = 107,
 	    SensorWWVorrang = 115,
-	    SensorAutomatikbetrieb = 111,
-	    SensorTagbetrieb = 112,
+	    SensorWWTagbetrieb = 112,
 	    SensorSommerbetrieb = 113,
 	    /* not valid for DB */
-	    BooleanSensorLast = 118
+	    BooleanSensorLast = 124
 	} BooleanSensors;
 
 	typedef enum {

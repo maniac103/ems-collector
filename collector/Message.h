@@ -38,7 +38,10 @@ class Message
 	void parseRCOutdoorTempMessage();
 	void parseRCHKMonitorMessage(const char *name,
 				     Database::NumericSensors vorlaufSollSensor,
-				     Database::BooleanSensors aktivSensor);
+				     Database::BooleanSensors automatikSensor,
+				     Database::BooleanSensors tagSensor,
+				     Database::BooleanSensors ferienSensor,
+				     Database::BooleanSensors partySensor);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();

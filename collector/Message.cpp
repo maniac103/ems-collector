@@ -101,13 +101,21 @@ Message::parse()
 		case 0x1A: /* command for UBA3 */ handled = true; break;
 		case 0x35: /* command for UBA3 */ handled = true; break;
 		case 0x3E:
-		    parseRCHKMonitorMessage("HK1", Database::SensorVorlaufHK1SollTemp,
-					    Database::SensorHK1Active);
+		    parseRCHKMonitorMessage("HK1",
+					    Database::SensorVorlaufHK1SollTemp,
+					    Database::SensorHK1Automatik,
+					    Database::SensorHK1Tagbetrieb,
+					    Database::SensorHK1Ferien,
+					    Database::SensorHK1Party);
 		    handled = true;
 		    break;
 		case 0x48:
-		    parseRCHKMonitorMessage("HK2", Database::SensorVorlaufHK2SollTemp,
-					    Database::SensorHK2Active);
+		    parseRCHKMonitorMessage("HK2",
+					    Database::SensorVorlaufHK2SollTemp,
+					    Database::SensorHK2Automatik,
+					    Database::SensorHK2Tagbetrieb,
+					    Database::SensorHK2Ferien,
+					    Database::SensorHK2Party);
 		    handled = true;
 		    break;
 		case 0x9D: /* command for WM10 */ handled = true; break;
@@ -278,7 +286,7 @@ Message::parseUBAMonitorWWMessage()
     printNumberAndAddToDb(4, 2, 10, "Warmwasser-Isttemperatur (Messstelle 2)", "°C",
 			  Database::NumericSensorLast);
 
-    printBoolAndAddToDb(6, 0, "Tagbetrieb", Database::SensorTagbetrieb);
+    printBoolAndAddToDb(6, 0, "Tagbetrieb", Database::SensorWWTagbetrieb);
     printBoolAndAddToDb(6, 1, "Einmalladung", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 2, "Thermische Desinfektion", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 3, "Warmwasserbereitung", Database::SensorWarmwasserBereitung);
@@ -364,13 +372,15 @@ Message::parseRCOutdoorTempMessage()
 {
     printNumberAndAddToDb(1, 1, 1, "Gedämpfte Außentemperatur", "°C",
 			  Database::SensorGedaempfteAussenTemp);
-    printBoolAndAddToDb(3, 0, "Tagbetrieb", Database::SensorTagbetrieb);
 }
 
 void
 Message::parseRCHKMonitorMessage(const char *name,
 				 Database::NumericSensors vorlaufSollSensor,
-				 Database::BooleanSensors aktivSensor)
+				 Database::BooleanSensors automatikSensor,
+				 Database::BooleanSensors tagSensor,
+				 Database::BooleanSensors ferienSensor,
+				 Database::BooleanSensors partySensor)
 {
     std::string text;
     DebugStream& debug = Options::dataDebug();
@@ -404,21 +414,21 @@ Message::parseRCHKMonitorMessage(const char *name,
     text += " Solltemperatur";
     printNumberAndAddToDb(15, 1, 1, text.c_str(), "°C", vorlaufSollSensor);
 
-    printBoolAndAddToDb(1, 2, "Automatikbetrieb", Database::SensorAutomatikbetrieb);
+    printBoolAndAddToDb(1, 2, "Automatikbetrieb", automatikSensor);
     printBoolAndAddToDb(1, 0, "Ausschaltoptimierung", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 1, "Einschaltoptimierung", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 3, "Warmwasservorrang", Database::SensorWWVorrang);
     printBoolAndAddToDb(1, 4, "Estrichtrocknung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 5, "Ferienbetrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(1, 5, "Ferienbetrieb", ferienSensor);
     printBoolAndAddToDb(1, 6, "Frostschutz", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 7, "Manueller Betrieb", Database::BooleanSensorLast);
     printBoolAndAddToDb(2, 0, "Sommerbetrieb", Database::SensorSommerbetrieb);
-    printBoolAndAddToDb(2, 1, "Tagbetrieb", Database::SensorTagbetrieb);
-    printBoolAndAddToDb(2, 7, "Partybetrieb", Database::BooleanSensorLast);
+    printBoolAndAddToDb(2, 1, "Tagbetrieb", tagSensor);
+    printBoolAndAddToDb(2, 7, "Partybetrieb", partySensor);
 
     text = "Schaltuhr ";
     text += name;
-    printBoolAndAddToDb(14, 4, text.c_str(), aktivSensor);
+    printBoolAndAddToDb(14, 4, text.c_str(), Database::BooleanSensorLast);
 }
 
 void
