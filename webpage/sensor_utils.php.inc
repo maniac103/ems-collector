@@ -91,7 +91,7 @@ function get_min_max($sensor, $start_clause, $end_clause) {
 }
 
 function get_min_max_interval($sensor, $interval) {
-  $start = "subdate(now(), interval 1 " . $interval . ")";
+  $start = "subdate(now(), interval " . $interval . ")";
   $end = "now()";
   return get_min_max($sensor, $start, $end);
 }

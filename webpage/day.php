@@ -13,10 +13,10 @@ include 'utils.php.inc';
 
 set_loc_settings();
 
-$aussentemp = get_min_max_interval(SensorAussenTemp, "day");
+$aussentemp = get_min_max_interval(SensorAussenTemp, "1 day");
 $aussentemp_today = get_min_max_for_day(SensorAussenTemp, 0);
 $aussentemp_yesterday = get_min_max_for_day(SensorAussenTemp, 1);
-$raumtemp = get_min_max_interval(SensorRaumIstTemp, "day");
+$raumtemp = get_min_max_interval(SensorRaumIstTemp, "1 day");
 ?>
 
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
