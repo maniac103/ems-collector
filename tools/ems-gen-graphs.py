@@ -8,8 +8,8 @@ import sys
 import time
 
 mysql_socket_path = "/var/run/mysqld/mysqld.sock"
-mysql_user = "root"
-mysql_password = "pass"
+mysql_user = "emslog"
+mysql_password = "emslog"
 mysql_db_name = "ems_data"
 
 @contextlib.contextmanager

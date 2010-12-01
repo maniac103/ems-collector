@@ -20,7 +20,7 @@ $raumtemp = get_min_max_interval(SensorRaumIstTemp, "3 day");
 <body topmargin=0 leftmargin=0 marginwidth=0 marginheight=0>
   <table style="width:800; text-align:center;">
     <tr><td>
-      <h2>Letzte Woche</h2>
+      <h2>Letzte 3 Tage</h2>
     </td></tr>
     <tr><td>
       <?php include 'menu.inc'; ?>
