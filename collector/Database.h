@@ -2,17 +2,17 @@
 #define __DATABASE_H__
 
 #include <map>
+#include <queue>
 #include <mysql++/connection.h>
+#include <mysql++/query.h>
 
 class Database {
     public:
 	Database();
-	Database(const std::string& server, const std::string& user, const std::string& password);
 	~Database();
 
-	bool isConnected() const {
-	    return m_connection.connected();
-	}
+    public:
+	bool connect(const std::string& server, const std::string& user, const std::string& password);
 
     public:
 	typedef enum {
@@ -85,6 +85,7 @@ class Database {
 	bool createTables();
 	void createSensorRows();
 	bool checkAndUpdateRateLimit(unsigned int sensor, time_t now);
+	bool executeQuery(mysqlpp::Query& query);
 
     private:
 	static const char *dbName;
@@ -109,8 +110,7 @@ class Database {
 	std::map<unsigned int, bool> m_booleanCache;
 	std::map<unsigned int, std::string> m_stateCache;
 	std::map<unsigned int, mysqlpp::ulonglong> m_lastInsertIds;
-
-	mysqlpp::Connection m_connection;
+	mysqlpp::Connection *m_connection;
 };
 
 #endif /* __DATABASE_H__ */

@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -c -O2 -I/usr/include/mysql
-LIBS = -lboost_system -lboost_thread-mt -lboost_program_options -lmysqlpp
+LIBS = -lpthread -lboost_system -lboost_thread-mt -lboost_program_options -lmysqlpp
 SRCS = main.cpp SerialHandler.cpp Message.cpp Database.cpp Options.cpp PidFile.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 DEPFILE = .depend

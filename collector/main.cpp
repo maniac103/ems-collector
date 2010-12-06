@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <csignal>
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -29,8 +30,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (dbPath != "none") {
-	    db = Database(dbPath, Options::databaseUser(), Options::databasePassword());
-	    if (!db.isConnected()) {
+	    if (!db.connect(dbPath, Options::databaseUser(), Options::databasePassword())) {
 		std::cerr << "Could not connect to database" << std::endl;
 		return 1;
 	    }

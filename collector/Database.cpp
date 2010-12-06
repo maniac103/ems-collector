@@ -27,31 +27,47 @@ sql_create_4(StateSensorValue, 1, 4,
 	     mysqlpp::sql_datetime, endtime);
 
 Database::Database() :
-    m_connection()
+    m_connection(NULL)
 {
 }
 
-Database::Database(const std::string& server, const std::string& user, const std::string& password) :
-    m_connection(NULL, server.c_str(), user.c_str(), password.c_str())
+Database::~Database()
+{
+    if (m_connection) {
+	delete m_connection;
+    }
+}
+
+bool
+Database::connect(const std::string& server, const std::string& user, const std::string& password)
 {
     bool success = false;
+    mysqlpp::Connection *conn;
+
+    conn = new mysqlpp::Connection();
+    conn->set_option(new mysqlpp::ReconnectOption(true));
+
+    if (!conn->connect(NULL, server.c_str(), user.c_str(), password.c_str())) {
+	delete conn;
+	return false;
+    }
 
     NumericSensorValue::table(numericTableName);
     BooleanSensorValue::table(booleanTableName);
     StateSensorValue::table(stateTableName);
 
     try {
-	m_connection.select_db(dbName);
+	conn->select_db(dbName);
 	success = true;
     } catch (mysqlpp::DBSelectionFailed& e) {
 	/* DB not yet there, need to create it */
 	try {
-	    m_connection.create_db(dbName);
-	    m_connection.select_db(dbName);
+	    conn->create_db(dbName);
+	    conn->select_db(dbName);
 	    if (createTables()) {
 		success = true;
 	    } else {
-		m_connection.drop_db(dbName);
+		conn->drop_db(dbName);
 	    }
 	} catch (mysqlpp::Exception& e) {
 	    std::cerr << "Could not create database: " << e.what() << std::endl;
@@ -59,19 +75,19 @@ Database::Database(const std::string& server, const std::string& user, const std
     }
 
     if (!success) {
-	m_connection.disconnect();
+	delete conn;
+    } else {
+	m_connection = conn;
     }
-}
 
-Database::~Database()
-{
+    return success;
 }
 
 bool
 Database::createTables()
 {
     try {
-	mysqlpp::Query query = m_connection.query();
+	mysqlpp::Query query = m_connection->query();
 
 	/* Create sensor list table */
 	query << "CREATE TABLE sensors ("
@@ -145,7 +161,7 @@ Database::createTables()
 void
 Database::createSensorRows()
 {
-    mysqlpp::Query query = m_connection.query();
+    mysqlpp::Query query = m_connection->query();
 
     query << "insert into sensors values (%0q, %1q, %2q, %3q:reading_type, %4q:unit, %5q:precision)";
     query.parse();
@@ -252,16 +268,30 @@ Database::checkAndUpdateRateLimit(unsigned int sensor, time_t now)
     return true;
 }
 
+bool
+Database::executeQuery(mysqlpp::Query& query)
+{
+    try {
+	query.execute();
+	return true;
+    } catch (const mysqlpp::BadQuery& e) {
+	std::cerr << "MySQL query error: " << e.what() << std::endl;
+    } catch (const mysqlpp::Exception& e) {
+	std::cerr << "MySQL exception: " << e.what() << std::endl;
+    }
+
+    return false;
+}
 
 void
 Database::addSensorValue(NumericSensors sensor, float value)
 {
     time_t now = time(NULL);
-    if (!isConnected() || !checkAndUpdateRateLimit(sensor, now)) {
+    if (!m_connection || !checkAndUpdateRateLimit(sensor, now)) {
 	return;
     }
 
-    mysqlpp::Query query = m_connection.query();
+    mysqlpp::Query query = m_connection->query();
     std::map<unsigned int, float>::iterator cacheIter = m_numericCache.find(sensor);
     std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
     bool valueChanged = cacheIter == m_numericCache.end() || cacheIter->second != value;
@@ -271,16 +301,16 @@ Database::addSensorValue(NumericSensors sensor, float value)
     if (idValid) {
 	query << "update " << numericTableName << " set endtime ='" << timestamp
 	      << "' where id = " << idIter->second;
-	query.execute();
+	executeQuery(query);
     }
 
     if (valueChanged || !idValid) {
 	NumericSensorValue row(sensor, value, timestamp, timestamp);
 	query.insert(row);
-	query.execute();
-
-	m_lastInsertIds[sensor] = query.insert_id();
-	m_numericCache[sensor] = value;
+	if (executeQuery(query)) {
+	    m_lastInsertIds[sensor] = query.insert_id();
+	    m_numericCache[sensor] = value;
+	}
     }
 }
 
@@ -288,11 +318,11 @@ void
 Database::addSensorValue(BooleanSensors sensor, bool value)
 {
     time_t now = time(NULL);
-    if (!isConnected()) {
+    if (!m_connection) {
 	return;
     }
 
-    mysqlpp::Query query = m_connection.query();
+    mysqlpp::Query query = m_connection->query();
     std::map<unsigned int, bool>::iterator cacheIter = m_booleanCache.find(sensor);
     std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
     bool valueChanged = cacheIter == m_booleanCache.end() || cacheIter->second != value;
@@ -302,16 +332,16 @@ Database::addSensorValue(BooleanSensors sensor, bool value)
     if (idValid) {
 	query << "update " << booleanTableName << " set endtime ='" << timestamp
 	      << "' where id = " << idIter->second;
-	query.execute();
+	executeQuery(query);
     }
 
     if (valueChanged || !idValid) {
 	BooleanSensorValue row(sensor, value, timestamp, timestamp);
 	query.insert(row);
-	query.execute();
-
-	m_lastInsertIds[sensor] = query.insert_id();
-	m_booleanCache[sensor] = value;
+	if (executeQuery(query)) {
+	    m_lastInsertIds[sensor] = query.insert_id();
+	    m_booleanCache[sensor] = value;
+	}
     }
 }
 
@@ -319,11 +349,11 @@ void
 Database::addSensorValue(StateSensors sensor, const std::string& value)
 {
     time_t now = time(NULL);
-    if (!isConnected()) {
+    if (!m_connection) {
 	return;
     }
 
-    mysqlpp::Query query = m_connection.query();
+    mysqlpp::Query query = m_connection->query();
     std::map<unsigned int, std::string>::iterator cacheIter = m_stateCache.find(sensor);
     std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
     bool valueChanged = cacheIter == m_stateCache.end() || cacheIter->second != value;
@@ -333,16 +363,16 @@ Database::addSensorValue(StateSensors sensor, const std::string& value)
     if (idValid) {
 	query << "update " << stateTableName << " set endtime ='" << timestamp
 	      << "' where id = " << idIter->second;
-	query.execute();
+	executeQuery(query);
     }
 
     if (valueChanged || !idValid) {
 	StateSensorValue row(sensor, value, timestamp, timestamp);
 	query.insert(row);
-	query.execute();
-
-	m_lastInsertIds[sensor] = query.insert_id();
-	m_stateCache[sensor] = value;
+	if (executeQuery(query)) {
+	    m_lastInsertIds[sensor] = query.insert_id();
+	    m_stateCache[sensor] = value;
+	}
     }
 }
 
