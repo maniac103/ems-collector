@@ -47,6 +47,8 @@ Database::connect(const std::string& server, const std::string& user, const std:
     m_connection->set_option(new mysqlpp::ReconnectOption(true));
 
     if (!m_connection->connect(NULL, server.c_str(), user.c_str(), password.c_str())) {
+	delete m_connection;
+	m_connection = NULL;
 	return false;
     }
 
@@ -70,6 +72,10 @@ Database::connect(const std::string& server, const std::string& user, const std:
 
     if (success) {
 	success = createTables();
+    }
+    if (!success) {
+	delete m_connection;
+	m_connection = NULL;
     }
 
     return success;
