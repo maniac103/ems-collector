@@ -3,7 +3,7 @@
 include 'constants.php.inc';
 
 function open_db() {
-  return new PDO('mysql:dbname=ems_data;host=localhost', 'emslog', 'emslog');
+  return new PDO('mysql:dbname=ems_data;host=localhost', 'emsdata', 'emsdata');
 }
 
 function format_value($row) {
