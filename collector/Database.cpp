@@ -42,13 +42,11 @@ bool
 Database::connect(const std::string& server, const std::string& user, const std::string& password)
 {
     bool success = false;
-    mysqlpp::Connection *conn;
 
-    conn = new mysqlpp::Connection();
-    conn->set_option(new mysqlpp::ReconnectOption(true));
+    m_connection = new mysqlpp::Connection();
+    m_connection->set_option(new mysqlpp::ReconnectOption(true));
 
-    if (!conn->connect(NULL, server.c_str(), user.c_str(), password.c_str())) {
-	delete conn;
+    if (!m_connection->connect(NULL, server.c_str(), user.c_str(), password.c_str())) {
 	return false;
     }
 
@@ -57,27 +55,21 @@ Database::connect(const std::string& server, const std::string& user, const std:
     StateSensorValue::table(stateTableName);
 
     try {
-	conn->select_db(dbName);
+	m_connection->select_db(dbName);
 	success = true;
     } catch (mysqlpp::DBSelectionFailed& e) {
 	/* DB not yet there, need to create it */
 	try {
-	    conn->create_db(dbName);
-	    conn->select_db(dbName);
-	    if (createTables()) {
-		success = true;
-	    } else {
-		conn->drop_db(dbName);
-	    }
+	    m_connection->create_db(dbName);
+	    m_connection->select_db(dbName);
+	    success = true;
 	} catch (mysqlpp::Exception& e) {
 	    std::cerr << "Could not create database: " << e.what() << std::endl;
 	}
     }
 
-    if (!success) {
-	delete conn;
-    } else {
-	m_connection = conn;
+    if (success) {
+	success = createTables();
     }
 
     return success;
@@ -88,9 +80,18 @@ Database::createTables()
 {
     try {
 	mysqlpp::Query query = m_connection->query();
+	
+	query << "show tables";
+
+	mysqlpp::StoreQueryResult res = query.store();
+	if (res && res.num_rows() > 0) {
+	    std::cout << "show tables returned " << res.num_rows() << " rows" << std::endl;
+	    /* tables already present */
+	    return true;
+	}
 
 	/* Create sensor list table */
-	query << "CREATE TABLE sensors ("
+	query << "CREATE TABLE IF NOT EXISTS sensors ("
 	      << "  type SMALLINT UNSIGNED NOT NULL, "
 	      << "  value_type TINYINT UNSIGNED NOT NULL, "
 	      << "  name VARCHAR(100) NOT NULL, "
@@ -105,7 +106,7 @@ Database::createTables()
 	createSensorRows();
 
 	/* Create numeric sensor data table */
-	query << "CREATE TABLE " << numericTableName << " ("
+	query << "CREATE TABLE IF NOT EXISTS " << numericTableName << " ("
 	      << "  id INT AUTO_INCREMENT, "
 	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
 	      << "  value FLOAT NOT NULL, "
@@ -118,7 +119,7 @@ Database::createTables()
 	query.execute();
 
 	/* Create boolean sensor data table */
-	query << "CREATE TABLE " << booleanTableName << " ("
+	query << "CREATE TABLE IF NOT EXISTS " << booleanTableName << " ("
 	      << "  id INT AUTO_INCREMENT, "
 	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
 	      << "  value TINYINT NOT NULL, "
@@ -131,7 +132,7 @@ Database::createTables()
 	query.execute();
 
 	/* Create state sensor data table */
-	query << "CREATE TABLE " << stateTableName << " ("
+	query << "CREATE TABLE IF NOT EXISTS " << stateTableName << " ("
 	      << "  id INT AUTO_INCREMENT, "
 	      << "  sensor SMALLINT UNSIGNED NOT NULL, "
 	      << "  value VARCHAR(100) NOT NULL, "
