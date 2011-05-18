@@ -91,7 +91,6 @@ Database::createTables()
 
 	mysqlpp::StoreQueryResult res = query.store();
 	if (res && res.num_rows() > 0) {
-	    std::cout << "show tables returned " << res.num_rows() << " rows" << std::endl;
 	    /* tables already present */
 	    return true;
 	}
