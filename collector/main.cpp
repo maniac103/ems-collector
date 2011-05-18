@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     try {
 	sigset_t oldMask, newMask, waitMask;
 	struct timespec pollTimeout;
-	int sig = 0;
+	siginfo_t info;
 	boost::asio::io_service ioService;
 	const std::string& dbPath = Options::databasePath();
 	PidFile pid(Options::pidFilePath());
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	    pthread_sigmask(SIG_BLOCK, &waitMask, 0);
 
 	    while (handler.active()) {
-		if (sigwait(&waitMask, &sig) >= 0) {
+		if (sigtimedwait(&waitMask, &info, &pollTimeout) >= 0) {
 		    running = false;
 		    handler.close();
 		    break;

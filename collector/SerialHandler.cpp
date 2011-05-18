@@ -16,6 +16,7 @@ SerialHandler::SerialHandler(boost::asio::io_service& ioService,
 {
     if (!m_serialPort.is_open()) {
 	std::cerr << "Failed to open serial port." << std::endl;
+	m_active = false;
 	return;
     }
 
@@ -29,6 +30,9 @@ SerialHandler::~SerialHandler()
 {
     if (m_message) {
 	delete m_message;
+    }
+    if (m_active) {
+	m_serialPort.close();
     }
 }
 
