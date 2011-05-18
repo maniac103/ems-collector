@@ -21,7 +21,6 @@ int main(int argc, char *argv[])
 	sigset_t oldMask, newMask, waitMask;
 	struct timespec pollTimeout;
 	siginfo_t info;
-	boost::asio::io_service ioService;
 	const std::string& dbPath = Options::databasePath();
 	PidFile pid(Options::pidFilePath());
 	Database db;
@@ -52,6 +51,7 @@ int main(int argc, char *argv[])
 	pollTimeout.tv_nsec = 0;
 
 	while (running) {
+	    boost::asio::io_service ioService;
 	    SerialHandler handler(ioService, Options::deviceName(), db);
 
 	    /* block all signals for background thread */
