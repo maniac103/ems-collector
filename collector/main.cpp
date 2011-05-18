@@ -19,11 +19,13 @@ int main(int argc, char *argv[])
 
     try {
 	sigset_t oldMask, newMask, waitMask;
+	struct timespec pollTimeout;
 	int sig = 0;
 	boost::asio::io_service ioService;
 	const std::string& dbPath = Options::databasePath();
 	PidFile pid(Options::pidFilePath());
 	Database db;
+	bool running = true;
 
 	if (Options::daemonize()) {
 	    pid.aquire();
@@ -36,8 +38,6 @@ int main(int argc, char *argv[])
 	    }
 	}
 
-	SerialHandler handler(ioService, Options::deviceName(), db);
-
 	if (Options::daemonize()) {
 	    if (daemon(0, 0) == -1) {
 		std::ostringstream msg;
@@ -48,28 +48,44 @@ int main(int argc, char *argv[])
 	    pid.write();
 	}
 
-	/* block all signals for background thread */
-	sigfillset(&newMask);
-	pthread_sigmask(SIG_BLOCK, &newMask, &oldMask);
+	pollTimeout.tv_sec = 2;
+	pollTimeout.tv_nsec = 0;
 
-	/* run the IO service in background thread */
-	boost::thread t(boost::bind(&boost::asio::io_service::run, &ioService));
+	while (running) {
+	    SerialHandler handler(ioService, Options::deviceName(), db);
 
-	/* restore previous signals */
-	pthread_sigmask(SIG_SETMASK, &oldMask, 0);
+	    /* block all signals for background thread */
+	    sigfillset(&newMask);
+	    pthread_sigmask(SIG_BLOCK, &newMask, &oldMask);
 
-	/* wait for signal indicating time to shut down */
-	sigemptyset(&waitMask);
-	sigaddset(&waitMask, SIGINT);
-	sigaddset(&waitMask, SIGQUIT);
-	sigaddset(&waitMask, SIGTERM);
+	    /* run the IO service in background thread */
+	    boost::thread t(boost::bind(&boost::asio::io_service::run, &ioService));
 
-	pthread_sigmask(SIG_BLOCK, &waitMask, 0);
-	sigwait(&waitMask, &sig);
+	    /* restore previous signals */
+	    pthread_sigmask(SIG_SETMASK, &oldMask, 0);
 
-	/* stop the serial handler */
-	handler.close();
-	t.join();
+	    /* wait for signal indicating time to shut down */
+	    sigemptyset(&waitMask);
+	    sigaddset(&waitMask, SIGINT);
+	    sigaddset(&waitMask, SIGQUIT);
+	    sigaddset(&waitMask, SIGTERM);
+
+	    pthread_sigmask(SIG_BLOCK, &waitMask, 0);
+
+	    while (handler.active()) {
+		if (sigwait(&waitMask, &sig) >= 0) {
+		    running = false;
+		    handler.close();
+		    break;
+		}
+	    }
+
+	    t.join();
+	    /* wait some time until retrying */
+	    if (running) {
+		sleep(10);
+	    }
+	}
     } catch (std::exception& e) {
 	std::cerr << "Exception: " << e.what() << std::endl;
 	return 1;

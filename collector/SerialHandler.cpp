@@ -103,8 +103,8 @@ SerialHandler::doClose(const boost::system::error_code& error)
 
     if (error) {
 	std::cerr << "Error: " << error.message() << std::endl;
-    } else {
-	m_serialPort.close();
-	m_active = false;
     }
+
+    m_serialPort.close();
+    m_active = false;
 }
