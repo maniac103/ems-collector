@@ -1,7 +1,6 @@
 #include <cerrno>
 #include <csignal>
 #include <iostream>
-#include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include "SerialHandler.h"
 #include "Database.h"
@@ -51,15 +50,14 @@ int main(int argc, char *argv[])
 	pollTimeout.tv_nsec = 0;
 
 	while (running) {
-	    boost::asio::io_service ioService;
-	    SerialHandler handler(ioService, Options::deviceName(), db);
+	    SerialHandler handler(Options::deviceName(), db);
 
 	    /* block all signals for background thread */
 	    sigfillset(&newMask);
 	    pthread_sigmask(SIG_BLOCK, &newMask, &oldMask);
 
 	    /* run the IO service in background thread */
-	    boost::thread t(boost::bind(&boost::asio::io_service::run, &ioService));
+	    boost::thread t(boost::bind(&SerialHandler::run, &handler));
 
 	    /* restore previous signals */
 	    pthread_sigmask(SIG_SETMASK, &oldMask, 0);

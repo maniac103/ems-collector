@@ -3,12 +3,11 @@
 #include "SerialHandler.h"
 #include "Options.h"
 
-SerialHandler::SerialHandler(boost::asio::io_service& ioService,
-			     const std::string& device,
+SerialHandler::SerialHandler(const std::string& device,
 			     Database& db) :
+    boost::asio::io_service(),
     m_active(true),
-    m_ioService(ioService),
-    m_serialPort(ioService, device),
+    m_serialPort(*this, device),
     m_db(db),
     m_state(Syncing),
     m_pos(0),

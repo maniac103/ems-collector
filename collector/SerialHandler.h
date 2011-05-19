@@ -8,15 +8,15 @@
 #include "Message.h"
 #include "Database.h"
 
-class SerialHandler
+class SerialHandler : public boost::asio::io_service
 {
     public:
-	SerialHandler(boost::asio::io_service& ioService, const std::string& device, Database& db);
+	SerialHandler(const std::string& device, Database& db);
 	~SerialHandler();
 
 	void close() {
-	    m_ioService.post(boost::bind(&SerialHandler::doClose, this,
-					 boost::system::error_code()));
+	    post(boost::bind(&SerialHandler::doClose, this,
+			     boost::system::error_code()));
 	}
 
 	bool active() {
@@ -47,7 +47,6 @@ class SerialHandler
 	} State;
 
 	bool m_active;
-	boost::asio::io_service& m_ioService;
 	boost::asio::serial_port m_serialPort;
 
 	Database& m_db;
