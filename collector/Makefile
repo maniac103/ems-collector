@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -c -O2 -I/usr/include/mysql
+CFLAGS = -Wall -c -O2 -I/usr/include/mysql -I../framer
 LIBS = -lpthread -lboost_system -lboost_thread-mt -lboost_program_options -lmysqlpp
 SRCS = main.cpp SerialHandler.cpp Message.cpp Database.cpp Options.cpp PidFile.cpp
 OBJS = $(SRCS:%.cpp=%.o)
@@ -13,7 +13,7 @@ clean:
 	rm -f $(DEPFILE)
 
 $(DEPFILE): $(SRCS)
-	$(CC) -MM $(SRCS) > $(DEPFILE)
+	$(CC) $(CFLAGS) -MM $(SRCS) > $(DEPFILE)
 
 -include $(DEPFILE)
 

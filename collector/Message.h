@@ -10,10 +10,10 @@ class Message
     public:
 	Message(Database& db, size_t size) :
 	    m_db(db),
+	    m_buffer(size),
 	    m_pos(0),
 	    m_fill(0),
-	    m_csum(0),
-	    m_buffer(size) { }
+	    m_csum(0) { }
 
 	void addData(unsigned char data) {
 	    m_buffer[m_fill++] = data;
@@ -26,7 +26,25 @@ class Message
 	bool checksumMatches(unsigned char csum) {
 	    return m_csum == csum;
 	}
-	void parse();
+	virtual void parse() {
+	    assert(m_fill == m_buffer.size());
+	}
+
+    protected:
+	Database& m_db;
+	std::vector<unsigned char> m_buffer;
+
+    private:
+	size_t m_pos;
+	size_t m_fill;
+	unsigned char m_csum;
+};
+
+class DataMessage : public Message {
+    public:
+	DataMessage(Database& db, size_t size) :
+	    Message(db, size) {}
+	virtual void parse();
 
     private:
 	void parseUBAMonitorFastMessage();
@@ -55,13 +73,13 @@ class Message
 				 Database::BooleanSensors sensor);
 	void printStateAndAddToDb(const std::string& value, const char *name,
 				  Database::StateSensors sensor);
+};
 
-    private:
-	Database& m_db;
-	size_t m_pos;
-	size_t m_fill;
-	unsigned char m_csum;
-	std::vector<unsigned char> m_buffer;
+class StatsMessage : public Message {
+    public:
+	StatsMessage(Database& db, size_t size) :
+	    Message(db, size) {}
+	virtual void parse();
 };
 
 #endif /* __MESSAGE_H__ */

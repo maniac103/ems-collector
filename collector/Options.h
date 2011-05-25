@@ -76,7 +76,8 @@ class Options
 	static const unsigned int DebugSerial = 0;
 	static const unsigned int DebugMessages = 1;
 	static const unsigned int DebugData = 2;
-	static const unsigned int DebugCount = 3;
+	static const unsigned int DebugStats = 3;
+	static const unsigned int DebugCount = 4;
 	static DebugStream m_debugStreams[DebugCount];
 
     public:
@@ -88,6 +89,9 @@ class Options
 	}
 	static DebugStream& dataDebug() {
 	    return m_debugStreams[DebugData];
+	}
+	static DebugStream& statsDebug() {
+	    return m_debugStreams[DebugStats];
 	}
 
     private:

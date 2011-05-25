@@ -41,10 +41,17 @@ class SerialHandler : public boost::asio::io_service
     private:
 	typedef enum {
 	    Syncing,
+	    Type,
 	    Length,
 	    Data,
 	    Checksum
 	} State;
+
+	typedef enum {
+	    DataPacket = 0,
+	    StatsPacket = 1,
+	    InvalidPacket = 2
+	} PacketType;
 
 	bool m_active;
 	boost::asio::serial_port m_serialPort;
@@ -52,6 +59,7 @@ class SerialHandler : public boost::asio::io_service
 	Database& m_db;
 
 	State m_state;
+	PacketType m_type;
 	size_t m_pos;
 	Message *m_message;
 

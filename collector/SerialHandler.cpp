@@ -65,16 +65,35 @@ SerialHandler::readComplete(const boost::system::error_code& error,
 		if (m_pos == 0 && dataByte == 0xaa) {
 		    m_pos = 1;
 		} else if (m_pos == 1 && dataByte == 0x55) {
-		    m_state = Length;
+		    m_state = Type;
 		    m_pos = 0;
 		} else {
 		    m_pos = 0;
 		}
 		break;
+	    case Type:
+		if (dataByte >= InvalidPacket) {
+		    m_state = Syncing;
+		} else {
+		    m_type = (PacketType) dataByte;
+		    m_state = Length;
+		}
+		break;
 	    case Length:
-		m_message = new Message(m_db, dataByte);
 		m_state = Data;
 		m_pos = 0;
+		switch (m_type) {
+		    case DataPacket:
+			m_message = new DataMessage(m_db, dataByte);
+			break;
+		    case StatsPacket:
+			m_message = new StatsMessage(m_db, dataByte);
+			break;
+		    default:
+			assert(0);
+			m_state = Syncing;
+			break;
+		}
 		break;
 	    case Data:
 		m_message->addData(dataByte);
