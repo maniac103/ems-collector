@@ -40,7 +40,7 @@ Options::parse(int argc, char *argv[])
 	("ratelimit,r", bpo::value<unsigned int>(&m_rateLimit)->default_value(60),
 	 "Rate limit (in s) for writing numeric sensor values into DB")
 	("debug,d", bpo::value<std::string>()->default_value("none"),
-	 "Comma separated list of debug flags (all, serial, message, data, none) "
+	 "Comma separated list of debug flags (all, serial, message, data, stats, none) "
 	 " and their files, e.g. message=/tmp/messages.txt");
 
     bpo::options_description daemon("Daemon options");
