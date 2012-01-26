@@ -51,8 +51,8 @@ class Options
 	    return m_rateLimit;
 	}
 
-	static const std::string& deviceName() {
-	    return m_deviceName;
+	static const std::string& target() {
+	    return m_target;
 	}
 	static bool daemonize() {
 	    return m_daemonize;
@@ -73,7 +73,7 @@ class Options
 	static ParseResult parse(int argc, char *argv[]);
 
     private:
-	static const unsigned int DebugSerial = 0;
+	static const unsigned int DebugIo = 0;
 	static const unsigned int DebugMessages = 1;
 	static const unsigned int DebugData = 2;
 	static const unsigned int DebugStats = 3;
@@ -81,8 +81,8 @@ class Options
 	static DebugStream m_debugStreams[DebugCount];
 
     public:
-	static DebugStream& serialDebug() {
-	    return m_debugStreams[DebugSerial];
+	static DebugStream& ioDebug() {
+	    return m_debugStreams[DebugIo];
 	}
 	static DebugStream& messageDebug() {
 	    return m_debugStreams[DebugMessages];
@@ -95,7 +95,7 @@ class Options
 	}
 
     private:
-	static std::string m_deviceName;
+	static std::string m_target;
 	static unsigned int m_rateLimit;
 	static std::string m_pidFilePath;
 	static bool m_daemonize;

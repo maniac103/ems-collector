@@ -1,11 +1,32 @@
 #include <cerrno>
 #include <csignal>
 #include <iostream>
+#include <boost/scoped_ptr.hpp>
 #include <boost/thread.hpp>
 #include "SerialHandler.h"
+#include "TcpHandler.h"
 #include "Database.h"
 #include "Options.h"
 #include "PidFile.h"
+
+static IoHandler *
+getHandler(const std::string& target, Database& db)
+{
+    if (target.compare(0, 7, "serial:") == 0) {
+	return new SerialHandler(target.substr(7), db);
+    }
+
+    if (target.compare(0, 4, "tcp:") == 0) {
+	size_t pos = target.find(':', 4);
+	if (pos != std::string::npos) {
+	    std::string host = target.substr(4, pos - 4);
+	    std::string port = target.substr(pos + 1);
+	    return new TcpHandler(host, port, db);
+	}
+    }
+
+    return NULL;
+}
 
 int main(int argc, char *argv[])
 {
@@ -50,14 +71,19 @@ int main(int argc, char *argv[])
 	pollTimeout.tv_nsec = 0;
 
 	while (running) {
-	    SerialHandler handler(Options::deviceName(), db);
+	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), db));
+	    if (!handler) {
+		std::ostringstream msg;
+		msg << "Target " << Options::target() << " is invalid.";
+		throw std::runtime_error(msg.str());
+	    }
 
 	    /* block all signals for background thread */
 	    sigfillset(&newMask);
 	    pthread_sigmask(SIG_BLOCK, &newMask, &oldMask);
 
 	    /* run the IO service in background thread */
-	    boost::thread t(boost::bind(&SerialHandler::run, &handler));
+	    boost::thread t(boost::bind(&IoHandler::run, handler.get()));
 
 	    /* restore previous signals */
 	    pthread_sigmask(SIG_SETMASK, &oldMask, 0);
@@ -70,10 +96,10 @@ int main(int argc, char *argv[])
 
 	    pthread_sigmask(SIG_BLOCK, &waitMask, 0);
 
-	    while (handler.active()) {
+	    while (handler->active()) {
 		if (sigtimedwait(&waitMask, &info, &pollTimeout) >= 0) {
 		    running = false;
-		    handler.close();
+		    handler->close();
 		    break;
 		}
 	    }

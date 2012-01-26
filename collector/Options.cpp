@@ -7,7 +7,7 @@
 
 namespace bpo = boost::program_options;
 
-std::string Options::m_deviceName;
+std::string Options::m_target;
 unsigned int Options::m_rateLimit = 0;
 DebugStream Options::m_debugStreams[DebugCount];
 std::string Options::m_pidFilePath;
@@ -20,7 +20,7 @@ static void
 usage(std::ostream& stream, const char *programName,
       bpo::options_description& options)
 {
-    stream << "Usage: " << programName << " [options] <serial_device>" << std::endl;
+    stream << "Usage: " << programName << " [options] <target>" << std::endl;
     stream << options << std::endl;
 }
 
@@ -40,7 +40,7 @@ Options::parse(int argc, char *argv[])
 	("ratelimit,r", bpo::value<unsigned int>(&m_rateLimit)->default_value(60),
 	 "Rate limit (in s) for writing numeric sensor values into DB")
 	("debug,d", bpo::value<std::string>()->default_value("none"),
-	 "Comma separated list of debug flags (all, serial, message, data, stats, none) "
+	 "Comma separated list of debug flags (all, io, message, data, stats, none) "
 	 " and their files, e.g. message=/tmp/messages.txt");
 
     bpo::options_description daemon("Daemon options");
@@ -63,7 +63,7 @@ Options::parse(int argc, char *argv[])
 
     bpo::options_description hidden("Hidden options");
     hidden.add_options()
-	("device", bpo::value<std::string>(&m_deviceName), "Serial device to use");
+	("target", bpo::value<std::string>(&m_target), "Connection target (serial:<device> or tcp:<host>:<port>)");
 
     bpo::options_description options;
     options.add(general);
@@ -81,7 +81,7 @@ Options::parse(int argc, char *argv[])
     visible.add(db);
 
     bpo::positional_options_description p;
-    p.add("device", 1);
+    p.add("target", 1);
 
     bpo::variables_map variables;
     try {
@@ -108,7 +108,7 @@ Options::parse(int argc, char *argv[])
     }
 
     /* check for missing variables */
-    if (!variables.count("device")) {
+    if (!variables.count("target")) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
     }
@@ -140,8 +140,8 @@ Options::parse(int argc, char *argv[])
 		size_t start = item.find('=');
 		unsigned int module;
 
-		if (item.compare(0, 6, "serial") == 0) {
-		    module = DebugSerial;
+		if (item.compare(0, 6, "io") == 0) {
+		    module = DebugIo;
 		} else if (item.compare(0, 7, "message") == 0) {
 		    module = DebugMessages;
 		} else if (item.compare(0, 4, "data") == 0) {
