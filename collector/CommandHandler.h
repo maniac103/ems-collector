@@ -41,6 +41,9 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void handleWrite(const boost::system::error_code& error);
 
 	boost::tribool handleCommand(std::istream& request);
+	bool handleGetErrorsCommand();
+	boost::tribool handleHkCommand(std::istream& request, uint8_t base);
+	boost::tribool handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
 	boost::tribool handleWwCommand(std::istream& request);
 	boost::tribool handleThermDesinfectCommand(std::istream& request);
 	boost::tribool handleZirkPumpCommand(std::istream& request);

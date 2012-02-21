@@ -1,5 +1,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
 
 CommandHandler::CommandHandler(boost::asio::io_service& ioService,
@@ -101,11 +102,96 @@ CommandConnection::handleCommand(std::istream& request)
     std::string category;
     request >> category;
 
-    if (category == "ww") {
+    if (category == "hk1") {
+	return handleHkCommand(request, 61);
+    } else if (category == "hk2") {
+	return handleHkCommand(request, 71);
+    } else if (category == "hk3") {
+	return handleHkCommand(request, 81);
+    } else if (category == "hk4") {
+	return handleHkCommand(request, 91);
+    } else if (category == "ww") {
 	return handleWwCommand(request);
+    } else if (category == "geterrors") {
+	return handleGetErrorsCommand();
     }
 
     return boost::indeterminate;
+}
+
+boost::tribool
+CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
+{
+    std::string cmd;
+    request >> cmd;
+
+    if (cmd == "mode") {
+	std::vector<char> data = { 0x10, base, 0x07 };
+	std::string mode;
+
+	request >> mode;
+
+	if (mode == "day") {
+	    data.push_back(0x01);
+	} else if (mode == "night") {
+	    data.push_back(0x00);
+	} else if (mode == "auto") {
+	    data.push_back(0x02);
+	} else {
+	    return boost::indeterminate;
+	}
+	return sendCommand(data);
+    } else if (cmd == "daytemperature") {
+	return handleHkTemperatureCommand(request, base, 0x02);
+    } else if (cmd == "nighttemperature") {
+	return handleHkTemperatureCommand(request, base, 0x01);
+    } else if (cmd == "holidaytemperature") {
+	return handleHkTemperatureCommand(request, base, 0x07);
+    } else if (cmd == "holidaymode") {
+	/* TODO */
+	return false;
+    } else if (cmd == "vacationmode") {
+	/* TODO */
+	return false;
+    } else if (cmd == "partymode") {
+	std::vector<char> data = { 0x10, base, 0x56 };
+	unsigned int hours;
+
+	request >> hours;
+
+	if (!request || hours > 99) {
+	    return boost::indeterminate;
+	}
+	data.push_back(hours);
+	return sendCommand(data);
+    }
+
+    return boost::indeterminate;
+}
+
+boost::tribool
+CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd)
+{
+    std::vector<char> data = { 0x10, base, cmd };
+    float value;
+    uint8_t valueByte;
+
+    request >> value;
+    if (!request) {
+	return boost::indeterminate;
+    }
+
+    try {
+	valueByte = boost::numeric_cast<uint8_t>(2 * value);
+	if (valueByte < 20 || valueByte > 60) {
+	    return boost::indeterminate;
+	}
+    } catch (boost::numeric::bad_numeric_cast& e) {
+	return boost::indeterminate;
+    }
+
+    data.push_back(valueByte);
+    return sendCommand(data);
 }
 
 boost::tribool
@@ -259,6 +345,34 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
     }
 
     return boost::indeterminate;
+}
+
+bool
+CommandConnection::handleGetErrorsCommand()
+{
+    std::vector<char> data = { 0x10, 0x12 };
+
+    if (!sendCommand(data)) {
+	return false;
+    }
+
+    /* TODO: redirect response to here
+     *
+     * response example:
+     * 0x35, 0x31, 0x03, 0x2e, 0x89, 0x08, 0x16, 0x1c, 0x0d, 0x00, 0x00, 0x30
+     *
+     * 0x35 0x31 -> A51
+     * 0x03 0x2e -> 0x32e -> error code 814
+     * 0x89 -> 0x80 = has date, 0x09 = 2009
+     * 0x08 -> August
+     * 0x16 -> hour 22
+     * 0x1c -> day 28
+     * 0x0d -> minute 13
+     * 0x00 0x00 -> 0x0 -> error still ongoing (otherwise duration)
+     * 0x30 -> error source
+     */
+
+    return true;
 }
 
 bool
