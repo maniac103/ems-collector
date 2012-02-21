@@ -416,6 +416,17 @@ DataMessage::parseRCHKMonitorMessage(const char *name,
     text += " Solltemperatur";
     printNumberAndAddToDb(15, 1, 1, text.c_str(), "°C", vorlaufSollSensor);
 
+    if (m_buffer[16] & (1 << 0)) {
+	if (debug) {
+	    debug << "DATA: " << name << " Keine Raumtemperatur vorhanden" << std::endl;
+	}
+    } else {
+	text = name;
+	text += " Raumtemperatur-Änderungsgeschwindigkeit";
+	printNumberAndAddToDb(11, 2, 100, text.c_str(),
+			      "K/min", Database::NumericSensorLast);
+    }
+
     printBoolAndAddToDb(1, 2, "Automatikbetrieb", automatikSensor);
     printBoolAndAddToDb(1, 0, "Ausschaltoptimierung", Database::BooleanSensorLast);
     printBoolAndAddToDb(1, 1, "Einschaltoptimierung", Database::BooleanSensorLast);
