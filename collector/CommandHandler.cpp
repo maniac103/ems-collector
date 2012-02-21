@@ -75,14 +75,21 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
     }
 
     std::istream requestStream(&m_request);
-    boost::tribool result = handleCommand(requestStream);
+    CommandResult result = handleCommand(requestStream);
 
-    if (result) {
-	respond("OK");
-    } else if (!result) {
-	respond("ERRFAIL");
-    } else {
-	respond("ERRCMD");
+    switch (result) {
+	case Ok:
+	    respond("OK");
+	    break;
+	case Failed:
+	    respond("ERRFAIL");
+	    break;
+	case InvalidCmd:
+	case InvalidArgs:
+	    respond("ERRCMD");
+	    break;
+	case Waiting:
+	    break;
     }
 
     startRead();
@@ -96,7 +103,7 @@ CommandConnection::handleWrite(const boost::system::error_code& error)
     }
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleCommand(std::istream& request)
 {
     std::string category;
@@ -116,10 +123,10 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleGetErrorsCommand();
     }
 
-    return boost::indeterminate;
+    return InvalidCmd;
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 {
     std::string cmd;
@@ -138,7 +145,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	} else if (mode == "auto") {
 	    data.push_back(0x02);
 	} else {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	return sendCommand(data);
     } else if (cmd == "daytemperature") {
@@ -149,10 +156,10 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	return handleHkTemperatureCommand(request, base, 0x07);
     } else if (cmd == "holidaymode") {
 	/* TODO */
-	return false;
+	return Failed;
     } else if (cmd == "vacationmode") {
 	/* TODO */
-	return false;
+	return Failed;
     } else if (cmd == "partymode") {
 	std::vector<char> data = { 0x10, base, 0x56 };
 	unsigned int hours;
@@ -160,16 +167,16 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	request >> hours;
 
 	if (!request || hours > 99) {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	data.push_back(hours);
 	return sendCommand(data);
     }
 
-    return boost::indeterminate;
+    return InvalidCmd;
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd)
 {
     std::vector<char> data = { 0x10, base, cmd };
@@ -177,24 +184,24 @@ CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t bas
     uint8_t valueByte;
 
     request >> value;
-    if (!request) {
-	return boost::indeterminate;
+    if (request) {
+	return InvalidArgs;
     }
 
     try {
 	valueByte = boost::numeric_cast<uint8_t>(2 * value);
 	if (valueByte < 20 || valueByte > 60) {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
     } catch (boost::numeric::bad_numeric_cast& e) {
-	return boost::indeterminate;
+	return InvalidArgs;
     }
 
     data.push_back(valueByte);
     return sendCommand(data);
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleWwCommand(std::istream& request)
 {
     std::string cmd;
@@ -217,7 +224,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	} else if (mode == "auto") {
 	    data.push_back(0x02);
 	} else {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	return sendCommand(data);
     } else if (cmd == "temperature") {
@@ -227,17 +234,17 @@ CommandConnection::handleWwCommand(std::istream& request)
 	request >> temperature;
 
 	if (!request || temperature < 30 || temperature > 60) {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	data.push_back(temperature);
 
 	return sendCommand(data);
     }
 
-    return boost::indeterminate;
+    return InvalidCmd;
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleThermDesinfectCommand(std::istream& request)
 {
     std::string cmd;
@@ -254,7 +261,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	} else if (mode == "off") {
 	    data.push_back(0x00);
 	} else {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	return sendCommand(data);
     } else if (cmd == "day") {
@@ -280,7 +287,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	} else if (day == "everyday") {
 	    data.push_back(0x07);
 	} else {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	return sendCommand(data);
     } else if (cmd == "temperature") {
@@ -290,17 +297,17 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	request >> temperature;
 
 	if (!request || temperature < 60 || temperature > 80) {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	data.push_back(temperature);
 
 	return sendCommand(data);
     }
 
-    return boost::indeterminate;
+    return InvalidCmd;
 }
 
-boost::tribool
+CommandConnection::CommandResult
 CommandConnection::handleZirkPumpCommand(std::istream& request)
 {
     std::string cmd;
@@ -319,7 +326,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	} else if (mode == "auto") {
 	    data.push_back(0x02);
 	} else {
-	    return boost::indeterminate;
+	    return InvalidArgs;
 	}
 	return sendCommand(data);
     } else if (cmd == "count") {
@@ -334,26 +341,27 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	    try {
 		unsigned int count = boost::lexical_cast<unsigned int>(countString);
 		if (count < 1 || count > 6) {
-		    return boost::indeterminate;
+		    return InvalidArgs;
 		}
 		data.push_back(count);
 	    } catch (boost::bad_lexical_cast& e) {
-		return boost::indeterminate;
+		return InvalidArgs;
 	    }
 	}
 	return sendCommand(data);
     }
 
-    return boost::indeterminate;
+    return InvalidCmd;
 }
 
-bool
+CommandConnection::CommandResult
 CommandConnection::handleGetErrorsCommand()
 {
     std::vector<char> data = { 0x10, 0x12 };
+    CommandResult result = sendCommand(data);
 
-    if (!sendCommand(data)) {
-	return false;
+    if (result != Ok) {
+	return result;
     }
 
     /* TODO: redirect response to here
@@ -372,10 +380,10 @@ CommandConnection::handleGetErrorsCommand()
      * 0x30 -> error source
      */
 
-    return true;
+    return Waiting;
 }
 
-bool
+CommandConnection::CommandResult
 CommandConnection::sendCommand(const std::vector<char>& data)
 {
     boost::system::error_code error;
@@ -383,8 +391,8 @@ CommandConnection::sendCommand(const std::vector<char>& data)
 
     if (error) {
 	std::cerr << "Command send error: " << error.message() << std::endl;
-	return false;
+	return Failed;
     }
 
-    return true;
+    return Ok;
 }

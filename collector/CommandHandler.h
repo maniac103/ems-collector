@@ -8,7 +8,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/logic/tribool.hpp>
 
 class CommandHandler;
 
@@ -40,20 +39,28 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void handleRequest(const boost::system::error_code& error);
 	void handleWrite(const boost::system::error_code& error);
 
-	boost::tribool handleCommand(std::istream& request);
-	bool handleGetErrorsCommand();
-	boost::tribool handleHkCommand(std::istream& request, uint8_t base);
-	boost::tribool handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
-	boost::tribool handleWwCommand(std::istream& request);
-	boost::tribool handleThermDesinfectCommand(std::istream& request);
-	boost::tribool handleZirkPumpCommand(std::istream& request);
+	typedef enum {
+	    Ok,
+	    InvalidCmd,
+	    InvalidArgs,
+	    Failed,
+	    Waiting
+	} CommandResult;
+
+	CommandResult handleCommand(std::istream& request);
+	CommandResult handleGetErrorsCommand();
+	CommandResult handleHkCommand(std::istream& request, uint8_t base);
+	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
+	CommandResult handleWwCommand(std::istream& request);
+	CommandResult handleThermDesinfectCommand(std::istream& request);
+	CommandResult handleZirkPumpCommand(std::istream& request);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
 		boost::bind(&CommandConnection::handleWrite, shared_from_this(),
 			    boost::asio::placeholders::error));
 	}
-	bool sendCommand(const std::vector<char>& data);
+	CommandResult sendCommand(const std::vector<char>& data);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
