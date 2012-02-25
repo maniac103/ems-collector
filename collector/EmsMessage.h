@@ -1,50 +1,19 @@
-#ifndef __MESSAGE_H__
-#define __MESSAGE_H__
+#ifndef __EMSMESSAGE_H__
+#define __EMSMESSAGE_H__
 
 #include <vector>
 #include <ostream>
 #include "Database.h"
 
-class Message
+class EmsMessage
 {
     public:
-	Message(Database& db, size_t size) :
+	EmsMessage(Database& db, const std::vector<uint8_t>& data) :
 	    m_db(db),
-	    m_buffer(size),
-	    m_pos(0),
-	    m_fill(0),
-	    m_csum(0) { }
-
-	void addData(unsigned char data) {
-	    m_buffer[m_fill++] = data;
-	    m_csum ^= data;
+	    m_data(data) {
 	}
 
-	bool isFull() {
-	    return m_fill == m_buffer.size();
-	}
-	bool checksumMatches(unsigned char csum) {
-	    return m_csum == csum;
-	}
-	virtual void parse() {
-	    assert(m_fill == m_buffer.size());
-	}
-
-    protected:
-	Database& m_db;
-	std::vector<unsigned char> m_buffer;
-
-    private:
-	size_t m_pos;
-	size_t m_fill;
-	unsigned char m_csum;
-};
-
-class DataMessage : public Message {
-    public:
-	DataMessage(Database& db, size_t size) :
-	    Message(db, size) {}
-	virtual void parse();
+	void handle();
 
     private:
 	void parseUBAMonitorFastMessage();
@@ -66,6 +35,7 @@ class DataMessage : public Message {
 
 	void parseMMTempMessage();
 
+    private:
 	void printNumberAndAddToDb(size_t offset, size_t size, int divider,
 				   const char *name, const char *unit,
 				   Database::NumericSensors sensor);
@@ -73,13 +43,10 @@ class DataMessage : public Message {
 				 Database::BooleanSensors sensor);
 	void printStateAndAddToDb(const std::string& value, const char *name,
 				  Database::StateSensors sensor);
+
+    private:
+	Database& m_db;
+	std::vector<unsigned char> m_data;
 };
 
-class StatsMessage : public Message {
-    public:
-	StatsMessage(Database& db, size_t size) :
-	    Message(db, size) {}
-	virtual void parse();
-};
-
-#endif /* __MESSAGE_H__ */
+#endif /* __EMSMESSAGE_H__ */

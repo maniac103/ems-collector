@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include "EmsMessage.h"
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -8,16 +9,14 @@ IoHandler::IoHandler(Database& db) :
     m_active(true),
     m_db(db),
     m_state(Syncing),
-    m_pos(0),
-    m_message(NULL)
+    m_pos(0)
 {
+    /* pre-alloc buffer to avoid reallocations */
+    m_data.resize(256);
 }
 
 IoHandler::~IoHandler()
 {
-    if (m_message) {
-	delete m_message;
-    }
 }
 
 void
@@ -50,48 +49,30 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		if (m_pos == 0 && dataByte == 0xaa) {
 		    m_pos = 1;
 		} else if (m_pos == 1 && dataByte == 0x55) {
-		    m_state = Type;
-		    m_pos = 0;
-		} else {
-		    m_pos = 0;
-		}
-		break;
-	    case Type:
-		if (dataByte >= InvalidPacket) {
-		    m_state = Syncing;
-		} else {
-		    m_type = (PacketType) dataByte;
 		    m_state = Length;
+		    m_pos = 0;
+		} else {
+		    m_pos = 0;
 		}
 		break;
 	    case Length:
 		m_state = Data;
 		m_pos = 0;
-		switch (m_type) {
-		    case DataPacket:
-			m_message = new DataMessage(m_db, dataByte);
-			break;
-		    case StatsPacket:
-			m_message = new StatsMessage(m_db, dataByte);
-			break;
-		    default:
-			assert(0);
-			m_state = Syncing;
-			break;
-		}
+		m_length = dataByte;
+		m_checkSum = 0;
 		break;
 	    case Data:
-		m_message->addData(dataByte);
-		if (m_message->isFull()) {
+		m_data[m_pos++] = dataByte;
+		m_checkSum ^= dataByte;
+		if (m_pos == m_length) {
 		    m_state = Checksum;
 		}
 		break;
 	    case Checksum:
-		if (m_message->checksumMatches(dataByte)) {
-		    m_message->parse();
+		if (m_checkSum == dataByte) {
+		    EmsMessage message(m_db, m_data);
+		    message.handle();
 		}
-		delete m_message;
-		m_message = NULL;
 		m_state = Syncing;
 		break;
 	}

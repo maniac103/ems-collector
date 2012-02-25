@@ -4,7 +4,6 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <fstream>
-#include "Message.h"
 #include "Database.h"
 
 class IoHandler : public boost::asio::io_service
@@ -38,24 +37,17 @@ class IoHandler : public boost::asio::io_service
     private:
 	typedef enum {
 	    Syncing,
-	    Type,
 	    Length,
 	    Data,
 	    Checksum
 	} State;
 
-	typedef enum {
-	    DataPacket = 0,
-	    StatsPacket = 1,
-	    InvalidPacket = 2
-	} PacketType;
-
 	Database& m_db;
 
 	State m_state;
-	PacketType m_type;
-	size_t m_pos;
-	Message *m_message;
+	size_t m_pos, m_length;
+	uint8_t m_checkSum;
+	std::vector<uint8_t> m_data;
 };
 
 #endif /* __IOHANDLER_H__ */

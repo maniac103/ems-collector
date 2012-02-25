@@ -10,8 +10,6 @@
  *
  */
 
-#include "common.h"
-
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
@@ -25,9 +23,6 @@
 #define PACKET_LED_TIME	    100 /* ms */
 #define FAULT_LED_TIME	    200 /* ms */
 
-#define FRAME_TYPE_DATA  0
-#define FRAME_TYPE_STATS 1
-
 static uint8_t recv_buffer[RECV_BUF_SIZE];
 static uint8_t recv_pos = 0;
 static uint8_t recv_valid = 0;
@@ -35,13 +30,6 @@ static uint8_t recv_valid = 0;
 static volatile uint8_t tx_buffer[TRANSMIT_BUF_SIZE];
 static volatile uint8_t tx_write_pos = 0;
 static volatile uint8_t tx_read_pos = 0;
-
-/* each tick is 10ms, we want to transfer once per minute */
-#define TX_STATS_COUNTDOWN_START 6000
-
-static volatile uint8_t need_tx_stats = 0;
-static uint16_t tx_stats_countdown = TX_STATS_COUNTDOWN_START;
-static rx_stats_t rx_stats;
 
 static uint8_t calc_checksum(const uint8_t *buffer, uint8_t size)
 {
@@ -70,13 +58,10 @@ static void copy_to_tx_buffer(uint8_t data)
     }
 }
 
-static void start_tx_frame(uint8_t type)
+static void start_tx_frame()
 {
-    /* start-of-frame */
     copy_to_tx_buffer(0xaa);
     copy_to_tx_buffer(0x55);
-    /* type */
-    copy_to_tx_buffer(type);
 }
 
 static void add_tx_data(uint8_t *data, uint8_t len)
@@ -134,26 +119,6 @@ ISR(SIG_OUTPUT_COMPARE1A)
     TCCR1B = 0;
 }
 
-static void init_10ms_tick()
-{
-    TIMSK |= _BV(OCIE2);
-    /* 80 * 128µs ~= 10ms */
-    OCR2 = 80;
-    /* CTC, timer clk = 8 MHz / 1024 -> 128µs */
-    TCCR2 = _BV(WGM21) | _BV(CS22) | _BV(CS21) | _BV(CS20);
-}
-
-ISR(SIG_OUTPUT_COMPARE2)
-{
-    if (!need_tx_stats) {
-	tx_stats_countdown--;
-	if (!tx_stats_countdown) {
-	    tx_stats_countdown = TX_STATS_COUNTDOWN_START;
-	    need_tx_stats = 1;
-	}
-    }
-}
-
 ISR(SIG_UART_RECV)
 {
     uint8_t status, data;
@@ -171,8 +136,6 @@ ISR(SIG_UART_RECV)
 	    if (status & _BV(FE)) {
 		/* frame error -> end of frame byte */
 
-		rx_stats.total_bytes += recv_pos;
-
 		/* ignore 1-byte-long frames */
 		if (recv_pos > 1) {
 		    /* strip CRC */
@@ -185,21 +148,13 @@ ISR(SIG_UART_RECV)
 
 			/* need frame start + len + payload */
 			if (enough_tx_space(recv_pos)) {
-			    rx_stats.good_packets++;
-			    rx_stats.good_bytes += recv_pos + 1;
-			    start_tx_frame(FRAME_TYPE_DATA);
+			    start_tx_frame();
 			    add_tx_data(recv_buffer, recv_pos);
 			    enable_led(0);
-			} else {
-			    rx_stats.dropped_packets++;
-			    rx_stats.dropped_bytes += recv_pos + 1;
 			}
 		    } else {
 			enable_led(1);
-			rx_stats.bad_packets++;
 		    }
-		} else {
-		    rx_stats.onebyte_packets++;
 		}
 	    } else {
 		if (recv_pos < RECV_BUF_SIZE) {
@@ -213,19 +168,6 @@ ISR(SIG_UART_RECV)
 	    recv_pos = 0;
 	    recv_valid = 1;
 	}
-    }
-
-    if (need_tx_stats && enough_tx_space(sizeof(rx_stats_t))) {
-	start_tx_frame(FRAME_TYPE_STATS);
-	/* we can do that, because
-	 * a) we're running on an 8-bit machine and thus the struct is
-	 *    implicitly packed
-	 * b) we want to transfer data as little endian, which
-	 *    incidently matches AVR endianess
-	 */
-	add_tx_data((uint8_t *) &rx_stats, sizeof(rx_stats));
-	rx_stats.id++;
-	need_tx_stats = 0;
     }
 }
 
@@ -257,7 +199,6 @@ int main(void)
     DDRB = _BV(DDB1) | _BV(DDB2);
 
     uart_init();
-    init_10ms_tick();
     sei();
 
     while (1) {

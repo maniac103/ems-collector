@@ -1,33 +1,29 @@
-#include <asm/byteorder.h>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <cassert>
-#include "Message.h"
+#include "EmsMessage.h"
 #include "Options.h"
-#include "common.h"
 
 #define BYTEFORMAT_HEX \
     "0x" << std::setbase(16) << std::setw(2) << std::setfill('0') << (unsigned int)
 #define BYTEFORMAT_DEC \
     std::dec << (unsigned int)
 
-#define RETURN_ON_SIZE_MISMATCH(expected,text)                 \
-    if (m_buffer.size() != expected) {                         \
-	std::cerr << text << " size mismatch (";               \
-	std::cerr << std::dec << m_buffer.size() << " vs. ";   \
-	std::cerr << expected << ")" << std::endl;             \
-	return;                                                \
+#define RETURN_ON_SIZE_MISMATCH(expected,text)             \
+    if (m_data.size() != expected) {                       \
+	std::cerr << text << " size mismatch (";           \
+	std::cerr << std::dec << m_data.size() << " vs. "; \
+	std::cerr << expected << ")" << std::endl;         \
+	return;                                            \
     }
 
 void
-DataMessage::parse()
+EmsMessage::handle()
 {
     unsigned char source, dest, type;
     bool handled = false;
     DebugStream& debug = Options::messageDebug();
-
-    Message::parse();
 
     if (debug) {
 	time_t now = time(NULL);
@@ -42,15 +38,15 @@ DataMessage::parse()
 	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_min;
 	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_sec;
 	debug << "]: ";
-	for (size_t i = 0; i < m_buffer.size(); i++) {
-	    debug << " " << BYTEFORMAT_HEX m_buffer[i];
+	for (size_t i = 0; i < m_data.size(); i++) {
+	    debug << " " << BYTEFORMAT_HEX m_data[i];
 	}
 	debug << std::endl;
     }
 
-    source = m_buffer[0];
-    dest = m_buffer[1];
-    type = m_buffer[2];
+    source = m_data[0];
+    dest = m_data[1];
+    type = m_data[2];
 
     if (dest & 0x80) {
 	/* if highest bit of dest is set, it's a polling request -> ignore */
@@ -58,7 +54,7 @@ DataMessage::parse()
     }
 
     /* strip source, dest, type */
-    m_buffer.erase(m_buffer.begin(), m_buffer.begin() + 3);
+    m_data.erase(m_data.begin(), m_data.begin() + 3);
 
     switch (source) {
 	case 0x08:
@@ -151,21 +147,21 @@ DataMessage::parse()
 }
 
 void
-DataMessage::printNumberAndAddToDb(size_t offset, size_t size, int divider,
-				   const char *name, const char *unit,
-			       Database::NumericSensors sensor)
+EmsMessage::printNumberAndAddToDb(size_t offset, size_t size, int divider,
+				  const char *name, const char *unit,
+				  Database::NumericSensors sensor)
 {
     int value = 0;
     float floatVal;
 
     for (size_t i = offset; i < offset + size; i++) {
-	value = (value << 8) | m_buffer[i];
+	value = (value << 8) | m_data[i];
     }
 
     /* treat values with highest bit set as negative
      * e.g. size = 2, value = 0xfffe -> real value -2
      */
-    if (m_buffer[offset] & 0x80) {
+    if (m_data[offset] & 0x80) {
 	value = value - (1 << (size * 8));
     }
 
@@ -183,10 +179,10 @@ DataMessage::printNumberAndAddToDb(size_t offset, size_t size, int divider,
 }
 
 void
-DataMessage::printBoolAndAddToDb(int byte, int bit, const char *name,
-				 Database::BooleanSensors sensor)
+EmsMessage::printBoolAndAddToDb(int byte, int bit, const char *name,
+				Database::BooleanSensors sensor)
 {
-    bool flagSet = m_buffer[byte] & (1 << bit);
+    bool flagSet = m_data[byte] & (1 << bit);
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: " << name << " = "
@@ -199,8 +195,8 @@ DataMessage::printBoolAndAddToDb(int byte, int bit, const char *name,
 }
 
 void
-DataMessage::printStateAndAddToDb(const std::string& value, const char *name,
-				  Database::StateSensors sensor)
+EmsMessage::printStateAndAddToDb(const std::string& value, const char *name,
+				 Database::StateSensors sensor)
 {
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: " << name << " = " << value << std::endl;
@@ -212,7 +208,7 @@ DataMessage::printStateAndAddToDb(const std::string& value, const char *name,
 }
 
 void
-DataMessage::parseUBAMonitorFastMessage()
+EmsMessage::parseUBAMonitorFastMessage()
 {
     std::ostringstream ss;
 
@@ -235,10 +231,10 @@ DataMessage::parseUBAMonitorFastMessage()
     printNumberAndAddToDb(18, 1, 10, "Systemdruck", "bar",
 			  Database::SensorSystemdruck);
 
-    ss << m_buffer[19] << m_buffer[20];
+    ss << m_data[19] << m_data[20];
     printStateAndAddToDb(ss.str(), "Servicecode", Database::SensorServiceCode);
     ss.str(std::string());
-    ss << std::dec << (m_buffer[21] << 8 | m_buffer[22]);
+    ss << std::dec << (m_data[21] << 8 | m_data[22]);
     printStateAndAddToDb(ss.str(), "Fehlercode", Database::SensorFehlerCode);
 
     printBoolAndAddToDb(8, 0, "Flamme", Database::SensorFlamme);
@@ -250,7 +246,7 @@ DataMessage::parseUBAMonitorFastMessage()
 }
 
 void
-DataMessage::parseUBAMonitorSlowMessage()
+EmsMessage::parseUBAMonitorSlowMessage()
 {
     RETURN_ON_SIZE_MISMATCH(26, "Monitor Slow");
 
@@ -271,7 +267,7 @@ DataMessage::parseUBAMonitorSlowMessage()
 }
 
 void
-DataMessage::parseUBAMonitorWWMessage()
+EmsMessage::parseUBAMonitorWWMessage()
 {
     DebugStream& debug = Options::dataDebug();
 
@@ -299,19 +295,19 @@ DataMessage::parseUBAMonitorWWMessage()
 
     if (debug) {
 	debug << "DATA: Art des Warmwassersystems: ";
-	if (m_buffer[9] & (1 << 0)) {
+	if (m_data[9] & (1 << 0)) {
 	    debug << "keins ";
 	}
-	if (m_buffer[9] & (1 << 1)) {
+	if (m_data[9] & (1 << 1)) {
 	    debug << "Durchlauferhitzer ";
 	}
-	if (m_buffer[9] & (1 << 2)) {
+	if (m_data[9] & (1 << 2)) {
 	    debug << "kleiner Speicher ";
 	}
-	if (m_buffer[9] & (1 << 3)) {
+	if (m_data[9] & (1 << 3)) {
 	    debug << "großer Speicher ";
 	}
-	if (m_buffer[9] & (1 << 4)) {
+	if (m_data[9] & (1 << 4)) {
 	    debug << "Speicherladesystem ";
 	}
 	debug << std::endl;
@@ -319,7 +315,7 @@ DataMessage::parseUBAMonitorWWMessage()
 }
 
 void
-DataMessage::parseUBAUnknown1Message()
+EmsMessage::parseUBAUnknown1Message()
 {
     RETURN_ON_SIZE_MISMATCH(4, "Unknown1");
 
@@ -330,20 +326,20 @@ DataMessage::parseUBAUnknown1Message()
 }
 
 void
-DataMessage::parseRCTimeMessage()
+EmsMessage::parseRCTimeMessage()
 {
     RETURN_ON_SIZE_MISMATCH(9, "RC Time");
 
     DebugStream& debug = Options::dataDebug();
     if (debug) {
-	debug << "DATA: Datum = " << BYTEFORMAT_DEC m_buffer[4] << ".";
-	debug << BYTEFORMAT_DEC m_buffer[2] << ".";
-	debug << BYTEFORMAT_DEC (2000 + m_buffer[1]) << std::endl;
-	debug << "DATA: Zeit = " << BYTEFORMAT_DEC m_buffer[3] << ":";
-	debug << BYTEFORMAT_DEC m_buffer[5] << ":";
-	debug << BYTEFORMAT_DEC m_buffer[6] << std::endl;
+	debug << "DATA: Datum = " << BYTEFORMAT_DEC m_data[4] << ".";
+	debug << BYTEFORMAT_DEC m_data[2] << ".";
+	debug << BYTEFORMAT_DEC (2000 + m_data[1]) << std::endl;
+	debug << "DATA: Zeit = " << BYTEFORMAT_DEC m_data[3] << ":";
+	debug << BYTEFORMAT_DEC m_data[5] << ":";
+	debug << BYTEFORMAT_DEC m_data[6] << std::endl;
 	debug << "DATA: Wochentag = ";
-	switch (m_buffer[7]) {
+	switch (m_data[7]) {
 	    case 0: debug << "Montag"; break;
 	    case 1: debug << "Dienstag"; break;
 	    case 2: debug << "Mittwoch"; break;
@@ -351,18 +347,18 @@ DataMessage::parseRCTimeMessage()
 	    case 4: debug << "Freitag"; break;
 	    case 5: debug << "Samstag"; break;
 	    case 6: debug << "Sonntag"; break;
-	    default: debug << "???" << BYTEFORMAT_DEC m_buffer[7];
+	    default: debug << "???" << BYTEFORMAT_DEC m_data[7];
 	}
 	debug << std::endl;
 
 	debug << "DATA: Konfiguration = ";
-	if (m_buffer[8] & (1 << 0)) {
+	if (m_data[8] & (1 << 0)) {
 	    debug << "Sommerzeit ";
 	}
-	if (m_buffer[8] & (1 << 1)) {
+	if (m_data[8] & (1 << 1)) {
 	    debug << "Funkuhr ";
 	}
-	if (m_buffer[8] & (1 << 4)) {
+	if (m_data[8] & (1 << 4)) {
 	    debug << "Uhr läuft ";
 	}
 	debug << std::endl;
@@ -370,19 +366,19 @@ DataMessage::parseRCTimeMessage()
 }
 
 void
-DataMessage::parseRCOutdoorTempMessage()
+EmsMessage::parseRCOutdoorTempMessage()
 {
     printNumberAndAddToDb(1, 1, 1, "Gedämpfte Außentemperatur", "°C",
 			  Database::SensorGedaempfteAussenTemp);
 }
 
 void
-DataMessage::parseRCHKMonitorMessage(const char *name,
-				     Database::NumericSensors vorlaufSollSensor,
-				     Database::BooleanSensors automatikSensor,
-				     Database::BooleanSensors tagSensor,
-				     Database::BooleanSensors ferienSensor,
-				     Database::BooleanSensors partySensor)
+EmsMessage::parseRCHKMonitorMessage(const char *name,
+				    Database::NumericSensors vorlaufSollSensor,
+				    Database::BooleanSensors automatikSensor,
+				    Database::BooleanSensors tagSensor,
+				    Database::BooleanSensors ferienSensor,
+				    Database::BooleanSensors partySensor)
 {
     std::string text;
     DebugStream& debug = Options::dataDebug();
@@ -400,15 +396,15 @@ DataMessage::parseRCHKMonitorMessage(const char *name,
 
     if (debug) {
 	debug << "DATA: Kennlinie " << name << " "
-	      << "10°C -> " << BYTEFORMAT_DEC m_buffer[8]
-	      << "°C / 0°C -> " << BYTEFORMAT_DEC m_buffer[9]
-	      << "°C / -10°C -> " << BYTEFORMAT_DEC m_buffer[10]
+	      << "10°C -> " << BYTEFORMAT_DEC m_data[8]
+	      << "°C / 0°C -> " << BYTEFORMAT_DEC m_data[9]
+	      << "°C / -10°C -> " << BYTEFORMAT_DEC m_data[10]
 	      << "°C" << std::endl;
 
 	debug << "DATA: Einschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_buffer[6] << " min" << std::endl;
+	      << BYTEFORMAT_DEC m_data[6] << " min" << std::endl;
 	debug << "DATA: Ausschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_buffer[7] << " min" << std::endl;
+	      << BYTEFORMAT_DEC m_data[7] << " min" << std::endl;
     }
 
     text = "Vorlauf ";
@@ -416,7 +412,7 @@ DataMessage::parseRCHKMonitorMessage(const char *name,
     text += " Solltemperatur";
     printNumberAndAddToDb(15, 1, 1, text.c_str(), "°C", vorlaufSollSensor);
 
-    if (m_buffer[16] & (1 << 0)) {
+    if (m_data[16] & (1 << 0)) {
 	if (debug) {
 	    debug << "DATA: " << name << " Keine Raumtemperatur vorhanden" << std::endl;
 	}
@@ -445,7 +441,7 @@ DataMessage::parseRCHKMonitorMessage(const char *name,
 }
 
 void
-DataMessage::parseWMTemp1Message()
+EmsMessage::parseWMTemp1Message()
 {
     RETURN_ON_SIZE_MISMATCH(6, "WM1 Temp");
 
@@ -457,7 +453,7 @@ DataMessage::parseWMTemp1Message()
 }
 
 void
-DataMessage::parseWMTemp2Message()
+EmsMessage::parseWMTemp2Message()
 {
     RETURN_ON_SIZE_MISMATCH(3, "WM2 Temp");
 
@@ -466,7 +462,7 @@ DataMessage::parseWMTemp2Message()
 }
 
 void
-DataMessage::parseMMTempMessage()
+EmsMessage::parseMMTempMessage()
 {
     RETURN_ON_SIZE_MISMATCH(8, "MM Temp");
 
@@ -482,27 +478,7 @@ DataMessage::parseMMTempMessage()
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: MM10 Flags "
-			     << BYTEFORMAT_HEX m_buffer[7] << std::endl;
+			     << BYTEFORMAT_HEX m_data[7] << std::endl;
     }
 }
 
-void
-StatsMessage::parse()
-{
-    rx_stats_t stats;
-    DebugStream& debug = Options::statsDebug();
-
-    Message::parse();
-    RETURN_ON_SIZE_MISMATCH(sizeof(rx_stats_t), "Stats Message");
-
-    memcpy(&stats, &m_buffer.at(0), sizeof(rx_stats_t));
-    if (debug) {
-	debug << "ID: " << __le32_to_cpu(stats.id) << std::endl;
-	debug << "Bytes: " << __le32_to_cpu(stats.total_bytes) << " total, ";
-	debug << __le32_to_cpu(stats.good_bytes) << " good" << std::endl;
-	debug << "1-Byte Packets: " << __le32_to_cpu(stats.onebyte_packets) << std::endl;
-	debug << "Good Packets: " << __le32_to_cpu(stats.good_packets) << std::endl;
-	debug << "Bad Packets: " << __le32_to_cpu(stats.bad_packets) << std::endl;
-	debug << "Dropped Packets: " << __le32_to_cpu(stats.dropped_packets) << std::endl;
-    }
-}
