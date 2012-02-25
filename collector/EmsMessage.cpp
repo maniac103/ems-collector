@@ -73,7 +73,7 @@ EmsMessage::handle()
     }
 
     switch (m_source) {
-	case 0x08:
+	case addressUBA:
 	    /* UBA message */
 	    switch (m_type) {
 		case 0x07:
@@ -100,7 +100,7 @@ EmsMessage::handle()
 		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
 	    }
 	    break;
-	case 0x09:
+	case addressBC10:
 	    /* BC10 message */
 	    switch (m_type) {
 		case 0x29:
@@ -108,7 +108,7 @@ EmsMessage::handle()
 		    break;
 	    }
 	    break;
-	case 0x10:
+	case addressRC:
 	    /* RC message */
 	    switch (m_type) {
 		case 0x06: parseRCTimeMessage(); handled = true; break;
@@ -137,14 +137,14 @@ EmsMessage::handle()
 		case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
 		case 0xAC: /* command for MM10 */ handled = true; break;
 	    }
-	case 0x11:
+	case addressWM10:
 	    /* WM10 message */
 	    switch (m_type) {
 		case 0x9C: parseWMTemp1Message(); handled = true; break;
 		case 0x1E: parseWMTemp2Message(); handled = true; break;
 	    }
 	    break;
-	case 0x21:
+	case addressMM10:
 	    /* MM10 message */
 	    switch (m_type) {
 		case 0xAB: parseMMTempMessage(); handled = true; break;

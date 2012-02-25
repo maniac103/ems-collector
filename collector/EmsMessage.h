@@ -11,6 +11,14 @@ class EmsMessage
 	EmsMessage(Database& db, const std::vector<uint8_t>& data);
 	void handle();
 
+    public:
+	static const uint8_t addressUBA  = 0x08;
+	static const uint8_t addressBC10 = 0x09;
+	static const uint8_t addressPC   = 0x0b;
+	static const uint8_t addressRC   = 0x10;
+	static const uint8_t addressWM10 = 0x11;
+	static const uint8_t addressMM10 = 0x21;
+
 	uint8_t getSource() {
 	    return m_source;
 	}
