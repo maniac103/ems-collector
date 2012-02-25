@@ -11,7 +11,7 @@ IoHandler::IoHandler(Database& db) :
     m_pos(0)
 {
     /* pre-alloc buffer to avoid reallocations */
-    m_data.resize(256);
+    m_data.reserve(256);
 }
 
 IoHandler::~IoHandler()
@@ -61,8 +61,9 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		m_checkSum = 0;
 		break;
 	    case Data:
-		m_data[m_pos++] = dataByte;
+		m_data.push_back(dataByte);
 		m_checkSum ^= dataByte;
+		m_pos++;
 		if (m_pos == m_length) {
 		    m_state = Checksum;
 		}
@@ -75,6 +76,7 @@ IoHandler::readComplete(const boost::system::error_code& error,
 			m_pcMessageCallback(message);
 		    }
 		}
+		m_data.clear();
 		m_state = Syncing;
 		break;
 	}
