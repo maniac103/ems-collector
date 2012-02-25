@@ -22,7 +22,7 @@ class EmsMessage
 	uint8_t getSource() {
 	    return m_source;
 	}
-	uint8_t getDest() {
+	uint8_t getDestination() {
 	    return m_dest & 0x7f;
 	}
 

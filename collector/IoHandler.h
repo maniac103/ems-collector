@@ -3,8 +3,10 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <fstream>
 #include "Database.h"
+#include "EmsMessage.h"
 
 class IoHandler : public boost::asio::io_service
 {
@@ -33,6 +35,7 @@ class IoHandler : public boost::asio::io_service
 
 	bool m_active;
 	unsigned char m_recvBuffer[maxReadLength];
+	boost::function<void (const EmsMessage& message)> m_pcMessageCallback;
 
     private:
 	typedef enum {

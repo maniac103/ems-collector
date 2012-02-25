@@ -1,6 +1,5 @@
 #include <iostream>
 #include <iomanip>
-#include "EmsMessage.h"
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -72,6 +71,9 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		if (m_checkSum == dataByte) {
 		    EmsMessage message(m_db, m_data);
 		    message.handle();
+		    if (message.getDestination() == EmsMessage::addressPC && m_pcMessageCallback) {
+			m_pcMessageCallback(message);
+		    }
 		}
 		m_state = Syncing;
 		break;
