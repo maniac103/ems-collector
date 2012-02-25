@@ -18,10 +18,25 @@
 	return;                                            \
     }
 
+EmsMessage::EmsMessage(Database& db, const std::vector<uint8_t>& data) :
+    m_db(db),
+    m_data(data)
+{
+    if (m_data.size() >= 3) {
+	m_source = m_data[0];
+	m_dest = m_data[1];
+	m_type = m_data[2];
+	m_data.erase(m_data.begin(), m_data.begin() + 3);
+    } else {
+	m_source = 0;
+	m_dest = 0;
+	m_type = 0;
+    }
+}
+
 void
 EmsMessage::handle()
 {
-    unsigned char source, dest, type;
     bool handled = false;
     DebugStream& debug = Options::messageDebug();
 
@@ -37,29 +52,30 @@ EmsMessage::handle()
 	debug << std::setw(2) << std::setfill('0') << time.tm_hour;
 	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_min;
 	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_sec;
-	debug << "]: ";
+	debug << "]: source " << BYTEFORMAT_HEX m_source;
+	debug << ", dest " << BYTEFORMAT_HEX m_dest;
+	debug << ", type " << BYTEFORMAT_HEX m_type;
+	debug << ", data ";
 	for (size_t i = 0; i < m_data.size(); i++) {
 	    debug << " " << BYTEFORMAT_HEX m_data[i];
 	}
 	debug << std::endl;
     }
 
-    source = m_data[0];
-    dest = m_data[1];
-    type = m_data[2];
+    if (!m_source && !m_dest && !m_type) {
+	/* invalid packet */
+	return;
+    }
 
-    if (dest & 0x80) {
+    if (m_dest & 0x80) {
 	/* if highest bit of dest is set, it's a polling request -> ignore */
 	return;
     }
 
-    /* strip source, dest, type */
-    m_data.erase(m_data.begin(), m_data.begin() + 3);
-
-    switch (source) {
+    switch (m_source) {
 	case 0x08:
 	    /* UBA message */
-	    switch (type) {
+	    switch (m_type) {
 		case 0x07:
 		    /* yet unknown contents:
 		     * 0x8 0x0 0x7 0x0 0x3 0x3 0x0 0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 */
@@ -86,7 +102,7 @@ EmsMessage::handle()
 	    break;
 	case 0x09:
 	    /* BC10 message */
-	    switch (type) {
+	    switch (m_type) {
 		case 0x29:
 		    /* yet unknown: 0x9 0x10 0x29 0x0 0x6b */
 		    break;
@@ -94,7 +110,7 @@ EmsMessage::handle()
 	    break;
 	case 0x10:
 	    /* RC message */
-	    switch (type) {
+	    switch (m_type) {
 		case 0x06: parseRCTimeMessage(); handled = true; break;
 		case 0x1A: /* command for UBA3 */ handled = true; break;
 		case 0x35: /* command for UBA3 */ handled = true; break;
@@ -123,14 +139,14 @@ EmsMessage::handle()
 	    }
 	case 0x11:
 	    /* WM10 message */
-	    switch (type) {
+	    switch (m_type) {
 		case 0x9C: parseWMTemp1Message(); handled = true; break;
 		case 0x1E: parseWMTemp2Message(); handled = true; break;
 	    }
 	    break;
 	case 0x21:
 	    /* MM10 message */
-	    switch (type) {
+	    switch (m_type) {
 		case 0xAB: parseMMTempMessage(); handled = true; break;
 	    }
 	    break;
@@ -140,8 +156,8 @@ EmsMessage::handle()
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
 	    dataDebug << "DATA: Unhandled message received";
-	    dataDebug << "(source " << BYTEFORMAT_HEX source << ", type ";
-	    dataDebug << BYTEFORMAT_HEX type << ")." << std::endl;
+	    dataDebug << "(source " << BYTEFORMAT_HEX m_source << ", type ";
+	    dataDebug << BYTEFORMAT_HEX m_type << ")." << std::endl;
 	}
     }
 }

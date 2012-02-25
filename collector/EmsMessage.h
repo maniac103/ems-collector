@@ -8,12 +8,15 @@
 class EmsMessage
 {
     public:
-	EmsMessage(Database& db, const std::vector<uint8_t>& data) :
-	    m_db(db),
-	    m_data(data) {
-	}
-
+	EmsMessage(Database& db, const std::vector<uint8_t>& data);
 	void handle();
+
+	uint8_t getSource() {
+	    return m_source;
+	}
+	uint8_t getDest() {
+	    return m_dest & 0x7f;
+	}
 
     private:
 	void parseUBAMonitorFastMessage();
@@ -47,6 +50,9 @@ class EmsMessage
     private:
 	Database& m_db;
 	std::vector<unsigned char> m_data;
+	uint8_t m_source;
+	uint8_t m_dest;
+	uint8_t m_type;
 };
 
 #endif /* __EMSMESSAGE_H__ */
