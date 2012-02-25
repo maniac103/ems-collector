@@ -32,6 +32,8 @@ TcpHandler::handleConnect(const boost::system::error_code& error)
     } else {
 	boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), 7777);
 	m_cmdHandler.reset(new CommandHandler(*this, m_socket, cmdEndpoint));
+	m_pcMessageCallback = boost::bind(&CommandHandler::handlePcMessage,
+					  m_cmdHandler, _1);
 	readStart();
     }
 }
@@ -40,5 +42,6 @@ void
 TcpHandler::doCloseImpl()
 {
     m_cmdHandler.reset();
+    m_pcMessageCallback.clear();
     m_socket.close();
 }

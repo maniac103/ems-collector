@@ -8,6 +8,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include "EmsMessage.h"
 
 class CommandHandler;
 
@@ -34,6 +35,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void close() {
 	    m_socket.close();
 	}
+	void handlePcMessage(const EmsMessage& message);
 
     private:
 	void handleRequest(const boost::system::error_code& error);
@@ -80,6 +82,7 @@ class CommandHandler : private boost::noncopyable
     public:
 	void startConnection(CommandConnection::Ptr connection);
 	void stopConnection(CommandConnection::Ptr connection);
+	void handlePcMessage(const EmsMessage& message);
 
     private:
 	void handleAccept(CommandConnection::Ptr connection,

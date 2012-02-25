@@ -48,6 +48,14 @@ CommandHandler::stopConnection(CommandConnection::Ptr connection)
 }
 
 void
+CommandHandler::handlePcMessage(const EmsMessage& message)
+{
+    std::for_each(m_connections.begin(), m_connections.end(),
+		  boost::bind(&CommandConnection::handlePcMessage,
+			      _1, message));
+}
+
+void
 CommandHandler::startAccepting()
 {
     CommandConnection::Ptr connection(new CommandConnection(*this, m_service, m_cmdSocket));
@@ -381,6 +389,11 @@ CommandConnection::handleGetErrorsCommand()
      */
 
     return Waiting;
+}
+
+void
+CommandConnection::handlePcMessage(const EmsMessage& message)
+{
 }
 
 CommandConnection::CommandResult

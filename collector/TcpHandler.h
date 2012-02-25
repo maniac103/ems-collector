@@ -3,7 +3,7 @@
 
 #include "IoHandler.h"
 #include "CommandHandler.h"
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 class TcpHandler : public IoHandler
 {
@@ -27,7 +27,7 @@ class TcpHandler : public IoHandler
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
-	boost::scoped_ptr<CommandHandler> m_cmdHandler;
+	boost::shared_ptr<CommandHandler> m_cmdHandler;
 };
 
 #endif /* __TCPHANDLER_H__ */
