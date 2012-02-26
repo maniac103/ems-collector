@@ -12,9 +12,9 @@ TcpHandler::TcpHandler(const std::string& host,
     boost::asio::ip::tcp::resolver::query query(host, port);
     boost::asio::ip::tcp::resolver::iterator endpoint = resolver.resolve(query);
 
-    boost::asio::async_connect(m_socket, endpoint,
-			       boost::bind(&TcpHandler::handleConnect, this,
-					   boost::asio::placeholders::error));
+    m_socket.async_connect(*endpoint,
+			   boost::bind(&TcpHandler::handleConnect, this,
+				       boost::asio::placeholders::error));
 }
 
 TcpHandler::~TcpHandler()
