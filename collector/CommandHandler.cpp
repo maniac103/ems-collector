@@ -426,6 +426,11 @@ std::string
 CommandConnection::buildErrorMessageResponse(const std::vector<uint8_t>& data)
 {
     if (data.size() < 12) {
+	/* incomplete response */
+	return "";
+    }
+    if (data[0] == 0) {
+	/* no error at this position */
 	return "";
     }
 
