@@ -50,12 +50,14 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	} CommandResult;
 
 	CommandResult handleCommand(std::istream& request);
-	CommandResult handleGetErrorsCommand();
+	CommandResult handleGetErrorsCommand(unsigned int offset);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
+
+	std::string buildErrorMessageResponse(const std::vector<uint8_t>& data);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
@@ -69,6 +71,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	boost::asio::ip::tcp::socket& m_cmdSocket;
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
+	bool m_waitingForResponse;
+	unsigned int m_responseCounter;
 };
 
 class CommandHandler : private boost::noncopyable

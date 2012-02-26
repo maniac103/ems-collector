@@ -73,7 +73,9 @@ CommandConnection::CommandConnection(CommandHandler& handler,
 				     boost::asio::ip::tcp::socket& cmdSocket) :
     m_socket(ioService),
     m_cmdSocket(cmdSocket),
-    m_handler(handler)
+    m_handler(handler),
+    m_waitingForResponse(false),
+    m_responseCounter(0)
 {
 }
 
@@ -89,7 +91,9 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
 
     std::istream requestStream(&m_request);
 
-    if (m_request.size() > 2) {
+    if (m_waitingForResponse) {
+	respond("ERRBUSY");
+    } else if (m_request.size() > 2) {
 	CommandResult result = handleCommand(requestStream);
 
 	switch (result) {
@@ -140,7 +144,7 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "ww") {
 	return handleWwCommand(request);
     } else if (category == "geterrors") {
-	return handleGetErrorsCommand();
+	return handleGetErrorsCommand(0);
     }
 
     return InvalidCmd;
@@ -375,18 +379,60 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 }
 
 CommandConnection::CommandResult
-CommandConnection::handleGetErrorsCommand()
+CommandConnection::handleGetErrorsCommand(unsigned int offset)
 {
-    std::vector<uint8_t> data = { 0x10, 0x12 };
+    /* Service Key: 0x04 0x10 0x12 = 0x04 0xXX 0xYY
+     * -> 0xXX | 0x80, 0xYY, 0x00, <maxlen>
+     */
+    uint8_t offsetBytes = (uint8_t) (offset * 12);
+    std::vector<uint8_t> data = { 0x90, 0x12, offsetBytes, 12 };
     CommandResult result = sendCommand(data);
 
     if (result != Ok) {
 	return result;
     }
 
-    /* TODO: redirect response to here
-     *
-     * response example:
+    m_waitingForResponse = true;
+    m_responseCounter = offset;
+
+    /* TODO: timeout & retry */
+
+    return Waiting;
+}
+
+void
+CommandConnection::handlePcMessage(const EmsMessage& message)
+{
+    if (message.getSource() == EmsMessage::addressRC && message.getType() == 0x12) {
+	/* strip offset */
+	std::vector<uint8_t> data(message.getData().begin() + 1, message.getData().end());
+	std::string response = buildErrorMessageResponse(data);
+
+	if (!response.empty()) {
+	    respond(response);
+	}
+	m_responseCounter++;
+
+	if (m_responseCounter < 4) {
+	    handleGetErrorsCommand(m_responseCounter);
+	} else {
+	    m_waitingForResponse = false;
+	    respond("OK");
+	}
+    }
+}
+
+std::string
+CommandConnection::buildErrorMessageResponse(const std::vector<uint8_t>& data)
+{
+    if (data.size() < 12) {
+	return "";
+    }
+
+    std::ostringstream response;
+
+    /*
+     * Response example:
      * 0x35, 0x31, 0x03, 0x2e, 0x89, 0x08, 0x16, 0x1c, 0x0d, 0x00, 0x00, 0x30
      *
      * 0x35 0x31 -> A51
@@ -400,12 +446,36 @@ CommandConnection::handleGetErrorsCommand()
      * 0x30 -> error source
      */
 
-    return Waiting;
-}
+    if (data[4] & 0x80) {
+	/* has date */
+	int year = 2000 + (data[4] & 0x7f);
+	int month = data[5];
+	int day = data[7];
+	int hour = data[6];
+	int minute = data[8];
 
-void
-CommandConnection::handlePcMessage(const EmsMessage& message)
-{
+	response << std::setw(2) << std::setfill('0') << day << "-";
+	response << std::setw(2) << std::setfill('0') << month << "-";
+	response << std::setw(4) << year << ";";
+	response << std::setw(2) << std::setfill('0') << hour << "-";
+	response << std::setw(2) << std::setfill('0') << minute;
+    } else {
+	response  << "---";
+    }
+
+    response << ";";
+    response << std::hex << (unsigned int) data[11] << ";";
+
+    /* code */
+    response << std::dec << data[0] << data[1] << ";";
+
+    unsigned int code = (((unsigned int) data[2]) << 8) + data[3];
+    response << code << ";";
+
+    unsigned int duration = (((unsigned int) data[9]) << 8) + data[10];
+    response << duration;
+
+    return response.str();
 }
 
 CommandConnection::CommandResult

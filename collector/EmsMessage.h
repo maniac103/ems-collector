@@ -25,6 +25,9 @@ class EmsMessage
 	uint8_t getDestination() const {
 	    return m_dest & 0x7f;
 	}
+	uint8_t getType() const {
+	    return m_type;
+	}
 	const std::vector<uint8_t>& getData() const {
 	    return m_data;
 	}

@@ -78,6 +78,7 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		}
 		m_data.clear();
 		m_state = Syncing;
+		m_pos = 0;
 		break;
 	}
     }
