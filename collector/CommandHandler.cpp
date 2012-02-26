@@ -412,7 +412,8 @@ CommandConnection::CommandResult
 CommandConnection::sendCommand(const std::vector<uint8_t>& data)
 {
     boost::system::error_code error;
-    boost::asio::write(m_cmdSocket, boost::asio::buffer(data), error);
+    boost::asio::write(m_cmdSocket, boost::asio::buffer(data),
+		       boost::asio::transfer_all(), error);
 
     if (error) {
 	std::cerr << "Command send error: " << error.message() << std::endl;
