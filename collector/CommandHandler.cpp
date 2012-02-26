@@ -26,11 +26,14 @@ CommandHandler::handleAccept(CommandConnection::Ptr connection,
 			     const boost::system::error_code& error)
 {
     if (error) {
-	std::cerr << "Error: " << error.message() << std::endl;
-    } else {
-	startConnection(connection);
-	startAccepting();
+	if (error != boost::asio::error::operation_aborted) {
+	    std::cerr << "Accept error: " << error.message() << std::endl;
+	}
+	return;
     }
+
+    startConnection(connection);
+    startAccepting();
 }
 
 void
@@ -77,28 +80,37 @@ CommandConnection::CommandConnection(CommandHandler& handler,
 void
 CommandConnection::handleRequest(const boost::system::error_code& error)
 {
-    if (error && error != boost::asio::error::operation_aborted) {
-	m_handler.stopConnection(shared_from_this());
+    if (error) {
+	if (error != boost::asio::error::operation_aborted) {
+	    m_handler.stopConnection(shared_from_this());
+	}
 	return;
     }
 
     std::istream requestStream(&m_request);
-    CommandResult result = handleCommand(requestStream);
 
-    switch (result) {
-	case Ok:
-	    respond("OK");
-	    break;
-	case Failed:
-	    respond("ERRFAIL");
-	    break;
-	case InvalidCmd:
-	case InvalidArgs:
-	    respond("ERRCMD");
-	    break;
-	case Waiting:
-	    break;
+    if (m_request.size() > 2) {
+	CommandResult result = handleCommand(requestStream);
+
+	switch (result) {
+	    case Ok:
+		respond("OK");
+		break;
+	    case Failed:
+		respond("ERRFAIL");
+		break;
+	    case InvalidCmd:
+	    case InvalidArgs:
+		respond("ERRCMD");
+		break;
+	    case Waiting:
+		break;
+	}
     }
+
+    /* drain remainder */
+    std::string remainder;
+    std::getline(requestStream, remainder);
 
     startRead();
 }
@@ -141,7 +153,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<char> data = { 0x10, base, 0x07 };
+	std::vector<uint8_t> data = { 0x10, base, 0x07 };
 	std::string mode;
 
 	request >> mode;
@@ -169,7 +181,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	/* TODO */
 	return Failed;
     } else if (cmd == "partymode") {
-	std::vector<char> data = { 0x10, base, 0x56 };
+	std::vector<uint8_t> data = { 0x10, base, 0x56 };
 	unsigned int hours;
 
 	request >> hours;
@@ -187,7 +199,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 CommandConnection::CommandResult
 CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd)
 {
-    std::vector<char> data = { 0x10, base, cmd };
+    std::vector<uint8_t> data = { 0x10, base, cmd };
     float value;
     uint8_t valueByte;
 
@@ -220,7 +232,7 @@ CommandConnection::handleWwCommand(std::istream& request)
     } else if (cmd == "zirkpump") {
 	return handleZirkPumpCommand(request);
     } else if (cmd == "mode") {
-	std::vector<char> data = { 0x10, 0x37, 0x02 };
+	std::vector<uint8_t> data = { 0x10, 0x37, 0x02 };
 	std::string mode;
 
 	request >> mode;
@@ -236,7 +248,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	}
 	return sendCommand(data);
     } else if (cmd == "temperature") {
-	std::vector<char> data = { 0x08, 0x33, 0x02 };
+	std::vector<uint8_t> data = { 0x08, 0x33, 0x02 };
 	unsigned int temperature;
 
 	request >> temperature;
@@ -259,7 +271,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<char> data = { 0x10, 0x37, 0x04 };
+	std::vector<uint8_t> data = { 0x10, 0x37, 0x04 };
 	std::string mode;
 
 	request >> mode;
@@ -273,7 +285,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	}
 	return sendCommand(data);
     } else if (cmd == "day") {
-	std::vector<char> data = { 0x10, 0x37, 0x05 };
+	std::vector<uint8_t> data = { 0x10, 0x37, 0x05 };
 	std::string day;
 
 	request >> day;
@@ -299,7 +311,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	}
 	return sendCommand(data);
     } else if (cmd == "temperature") {
-	std::vector<char> data = { 0x08, 0x33, 0x08 };
+	std::vector<uint8_t> data = { 0x08, 0x33, 0x08 };
 	unsigned int temperature;
 
 	request >> temperature;
@@ -322,7 +334,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<char> data = { 0x10, 0x37, 0x03 };
+	std::vector<uint8_t> data = { 0x10, 0x37, 0x03 };
 	std::string mode;
 
 	request >> mode;
@@ -338,7 +350,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	}
 	return sendCommand(data);
     } else if (cmd == "count") {
-	std::vector<char> data = { 0x08, 0x33, 0x07 };
+	std::vector<uint8_t> data = { 0x08, 0x33, 0x07 };
 	std::string countString;
 
 	request >> countString;
@@ -365,7 +377,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 CommandConnection::CommandResult
 CommandConnection::handleGetErrorsCommand()
 {
-    std::vector<char> data = { 0x10, 0x12 };
+    std::vector<uint8_t> data = { 0x10, 0x12 };
     CommandResult result = sendCommand(data);
 
     if (result != Ok) {
@@ -397,7 +409,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 }
 
 CommandConnection::CommandResult
-CommandConnection::sendCommand(const std::vector<char>& data)
+CommandConnection::sendCommand(const std::vector<uint8_t>& data)
 {
     boost::system::error_code error;
     boost::asio::write(m_cmdSocket, boost::asio::buffer(data), error);

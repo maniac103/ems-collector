@@ -62,7 +62,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 		boost::bind(&CommandConnection::handleWrite, shared_from_this(),
 			    boost::asio::placeholders::error));
 	}
-	CommandResult sendCommand(const std::vector<char>& data);
+	CommandResult sendCommand(const std::vector<uint8_t>& data);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;

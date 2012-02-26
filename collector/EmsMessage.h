@@ -19,11 +19,14 @@ class EmsMessage
 	static const uint8_t addressWM10 = 0x11;
 	static const uint8_t addressMM10 = 0x21;
 
-	uint8_t getSource() {
+	uint8_t getSource() const {
 	    return m_source;
 	}
-	uint8_t getDestination() {
+	uint8_t getDestination() const {
 	    return m_dest & 0x7f;
+	}
+	const std::vector<uint8_t>& getData() const {
+	    return m_data;
 	}
 
     private:
