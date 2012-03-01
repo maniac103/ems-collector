@@ -32,6 +32,22 @@ class EmsMessage
 	    return m_data;
 	}
 
+    public:
+#pragma pack(push,1)
+	typedef struct {
+	    uint8_t errorAscii[2];
+	    uint16_t code_be16;
+	    uint8_t year : 7;
+	    uint8_t hasDate : 1;
+	    uint8_t month;
+	    uint8_t hour;
+	    uint8_t day;
+	    uint8_t minute;
+	    uint16_t durationMinutes_be16;
+	    uint8_t source;
+	} ErrorRecord;
+#pragma pack(pop)
+
     private:
 	void parseUBAMonitorFastMessage();
 	void parseUBAMonitorSlowMessage();

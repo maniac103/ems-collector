@@ -1,3 +1,4 @@
+#include <asm/byteorder.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
@@ -385,8 +386,9 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
     /* Service Key: 0x04 0x10 0x12 = 0x04 0xXX 0xYY
      * -> 0xXX | 0x80, 0xYY, 0x00, <maxlen>
      */
-    uint8_t offsetBytes = (uint8_t) (offset * 12);
-    std::vector<uint8_t> data = { 0x90, 0x12, offsetBytes, 12 };
+    const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
+    uint8_t offsetBytes = (uint8_t) (offset * msgSize);
+    std::vector<uint8_t> data = { 0x90, 0x12, offsetBytes, 2 * msgSize };
     CommandResult result = sendCommand(data);
 
     if (result != Ok) {
@@ -396,7 +398,7 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
     m_responseCounter = offset;
     scheduleResponseTimeout();
 
-    /* TODO: timeout & retry */
+    /* TODO: retry */
 
     return Waiting;
 }
@@ -410,15 +412,21 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 
     if (message.getSource() == EmsMessage::addressRC && message.getType() == 0x12) {
 	/* strip offset */
-	std::vector<uint8_t> data(message.getData().begin() + 1, message.getData().end());
-	std::string response = buildErrorMessageResponse(data);
+	size_t offset = 1;
+	const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
 
 	m_responseTimeout.cancel();
 
-	if (!response.empty()) {
-	    respond(response);
+	while (offset + msgSize <= message.getData().size()) {
+	    EmsMessage::ErrorRecord *record = (EmsMessage::ErrorRecord *) &message.getData().at(offset);
+	    std::string response = buildErrorMessageResponse(record);
+
+	    if (!response.empty()) {
+		respond(response);
+	    }
+	    m_responseCounter++;
+	    offset += 12;
 	}
-	m_responseCounter++;
 
 	if (m_responseCounter < 4) {
 	    handleGetErrorsCommand(m_responseCounter);
@@ -449,62 +457,31 @@ CommandConnection::responseTimeout(const boost::system::error_code& error)
 }
 
 std::string
-CommandConnection::buildErrorMessageResponse(const std::vector<uint8_t>& data)
+CommandConnection::buildErrorMessageResponse(const EmsMessage::ErrorRecord *record)
 {
-    if (data.size() < 12) {
-	/* incomplete response */
-	return "";
-    }
-    if (data[0] == 0) {
+    if (record->errorAscii[0] == 0) {
 	/* no error at this position */
 	return "";
     }
 
     std::ostringstream response;
 
-    /*
-     * Response example:
-     * 0x35, 0x31, 0x03, 0x2e, 0x89, 0x08, 0x16, 0x1c, 0x0d, 0x00, 0x00, 0x30
-     *
-     * 0x35 0x31 -> A51
-     * 0x03 0x2e -> 0x32e -> error code 814
-     * 0x89 -> 0x80 = has date, 0x09 = 2009
-     * 0x08 -> August
-     * 0x16 -> hour 22
-     * 0x1c -> day 28
-     * 0x0d -> minute 13
-     * 0x00 0x00 -> 0x0 -> error still ongoing (otherwise duration)
-     * 0x30 -> error source
-     */
-
-    if (data[4] & 0x80) {
-	/* has date */
-	int year = 2000 + (data[4] & 0x7f);
-	int month = data[5];
-	int day = data[7];
-	int hour = data[6];
-	int minute = data[8];
-
-	response << std::setw(2) << std::setfill('0') << day << "-";
-	response << std::setw(2) << std::setfill('0') << month << "-";
-	response << std::setw(4) << year << ";";
-	response << std::setw(2) << std::setfill('0') << hour << "-";
-	response << std::setw(2) << std::setfill('0') << minute;
+    if (record->hasDate) {
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->day << "-";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->month << "-";
+	response << std::setw(4) << (unsigned int) (2000 + record->year) << ";";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << "-";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->minute;
     } else {
 	response  << "---";
     }
 
     response << ";";
-    response << std::hex << (unsigned int) data[11] << ";";
+    response << std::hex << (unsigned int) record->source << ";";
 
-    /* code */
-    response << std::dec << data[0] << data[1] << ";";
-
-    unsigned int code = (((unsigned int) data[2]) << 8) + data[3];
-    response << code << ";";
-
-    unsigned int duration = (((unsigned int) data[9]) << 8) + data[10];
-    response << duration;
+    response << std::dec << record->errorAscii[0] << record->errorAscii[1] << ";";
+    response << __be16_to_cpu(record->code_be16) << ";";
+    response << __be16_to_cpu(record->durationMinutes_be16);
 
     return response.str();
 }

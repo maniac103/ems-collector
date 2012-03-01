@@ -57,7 +57,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
 
-	std::string buildErrorMessageResponse(const std::vector<uint8_t>& data);
+	std::string buildErrorMessageResponse(const EmsMessage::ErrorRecord *record);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
