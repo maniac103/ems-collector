@@ -64,6 +64,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 		boost::bind(&CommandConnection::handleWrite, shared_from_this(),
 			    boost::asio::placeholders::error));
 	}
+	void scheduleResponseTimeout();
+	void responseTimeout(const boost::system::error_code& error);
 	CommandResult sendCommand(const std::vector<uint8_t>& data);
 
     private:
@@ -72,6 +74,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
 	bool m_waitingForResponse;
+	boost::asio::deadline_timer m_responseTimeout;
 	unsigned int m_responseCounter;
 };
 

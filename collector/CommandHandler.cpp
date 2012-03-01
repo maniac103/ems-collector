@@ -75,6 +75,7 @@ CommandConnection::CommandConnection(CommandHandler& handler,
     m_cmdSocket(cmdSocket),
     m_handler(handler),
     m_waitingForResponse(false),
+    m_responseTimeout(ioService),
     m_responseCounter(0)
 {
 }
@@ -392,8 +393,8 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
 	return result;
     }
 
-    m_waitingForResponse = true;
     m_responseCounter = offset;
+    scheduleResponseTimeout();
 
     /* TODO: timeout & retry */
 
@@ -403,10 +404,16 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
 void
 CommandConnection::handlePcMessage(const EmsMessage& message)
 {
+    if (!m_waitingForResponse) {
+	return;
+    }
+
     if (message.getSource() == EmsMessage::addressRC && message.getType() == 0x12) {
 	/* strip offset */
 	std::vector<uint8_t> data(message.getData().begin() + 1, message.getData().end());
 	std::string response = buildErrorMessageResponse(data);
+
+	m_responseTimeout.cancel();
 
 	if (!response.empty()) {
 	    respond(response);
@@ -415,10 +422,29 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 
 	if (m_responseCounter < 4) {
 	    handleGetErrorsCommand(m_responseCounter);
+	    scheduleResponseTimeout();
 	} else {
 	    m_waitingForResponse = false;
 	    respond("OK");
 	}
+    }
+}
+
+void
+CommandConnection::scheduleResponseTimeout()
+{
+    m_waitingForResponse = true;
+    m_responseTimeout.expires_from_now(boost::posix_time::seconds(1));
+    m_responseTimeout.async_wait(boost::bind(&CommandConnection::responseTimeout,
+					     this, boost::asio::placeholders::error));
+}
+
+void
+CommandConnection::responseTimeout(const boost::system::error_code& error)
+{
+    if (m_waitingForResponse && error != boost::asio::error::operation_aborted) {
+	respond("ERRTIMEOUT");
+	m_waitingForResponse = false;
     }
 }
 
