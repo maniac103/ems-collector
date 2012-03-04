@@ -44,9 +44,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	typedef enum {
 	    Ok,
 	    InvalidCmd,
-	    InvalidArgs,
-	    Failed,
-	    Waiting
+	    InvalidArgs
 	} CommandResult;
 
 	CommandResult handleCommand(std::istream& request);
@@ -66,7 +64,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	}
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
-	CommandResult sendCommand(const std::vector<uint8_t>& data);
+	void sendCommand(const std::vector<uint8_t>& data);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
