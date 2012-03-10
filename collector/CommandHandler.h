@@ -9,6 +9,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include "EmsMessage.h"
+#include "TcpHandler.h"
 
 class CommandHandler;
 
@@ -19,9 +20,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	typedef boost::shared_ptr<CommandConnection> Ptr;
 
     public:
-	CommandConnection(CommandHandler& handler,
-			  boost::asio::io_service& ioService,
-			  boost::asio::ip::tcp::socket& cmdSocket);
+	CommandConnection(CommandHandler& handler);
 
     public:
 	boost::asio::ip::tcp::socket& socket() {
@@ -64,11 +63,12 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	}
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
-	void sendCommand(const std::vector<uint8_t>& data);
+	void sendCommand(uint8_t dest, uint8_t type,
+			 const uint8_t *data, size_t count,
+			 bool expectResponse = false);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
-	boost::asio::ip::tcp::socket& m_cmdSocket;
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
 	bool m_waitingForResponse;
@@ -79,8 +79,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 class CommandHandler : private boost::noncopyable
 {
     public:
-	CommandHandler(boost::asio::io_service& ioService,
-		       boost::asio::ip::tcp::socket& cmdSocket,
+	CommandHandler(TcpHandler& handler,
 		       boost::asio::ip::tcp::endpoint& endpoint);
 	~CommandHandler();
 
@@ -88,6 +87,9 @@ class CommandHandler : private boost::noncopyable
 	void startConnection(CommandConnection::Ptr connection);
 	void stopConnection(CommandConnection::Ptr connection);
 	void handlePcMessage(const EmsMessage& message);
+	TcpHandler& getHandler() const {
+	    return m_handler;
+	}
 
     private:
 	void handleAccept(CommandConnection::Ptr connection,
@@ -95,8 +97,7 @@ class CommandHandler : private boost::noncopyable
 	void startAccepting();
 
     private:
-	boost::asio::io_service& m_service;
-	boost::asio::ip::tcp::socket& m_cmdSocket;
+	TcpHandler& m_handler;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;
 };

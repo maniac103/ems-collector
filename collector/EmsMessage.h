@@ -8,7 +8,9 @@
 class EmsMessage
 {
     public:
-	EmsMessage(Database& db, const std::vector<uint8_t>& data);
+	EmsMessage(Database *db, const std::vector<uint8_t>& data);
+	EmsMessage(uint8_t dest, uint8_t type, const std::vector<uint8_t>& data, bool expectResponse);
+
 	void handle();
 
     public:
@@ -31,6 +33,7 @@ class EmsMessage
 	const std::vector<uint8_t>& getData() const {
 	    return m_data;
 	}
+	std::vector<uint8_t> getSendData() const;
 
     public:
 #pragma pack(push,1)
@@ -78,7 +81,7 @@ class EmsMessage
 				  Database::StateSensors sensor);
 
     private:
-	Database& m_db;
+	Database *m_db;
 	std::vector<unsigned char> m_data;
 	uint8_t m_source;
 	uint8_t m_dest;

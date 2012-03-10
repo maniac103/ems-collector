@@ -18,7 +18,7 @@
 	return;                                            \
     }
 
-EmsMessage::EmsMessage(Database& db, const std::vector<uint8_t>& data) :
+EmsMessage::EmsMessage(Database *db, const std::vector<uint8_t>& data) :
     m_db(db),
     m_data(data)
 {
@@ -32,6 +32,30 @@ EmsMessage::EmsMessage(Database& db, const std::vector<uint8_t>& data) :
 	m_dest = 0;
 	m_type = 0;
     }
+}
+
+EmsMessage::EmsMessage(uint8_t dest, uint8_t type,
+		       const std::vector<uint8_t>& data,
+		       bool expectResponse) :
+    m_db(NULL),
+    m_data(data),
+    m_source(addressPC),
+    m_dest(dest | (expectResponse ? 0x80 : 0)),
+    m_type(type)
+{
+}
+
+std::vector<uint8_t>
+EmsMessage::getSendData() const
+{
+    std::vector<uint8_t> data;
+
+    /* own address omitted on send */
+    data.push_back(m_dest);
+    data.push_back(m_type);
+    data.insert(data.end(), m_data.begin(), m_data.end());
+
+    return data;
 }
 
 void
@@ -189,8 +213,8 @@ EmsMessage::printNumberAndAddToDb(size_t offset, size_t size, int divider,
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: " << name << " = " << floatVal << " " << unit << std::endl;
     }
-    if (sensor != Database::NumericSensorLast) {
-	m_db.addSensorValue(sensor, floatVal);
+    if (m_db && sensor != Database::NumericSensorLast) {
+	m_db->addSensorValue(sensor, floatVal);
     }
 }
 
@@ -205,8 +229,8 @@ EmsMessage::printBoolAndAddToDb(int byte, int bit, const char *name,
 			     << (flagSet ? "AN" : "AUS") << std::endl;
     }
 
-    if (sensor != Database::BooleanSensorLast) {
-	m_db.addSensorValue(sensor, flagSet);
+    if (m_db && sensor != Database::BooleanSensorLast) {
+	m_db->addSensorValue(sensor, flagSet);
     }
 }
 
@@ -218,8 +242,8 @@ EmsMessage::printStateAndAddToDb(const std::string& value, const char *name,
 	Options::dataDebug() << "DATA: " << name << " = " << value << std::endl;
     }
 
-    if (sensor != Database::StateSensorLast) {
-	m_db.addSensorValue(sensor, value);
+    if (m_db && sensor != Database::StateSensorLast) {
+	m_db->addSensorValue(sensor, value);
     }
 }
 

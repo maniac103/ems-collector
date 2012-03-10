@@ -2,14 +2,16 @@
 #define __TCPHANDLER_H__
 
 #include "IoHandler.h"
-#include "CommandHandler.h"
 #include <boost/shared_ptr.hpp>
+
+class CommandHandler;
 
 class TcpHandler : public IoHandler
 {
     public:
 	TcpHandler(const std::string& host, const std::string& port, Database& db);
 	~TcpHandler();
+	void sendMessage(const EmsMessage& msg);
 
     protected:
 	virtual void readStart() {

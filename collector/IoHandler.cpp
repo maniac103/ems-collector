@@ -70,7 +70,7 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		break;
 	    case Checksum:
 		if (m_checkSum == dataByte) {
-		    EmsMessage message(m_db, m_data);
+		    EmsMessage message(&m_db, m_data);
 		    message.handle();
 		    if (message.getDestination() == EmsMessage::addressPC && m_pcMessageCallback) {
 			m_pcMessageCallback(message);

@@ -4,12 +4,10 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
 
-CommandHandler::CommandHandler(boost::asio::io_service& ioService,
-			       boost::asio::ip::tcp::socket& cmdSocket,
+CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
-    m_service(ioService),
-    m_cmdSocket(cmdSocket),
-    m_acceptor(ioService, endpoint)
+    m_handler(handler),
+    m_acceptor(handler, endpoint)
 {
     startAccepting();
 }
@@ -62,21 +60,18 @@ CommandHandler::handlePcMessage(const EmsMessage& message)
 void
 CommandHandler::startAccepting()
 {
-    CommandConnection::Ptr connection(new CommandConnection(*this, m_service, m_cmdSocket));
+    CommandConnection::Ptr connection(new CommandConnection(*this));
     m_acceptor.async_accept(connection->socket(),
 		            boost::bind(&CommandHandler::handleAccept, this,
 					connection, boost::asio::placeholders::error));
 }
 
 
-CommandConnection::CommandConnection(CommandHandler& handler,
-				     boost::asio::io_service& ioService,
-				     boost::asio::ip::tcp::socket& cmdSocket) :
-    m_socket(ioService),
-    m_cmdSocket(cmdSocket),
+CommandConnection::CommandConnection(CommandHandler& handler) :
+    m_socket(handler.getHandler()),
     m_handler(handler),
     m_waitingForResponse(false),
-    m_responseTimeout(ioService),
+    m_responseTimeout(handler.getHandler()),
     m_responseCounter(0)
 {
 }
@@ -147,34 +142,31 @@ CommandConnection::handleCommand(std::istream& request)
 }
 
 CommandConnection::CommandResult
-CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
+CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 {
     std::string cmd;
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<uint8_t> data = { 0x10, base, 0x07 };
+	uint8_t data[2];
 	std::string mode;
 
 	request >> mode;
 
-	if (mode == "day") {
-	    data.push_back(0x01);
-	} else if (mode == "night") {
-	    data.push_back(0x00);
-	} else if (mode == "auto") {
-	    data.push_back(0x02);
-	} else {
-	    return InvalidArgs;
-	}
-	sendCommand(data);
+	data[0] = 0x07;
+	if (mode == "day")        data[1] = 0x01;
+	else if (mode == "night") data[1] = 0x00;
+	else if (mode == "auto")  data[1] = 0x02;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
 	return Ok;
     } else if (cmd == "daytemperature") {
-	return handleHkTemperatureCommand(request, base, 0x02);
+	return handleHkTemperatureCommand(request, type, 0x02);
     } else if (cmd == "nighttemperature") {
-	return handleHkTemperatureCommand(request, base, 0x01);
+	return handleHkTemperatureCommand(request, type, 0x01);
     } else if (cmd == "holidaytemperature") {
-	return handleHkTemperatureCommand(request, base, 0x07);
+	return handleHkTemperatureCommand(request, type, 0x07);
     } else if (cmd == "holidaymode") {
 	/* TODO */
 	return InvalidCmd;
@@ -182,7 +174,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	/* TODO */
 	return InvalidCmd;
     } else if (cmd == "partymode") {
-	std::vector<uint8_t> data = { 0x10, base, 0x56 };
+	uint8_t data[2];
 	unsigned int hours;
 
 	request >> hours;
@@ -190,8 +182,10 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 	if (!request || hours > 99) {
 	    return InvalidArgs;
 	}
-	data.push_back(hours);
-	sendCommand(data);
+	data[0] = 0x56;
+	data[1] = hours;
+
+	sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
 	return Ok;
     }
 
@@ -199,9 +193,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t base)
 }
 
 CommandConnection::CommandResult
-CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd)
+CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t type, uint8_t cmd)
 {
-    std::vector<uint8_t> data = { 0x10, base, cmd };
+    uint8_t data[2];
     float value;
     uint8_t valueByte;
 
@@ -219,8 +213,9 @@ CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t bas
 	return InvalidArgs;
     }
 
-    data.push_back(valueByte);
-    sendCommand(data);
+    data[0] = cmd;
+    data[1] = valueByte;
+    sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
     return Ok;
 }
 
@@ -235,24 +230,21 @@ CommandConnection::handleWwCommand(std::istream& request)
     } else if (cmd == "zirkpump") {
 	return handleZirkPumpCommand(request);
     } else if (cmd == "mode") {
-	std::vector<uint8_t> data = { 0x10, 0x37, 0x02 };
+	uint8_t data[2];
 	std::string mode;
 
 	request >> mode;
 
-	if (mode == "on") {
-	    data.push_back(0x01);
-	} else if (mode == "off") {
-	    data.push_back(0x00);
-	} else if (mode == "auto") {
-	    data.push_back(0x02);
-	} else {
-	    return InvalidArgs;
-	}
-	sendCommand(data);
+	data[0] = 0x02;
+	if (mode == "on")        data[1] = 0x01;
+	else if (mode == "off")  data[1] = 0x00;
+	else if (mode == "auto") data[1] = 0x02;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, data, sizeof(data));
 	return Ok;
     } else if (cmd == "temperature") {
-	std::vector<uint8_t> data = { 0x08, 0x33, 0x02 };
+	uint8_t data[2];
 	unsigned int temperature;
 
 	request >> temperature;
@@ -260,9 +252,10 @@ CommandConnection::handleWwCommand(std::istream& request)
 	if (!request || temperature < 30 || temperature > 60) {
 	    return InvalidArgs;
 	}
-	data.push_back(temperature);
 
-	sendCommand(data);
+	data[0] = 0x02;
+	data[1] = temperature;
+	sendCommand(EmsMessage::addressUBA, 0x33, data, sizeof(data));
 	return Ok;
     }
 
@@ -276,49 +269,39 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<uint8_t> data = { 0x10, 0x37, 0x04 };
+	uint8_t data[2];
 	std::string mode;
 
 	request >> mode;
 
-	if (mode == "on") {
-	    data.push_back(0xff);
-	} else if (mode == "off") {
-	    data.push_back(0x00);
-	} else {
-	    return InvalidArgs;
-	}
-	sendCommand(data);
+	data[0] = 0x04;
+	if (mode == "on")       data[1] = 0xff;
+	else if (mode == "off") data[1] = 0x00;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, data, sizeof(data));
 	return Ok;
     } else if (cmd == "day") {
-	std::vector<uint8_t> data = { 0x10, 0x37, 0x05 };
+	uint8_t data[2];
 	std::string day;
 
 	request >> day;
 
-	if (day == "monday") {
-	    data.push_back(0x00);
-	} else if (day == "tuesday") {
-	    data.push_back(0x01);
-	} else if (day == "wednesday") {
-	    data.push_back(0x02);
-	} else if (day == "thursday") {
-	    data.push_back(0x03);
-	} else if (day == "friday") {
-	    data.push_back(0x04);
-	} else if (day == "saturday") {
-	    data.push_back(0x05);
-	} else if (day == "sunday") {
-	    data.push_back(0x06);
-	} else if (day == "everyday") {
-	    data.push_back(0x07);
-	} else {
-	    return InvalidArgs;
-	}
-	sendCommand(data);
+	data[0] = 0x05;
+	if (day == "monday")         data[1] = 0x00;
+	else if (day == "tuesday")   data[1] = 0x01;
+	else if (day == "wednesday") data[1] = 0x02;
+	else if (day == "thursday")  data[1] = 0x03;
+	else if (day == "friday")    data[1] = 0x04;
+	else if (day == "saturday")  data[1] = 0x05;
+	else if (day == "sunday")    data[1] = 0x06;
+	else if (day == "everyday")  data[1] = 0x07;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, data, sizeof(data));
 	return Ok;
     } else if (cmd == "temperature") {
-	std::vector<uint8_t> data = { 0x08, 0x33, 0x08 };
+	uint8_t data[2];
 	unsigned int temperature;
 
 	request >> temperature;
@@ -326,9 +309,10 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	if (!request || temperature < 60 || temperature > 80) {
 	    return InvalidArgs;
 	}
-	data.push_back(temperature);
 
-	sendCommand(data);
+	data[0] = 0x08;
+	data[1] = temperature;
+	sendCommand(EmsMessage::addressUBA, 0x33, data, sizeof(data));
 	return Ok;
     }
 
@@ -342,42 +326,40 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
     request >> cmd;
 
     if (cmd == "mode") {
-	std::vector<uint8_t> data = { 0x10, 0x37, 0x03 };
+	uint8_t data[2];
 	std::string mode;
 
 	request >> mode;
 
-	if (mode == "on") {
-	    data.push_back(0x01);
-	} else if (mode == "off") {
-	    data.push_back(0x00);
-	} else if (mode == "auto") {
-	    data.push_back(0x02);
-	} else {
-	    return InvalidArgs;
-	}
-	sendCommand(data);
+	data[0] = 0x03;
+	if (mode == "on")        data[1] = 0x01;
+	else if (mode == "off")  data[1] = 0x00;
+	else if (mode == "auto") data[1] = 0x02;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, data, sizeof(data));
 	return Ok;
     } else if (cmd == "count") {
-	std::vector<uint8_t> data = { 0x08, 0x33, 0x07 };
+	uint8_t data[2];
 	std::string countString;
 
 	request >> countString;
 
+	data[0] = 0x07;
 	if (countString == "alwayson") {
-	    data.push_back(0x07);
+	    data[1] = 0x07;
 	} else {
 	    try {
 		unsigned int count = boost::lexical_cast<unsigned int>(countString);
 		if (count < 1 || count > 6) {
 		    return InvalidArgs;
 		}
-		data.push_back(count);
+		data[1] = count;
 	    } catch (boost::bad_lexical_cast& e) {
 		return InvalidArgs;
 	    }
 	}
-	sendCommand(data);
+	sendCommand(EmsMessage::addressUBA, 0x33, data, sizeof(data));
 	return Ok;
     }
 
@@ -392,10 +374,10 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
      */
     const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
     uint8_t offsetBytes = (uint8_t) (offset * msgSize);
-    std::vector<uint8_t> data = { 0x90, 0x12, offsetBytes, 2 * msgSize };
+    uint8_t data[] = { offsetBytes, 2 * msgSize };
 
     m_responseCounter = offset;
-    sendCommand(data);
+    sendCommand(EmsMessage::addressRC, 0x12, data, sizeof(data), true);
 
     return Ok;
 }
@@ -488,12 +470,12 @@ CommandConnection::buildErrorMessageResponse(const EmsMessage::ErrorRecord *reco
 }
 
 void
-CommandConnection::sendCommand(const std::vector<uint8_t>& data)
+CommandConnection::sendCommand(uint8_t dest, uint8_t type,
+			       const uint8_t *data, size_t count,
+			       bool expectResponse)
 {
-    boost::system::error_code error;
+    EmsMessage msg(dest, type, std::vector<uint8_t>(data, data + count), expectResponse);
 
     scheduleResponseTimeout();
-
-    boost::asio::write(m_cmdSocket, boost::asio::buffer(data),
-		       boost::asio::transfer_all(), error);
+    m_handler.getHandler().sendMessage(msg);
 }
