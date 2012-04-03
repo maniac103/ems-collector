@@ -89,12 +89,7 @@ IoHandler::readComplete(const boost::system::error_code& error,
 void
 IoHandler::doClose(const boost::system::error_code& error)
 {
-    if (error == boost::asio::error::operation_aborted) {
-	/* if this call is the result of a timer cancel() */
-	return; // ignore it because the connection cancelled the timer
-    }
-
-    if (error) {
+    if (error && error != boost::asio::error::operation_aborted) {
 	std::cerr << "Error: " << error.message() << std::endl;
     }
 
