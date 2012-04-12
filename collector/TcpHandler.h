@@ -23,12 +23,16 @@ class TcpHandler : public IoHandler
 	}
 
 	virtual void doCloseImpl();
+	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
 
     private:
 	void handleConnect(const boost::system::error_code& error);
+	void resetWatchdog();
+	void watchdogTimeout(const boost::system::error_code& error);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
+	boost::asio::deadline_timer m_watchdog;
 	boost::shared_ptr<CommandHandler> m_cmdHandler;
 };
 

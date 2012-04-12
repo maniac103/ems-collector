@@ -7,7 +7,8 @@ TcpHandler::TcpHandler(const std::string& host,
 		       const std::string& port,
 		       Database& db) :
     IoHandler(db),
-    m_socket(*this)
+    m_socket(*this),
+    m_watchdog(*this)
 {
     boost::asio::ip::tcp::resolver resolver(*this);
     boost::asio::ip::tcp::resolver::query query(host, port);
@@ -35,13 +36,38 @@ TcpHandler::handleConnect(const boost::system::error_code& error)
 	m_cmdHandler.reset(new CommandHandler(*this, cmdEndpoint));
 	m_pcMessageCallback = boost::bind(&CommandHandler::handlePcMessage,
 					  m_cmdHandler, _1);
+	resetWatchdog();
 	readStart();
     }
 }
 
 void
+TcpHandler::resetWatchdog()
+{
+    m_watchdog.expires_from_now(boost::posix_time::minutes(2));
+    m_watchdog.async_wait(boost::bind(&TcpHandler::watchdogTimeout, this,
+				      boost::asio::placeholders::error));
+}
+
+void
+TcpHandler::watchdogTimeout(const boost::system::error_code& error)
+{
+    if (error != boost::asio::error::operation_aborted) {
+	doClose(error);
+    }
+}
+
+void
+TcpHandler::readComplete(const boost::system::error_code& error, size_t bytesTransferred)
+{
+    resetWatchdog();
+    IoHandler::readComplete(error, bytesTransferred);
+}
+
+void
 TcpHandler::doCloseImpl()
 {
+    m_watchdog.cancel();
     m_cmdHandler.reset();
     m_pcMessageCallback.clear();
     m_socket.close();

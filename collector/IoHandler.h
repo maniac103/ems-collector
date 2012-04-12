@@ -30,7 +30,7 @@ class IoHandler : public boost::asio::io_service
 	virtual void readStart() = 0;
 	virtual void doCloseImpl() = 0;
 
-	void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
+	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
 	void doClose(const boost::system::error_code& error);
 
 	bool m_active;
