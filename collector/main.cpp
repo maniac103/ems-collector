@@ -96,13 +96,13 @@ int main(int argc, char *argv[])
 
 	    pthread_sigmask(SIG_BLOCK, &waitMask, 0);
 
-	    while (handler->active()) {
+	    do {
 		if (sigtimedwait(&waitMask, &info, &pollTimeout) >= 0) {
 		    running = false;
 		    handler->close();
 		    break;
 		}
-	    }
+	    } while (handler->active());
 
 	    t.join();
 	    /* wait some time until retrying */

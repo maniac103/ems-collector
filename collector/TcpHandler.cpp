@@ -10,13 +10,18 @@ TcpHandler::TcpHandler(const std::string& host,
     m_socket(*this),
     m_watchdog(*this)
 {
+    boost::system::error_code error;
     boost::asio::ip::tcp::resolver resolver(*this);
     boost::asio::ip::tcp::resolver::query query(host, port);
-    boost::asio::ip::tcp::resolver::iterator endpoint = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::iterator endpoint = resolver.resolve(query, error);
 
-    m_socket.async_connect(*endpoint,
-			   boost::bind(&TcpHandler::handleConnect, this,
-				       boost::asio::placeholders::error));
+    if (error) {
+	doClose(error);
+    } else {
+	m_socket.async_connect(*endpoint,
+			       boost::bind(&TcpHandler::handleConnect, this,
+					   boost::asio::placeholders::error));
+    }
 }
 
 TcpHandler::~TcpHandler()
