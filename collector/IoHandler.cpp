@@ -114,4 +114,5 @@ IoHandler::doClose(const boost::system::error_code& error)
 
     doCloseImpl();
     m_active = false;
+    stop();
 }
