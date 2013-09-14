@@ -115,6 +115,11 @@ EmsMessage::handle()
 	return;
     }
 
+    if (m_dest == addressPC) {
+	/* don't handle responses that were meant for ourself */
+	return;
+    }
+
     switch (m_source) {
 	case addressUBA:
 	    /* UBA message */
