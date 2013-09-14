@@ -68,6 +68,12 @@ class EmsMessage
 	    uint16_t durationMinutes_be16;
 	    uint8_t source;
 	} ErrorRecord;
+
+	typedef struct {
+	    uint8_t on : 4;
+	    uint8_t day : 4;
+	    uint8_t time;
+	} ScheduleEntry;
 #pragma pack(pop)
 
     private:

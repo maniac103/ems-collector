@@ -90,6 +90,7 @@ CommandConnection::CommandConnection(CommandHandler& handler) :
     m_socket(handler.getHandler()),
     m_handler(handler),
     m_waitingForResponse(false),
+    m_nextCommandTimer(handler.getHandler()),
     m_responseTimeout(handler.getHandler()),
     m_responseCounter(0)
 {
@@ -154,7 +155,8 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "ww") {
 	return handleWwCommand(request);
     } else if (category == "geterrors") {
-	return handleGetErrorsCommand(0);
+	handleGetErrorsCommand(0);
+	return Ok;
     }
 
     return InvalidCmd;
@@ -205,6 +207,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	data[1] = hours;
 
 	sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
+	return Ok;
+    } else if (cmd == "getschedule") {
+	handleGetScheduleCommand(type + 2, 0);
 	return Ok;
     }
 
@@ -385,7 +390,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
     return InvalidCmd;
 }
 
-CommandConnection::CommandResult
+void
 CommandConnection::handleGetErrorsCommand(unsigned int offset)
 {
     /* Service Key: 0x04 0x10 0x12 = 0x04 0xXX 0xYY
@@ -397,8 +402,18 @@ CommandConnection::handleGetErrorsCommand(unsigned int offset)
 
     m_responseCounter = offset;
     sendCommand(EmsMessage::addressRC, 0x12, data, sizeof(data), true);
+}
 
-    return Ok;
+void
+CommandConnection::handleGetScheduleCommand(uint8_t type, unsigned int offset)
+{
+    const size_t msgSize = sizeof(EmsMessage::ScheduleEntry);
+    uint8_t offsetBytes = (uint8_t) (offset * msgSize);
+    uint8_t data[] = { offsetBytes, 14 * msgSize };
+
+    m_responseCounter = offset;
+
+    sendCommand(EmsMessage::addressRC, type, data, sizeof(data), true);
 }
 
 void
@@ -412,28 +427,68 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	m_waitingForResponse = false;
 	respond(message.getData().at(0) == 0x04 ? "FAIL" : "OK");
     }
-    if (message.getSource() == EmsMessage::addressRC && message.getType() == 0x12) {
+    if (message.getSource() == EmsMessage::addressRC) {
 	/* strip offset */
 	size_t offset = 1;
-	const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
+	bool done = false;
 
 	m_responseTimeout.cancel();
 
-	while (offset + msgSize <= message.getData().size()) {
-	    EmsMessage::ErrorRecord *record = (EmsMessage::ErrorRecord *) &message.getData().at(offset);
-	    std::string response = buildErrorMessageResponse(record);
+	switch (message.getType()) {
+	    case 0x12: /* get errors */ {
+		const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
+		while (offset + msgSize <= message.getData().size()) {
+		    EmsMessage::ErrorRecord *record = (EmsMessage::ErrorRecord *) &message.getData().at(offset);
+		    std::string response = buildErrorMessageResponse(record);
 
-	    if (!response.empty()) {
-		respond(response);
+		    if (!response.empty()) {
+			respond(response);
+		    }
+		    m_responseCounter++;
+		    offset += msgSize;
+		}
+
+		if (m_responseCounter < 4) {
+		    m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
+		    m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetErrorsCommand,
+						  this, m_responseCounter));
+		} else {
+		    done = true;
+		}
+		break;
 	    }
-	    m_responseCounter++;
-	    offset += msgSize;
+	    case 0x3f: /* get schedule HK1 */
+	    case 0x49: /* get schedule HK2 */
+	    case 0x53: /* get schedule HK3 */
+	    case 0x5d: /* get schedule HK4 */ {
+		const size_t msgSize = sizeof(EmsMessage::ScheduleEntry);
+		bool hasUnassigned = false;
+
+		while (offset + msgSize <= message.getData().size()) {
+		    EmsMessage::ScheduleEntry *entry = (EmsMessage::ScheduleEntry *) &message.getData().at(offset);
+		    std::string response = buildScheduleEntryResponse(entry);
+
+		    if (!response.empty()) {
+			respond(response);
+		    } else {
+			hasUnassigned = true;
+		    }
+		    m_responseCounter++;
+		    offset += msgSize;
+		}
+
+		if (m_responseCounter < 42 && !hasUnassigned) {
+		    m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
+		    m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetScheduleCommand,
+						  this, message.getType(), m_responseCounter));
+		} else {
+		    done = true;
+		}
+		break;
+	    }
 	}
 
-	if (m_responseCounter < 4) {
-	    handleGetErrorsCommand(m_responseCounter);
-	    scheduleResponseTimeout();
-	} else {
+	if (done) {
 	    m_waitingForResponse = false;
 	    respond("OK");
 	}
@@ -484,6 +539,28 @@ CommandConnection::buildErrorMessageResponse(const EmsMessage::ErrorRecord *reco
     response << std::dec << record->errorAscii[0] << record->errorAscii[1] << ";";
     response << __be16_to_cpu(record->code_be16) << ";";
     response << __be16_to_cpu(record->durationMinutes_be16);
+
+    return response.str();
+}
+
+std::string
+CommandConnection::buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry)
+{
+    static const char * dayNames[] = {
+	"MO", "TU", "WE", "TH", "FR", "SA", "SU"
+    };
+
+    if (entry->time >= 0x90) {
+	/* unset */
+	return "";
+    }
+
+    std::ostringstream response;
+    unsigned int minutes = entry->time * 10;
+    response << dayNames[entry->day / 2] << ";";
+    response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
+    response << std::setw(2) << std::setfill('0') << (minutes % 60) << ";";
+    response << (entry->on ? "ON" : "OFF");
 
     return response.str();
 }

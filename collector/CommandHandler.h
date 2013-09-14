@@ -66,14 +66,16 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	} CommandResult;
 
 	CommandResult handleCommand(std::istream& request);
-	CommandResult handleGetErrorsCommand(unsigned int offset);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
+	void handleGetErrorsCommand(unsigned int offset);
+	void handleGetScheduleCommand(uint8_t type, unsigned int offset);
 
 	std::string buildErrorMessageResponse(const EmsMessage::ErrorRecord *record);
+	std::string buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
@@ -91,6 +93,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
 	bool m_waitingForResponse;
+	boost::asio::deadline_timer m_nextCommandTimer;
 	boost::asio::deadline_timer m_responseTimeout;
 	unsigned int m_responseCounter;
 };
