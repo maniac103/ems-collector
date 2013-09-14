@@ -76,6 +76,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 
 	std::string buildErrorMessageResponse(const EmsMessage::ErrorRecord *record);
 	std::string buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry);
+	std::string buildHolidayEntryResponse(const char *type, const EmsMessage::HolidayEntry *entry);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),

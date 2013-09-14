@@ -211,6 +211,12 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
     } else if (cmd == "getschedule") {
 	handleGetScheduleCommand(type + 2, 0);
 	return Ok;
+    } else if (cmd == "getholiday") {
+	const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
+	uint8_t data[] = { 87, 2 * msgSize };
+
+	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data), true);
+	return Ok;
     }
 
     return InvalidCmd;
@@ -423,9 +429,11 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	return;
     }
 
+    const std::vector<uint8_t>& data = message.getData();
+
     if (message.getDestination() == EmsMessage::addressPC && message.getType() == 0xff) {
 	m_waitingForResponse = false;
-	respond(message.getData().at(0) == 0x04 ? "FAIL" : "OK");
+	respond(data[0] == 0x04 ? "FAIL" : "OK");
     }
     if (message.getSource() == EmsMessage::addressRC) {
 	/* strip offset */
@@ -437,8 +445,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	switch (message.getType()) {
 	    case 0x12: /* get errors */ {
 		const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
-		while (offset + msgSize <= message.getData().size()) {
-		    EmsMessage::ErrorRecord *record = (EmsMessage::ErrorRecord *) &message.getData().at(offset);
+		while (offset + msgSize <= data.size()) {
+		    EmsMessage::ErrorRecord *record = (EmsMessage::ErrorRecord *) &data.at(offset);
 		    std::string response = buildErrorMessageResponse(record);
 
 		    if (!response.empty()) {
@@ -460,32 +468,46 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    case 0x3f: /* get schedule HK1 */
 	    case 0x49: /* get schedule HK2 */
 	    case 0x53: /* get schedule HK3 */
-	    case 0x5d: /* get schedule HK4 */ {
-		const size_t msgSize = sizeof(EmsMessage::ScheduleEntry);
-		bool hasUnassigned = false;
+	    case 0x5d: /* get schedule HK4 */
+		if (data[0] > 80) {
+		    /* it's at the end -> holiday schedule */
+		    const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
 
-		while (offset + msgSize <= message.getData().size()) {
-		    EmsMessage::ScheduleEntry *entry = (EmsMessage::ScheduleEntry *) &message.getData().at(offset);
-		    std::string response = buildScheduleEntryResponse(entry);
-
-		    if (!response.empty()) {
-			respond(response);
+		    if (data.size() > 2 * msgSize) {
+			EmsMessage::HolidayEntry *begin = (EmsMessage::HolidayEntry *) &data.at(offset);
+			EmsMessage::HolidayEntry *end = (EmsMessage::HolidayEntry *) &data.at(offset + msgSize);
+			respond(buildHolidayEntryResponse("BEGIN", begin));
+			respond(buildHolidayEntryResponse("END", end));
+			done = true;
 		    } else {
-			hasUnassigned = true;
+			respond("FAIL");
 		    }
-		    m_responseCounter++;
-		    offset += msgSize;
-		}
-
-		if (m_responseCounter < 42 && !hasUnassigned) {
-		    m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
-		    m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetScheduleCommand,
-						  this, message.getType(), m_responseCounter));
 		} else {
-		    done = true;
+		    /* it's at the beginning -> heating schedule */
+		    const size_t msgSize = sizeof(EmsMessage::ScheduleEntry);
+
+		    while (offset + msgSize <= data.size()) {
+			EmsMessage::ScheduleEntry *entry = (EmsMessage::ScheduleEntry *) &data.at(offset);
+			std::string response = buildScheduleEntryResponse(entry);
+
+			if (!response.empty()) {
+			    respond(response);
+			} else {
+			    done = true;
+			}
+			m_responseCounter++;
+			offset += msgSize;
+		    }
+
+		    if (m_responseCounter < 42 && !done) {
+			m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
+			m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetScheduleCommand,
+						      this, message.getType(), m_responseCounter));
+		    } else {
+			done = true;
+		    }
 		}
 		break;
-	    }
 	}
 
 	if (done) {
@@ -561,6 +583,19 @@ CommandConnection::buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *e
     response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
     response << std::setw(2) << std::setfill('0') << (minutes % 60) << ";";
     response << (entry->on ? "ON" : "OFF");
+
+    return response.str();
+}
+
+std::string
+CommandConnection::buildHolidayEntryResponse(const char *type, const EmsMessage::HolidayEntry *entry)
+{
+    std::ostringstream response;
+
+    response << type << ";";
+    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->day << "-";
+    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->month << "-";
+    response << std::setw(4) << (unsigned int) (2000 + entry->year);
 
     return response.str();
 }

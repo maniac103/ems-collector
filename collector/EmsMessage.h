@@ -74,6 +74,12 @@ class EmsMessage
 	    uint8_t day : 4;
 	    uint8_t time;
 	} ScheduleEntry;
+
+	typedef struct {
+	    uint8_t day;
+	    uint8_t month;
+	    uint8_t year;
+	} HolidayEntry;
 #pragma pack(pop)
 
     private:
