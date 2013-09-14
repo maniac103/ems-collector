@@ -21,6 +21,7 @@
 #include <iomanip>
 #include "TcpHandler.h"
 #include "CommandHandler.h"
+#include "Options.h"
 
 TcpHandler::TcpHandler(const std::string& host,
 		       const std::string& port,
@@ -101,6 +102,18 @@ void
 TcpHandler::sendMessage(const EmsMessage& msg)
 {
     boost::system::error_code error;
+    std::vector<uint8_t> sendData = msg.getSendData();
+    DebugStream& debug = Options::ioDebug();
+
+    if (debug) {
+	debug << "IO: Sending bytes ";
+	for (size_t i = 0; i < sendData.size(); i++) {
+	    debug << std::setfill('0') << std::setw(2)
+		  << std::showbase << std::hex
+		  << (unsigned int) sendData[i] << " ";
+	}
+	debug << std::endl;
+    }
 
     boost::asio::write(m_socket, boost::asio::buffer(msg.getSendData()),
 		       boost::asio::transfer_all(), error);
