@@ -117,8 +117,10 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
 	    case Ok:
 		break;
 	    case InvalidCmd:
-	    case InvalidArgs:
 		respond("ERRCMD");
+		break;
+	    case InvalidArgs:
+		respond("ERRARGS");
 		break;
 	}
     }
@@ -183,17 +185,15 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
 	return Ok;
     } else if (cmd == "daytemperature") {
-	return handleHkTemperatureCommand(request, type, 0x02);
+	return handleHkTemperatureCommand(request, type, 2);
     } else if (cmd == "nighttemperature") {
-	return handleHkTemperatureCommand(request, type, 0x01);
+	return handleHkTemperatureCommand(request, type, 1);
     } else if (cmd == "holidaytemperature") {
-	return handleHkTemperatureCommand(request, type, 0x07);
+	return handleHkTemperatureCommand(request, type, 3);
     } else if (cmd == "holidaymode") {
-	/* TODO */
-	return InvalidCmd;
+	return handleSetHolidayCommand(request, type + 2, 93);
     } else if (cmd == "vacationmode") {
-	/* TODO */
-	return InvalidCmd;
+	return handleSetHolidayCommand(request, type + 2, 87);
     } else if (cmd == "partymode") {
 	uint8_t data[2];
 	unsigned int hours;
@@ -203,10 +203,25 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!request || hours > 99) {
 	    return InvalidArgs;
 	}
-	data[0] = 0x56;
+	data[0] = 86;
 	data[1] = hours;
 
 	sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
+	return Ok;
+    } else if (cmd == "schedule") {
+	unsigned int index;
+	uint8_t data[1 + sizeof(EmsMessage::ScheduleEntry)];
+	EmsMessage::ScheduleEntry *entry = (EmsMessage::ScheduleEntry *) &data[1];
+
+	request >> index;
+
+	if (!request || index > 42 || !parseScheduleEntry(request, entry)) {
+	    return InvalidArgs;
+	}
+
+	data[0] = (index - 1) * sizeof(EmsMessage::ScheduleEntry);
+
+	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data));
 	return Ok;
     } else if (cmd == "getschedule") {
 	handleGetScheduleCommand(type + 2, 0);
@@ -223,14 +238,14 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 }
 
 CommandConnection::CommandResult
-CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t type, uint8_t cmd)
+CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t type, uint8_t offset)
 {
     uint8_t data[2];
     float value;
     uint8_t valueByte;
 
     request >> value;
-    if (request) {
+    if (!request) {
 	return InvalidArgs;
     }
 
@@ -243,8 +258,45 @@ CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t typ
 	return InvalidArgs;
     }
 
-    data[0] = cmd;
+    data[0] = offset;
     data[1] = valueByte;
+    sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
+    return Ok;
+}
+
+CommandConnection::CommandResult
+CommandConnection::handleSetHolidayCommand(std::istream& request, uint8_t type, uint8_t offset)
+{
+    uint8_t data[1 + 2 * sizeof(EmsMessage::HolidayEntry)];
+    std::string beginString, endString;
+    EmsMessage::HolidayEntry *begin = (EmsMessage::HolidayEntry *) &data[1];
+    EmsMessage::HolidayEntry *end = (EmsMessage::HolidayEntry *) &data[1 + sizeof(*begin)];
+
+    request >> beginString;
+    request >> endString;
+
+    if (!request) {
+	return InvalidArgs;
+    }
+
+    data[0] = offset;
+    if (!parseHolidayEntry(beginString, begin) || !parseHolidayEntry(endString, end)) {
+	return InvalidArgs;
+    }
+
+    /* make sure begin is not later than end */
+    if (begin->year > end->year) {
+	return InvalidArgs;
+    } else if (begin->year == end->year) {
+	if (begin->month > end->month) {
+	    return InvalidArgs;
+	} else if (begin->month == end->month) {
+	    if (begin->day > end->day) {
+		return InvalidArgs;
+	    }
+	}
+    }
+
     sendCommand(EmsMessage::addressRC, type, data, sizeof(data));
     return Ok;
 }
@@ -548,30 +600,30 @@ CommandConnection::buildErrorMessageResponse(const EmsMessage::ErrorRecord *reco
     if (record->hasDate) {
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->day << "-";
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->month << "-";
-	response << std::setw(4) << (unsigned int) (2000 + record->year) << ";";
+	response << std::setw(4) << (unsigned int) (2000 + record->year) << " ";
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << "-";
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->minute;
     } else {
 	response  << "---";
     }
 
-    response << ";";
-    response << std::hex << (unsigned int) record->source << ";";
+    response << " ";
+    response << std::hex << (unsigned int) record->source << " ";
 
-    response << std::dec << record->errorAscii[0] << record->errorAscii[1] << ";";
-    response << __be16_to_cpu(record->code_be16) << ";";
+    response << std::dec << record->errorAscii[0] << record->errorAscii[1] << " ";
+    response << __be16_to_cpu(record->code_be16) << " ";
     response << __be16_to_cpu(record->durationMinutes_be16);
 
     return response.str();
 }
 
+static const char * dayNames[] = {
+    "MO", "TU", "WE", "TH", "FR", "SA", "SU"
+};
+
 std::string
 CommandConnection::buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry)
 {
-    static const char * dayNames[] = {
-	"MO", "TU", "WE", "TH", "FR", "SA", "SU"
-    };
-
     if (entry->time >= 0x90) {
 	/* unset */
 	return "";
@@ -579,12 +631,69 @@ CommandConnection::buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *e
 
     std::ostringstream response;
     unsigned int minutes = entry->time * 10;
-    response << dayNames[entry->day / 2] << ";";
+    response << dayNames[entry->day / 2] << " ";
     response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
-    response << std::setw(2) << std::setfill('0') << (minutes % 60) << ";";
+    response << std::setw(2) << std::setfill('0') << (minutes % 60) << " ";
     response << (entry->on ? "ON" : "OFF");
 
     return response.str();
+}
+
+bool
+CommandConnection::parseScheduleEntry(std::istream& request, EmsMessage::ScheduleEntry *entry)
+{
+    std::string day, time, mode;
+
+    request >> day;
+    if (!request) {
+	return false;
+    }
+
+    if (day == "unset") {
+	entry->on = 7;
+	entry->day = 0xe;
+	entry->time = 0x90;
+	return true;
+    }
+
+    request >> time >> mode;
+    if (!request) {
+	return false;
+    }
+
+    if (mode == "ON") {
+	entry->on = 1;
+    } else if (mode == "OFF") {
+	entry->on = 0;
+    } else {
+	return false;
+    }
+
+    bool hasDay = false;
+    for (size_t i = 0; i < sizeof(dayNames) / sizeof(dayNames[0]); i++) {
+	if (day == dayNames[i]) {
+	    entry->day = 2 * i;
+	    hasDay = true;
+	    break;
+	}
+    }
+    if (!hasDay) {
+	return false;
+    }
+
+    size_t pos = time.find(":");
+    if (pos == std::string::npos) {
+	return false;
+    }
+    unsigned int hours = boost::lexical_cast<unsigned int>(time.substr(0, pos));
+    unsigned int minutes = boost::lexical_cast<unsigned int>(time.substr(pos + 1));
+    if (hours > 23 || minutes >= 60 || (minutes % 10) != 0) {
+	return false;
+    }
+
+    entry->time = (uint8_t) ((hours * 60 + minutes) / 10);
+
+    return true;
 }
 
 std::string
@@ -598,6 +707,33 @@ CommandConnection::buildHolidayEntryResponse(const char *type, const EmsMessage:
     response << std::setw(4) << (unsigned int) (2000 + entry->year);
 
     return response.str();
+}
+
+bool
+CommandConnection::parseHolidayEntry(const std::string& string, EmsMessage::HolidayEntry *entry)
+{
+    size_t pos = string.find('-');
+    if (pos == std::string::npos) {
+	return false;
+    }
+
+    size_t pos2 = string.find('-', pos + 1);
+    if (pos2 == std::string::npos) {
+	return false;
+    }
+
+    unsigned int year = boost::lexical_cast<unsigned int>(string.substr(0, pos));
+    unsigned int month = boost::lexical_cast<unsigned int>(string.substr(pos + 1, pos2 - pos - 1));
+    unsigned int day = boost::lexical_cast<unsigned int>(string.substr(pos2 + 1));
+    if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+	return false;
+    }
+
+    entry->year = (uint8_t) (year - 2000);
+    entry->month = (uint8_t) month;
+    entry->day = (uint8_t) day;
+
+    return true;
 }
 
 void

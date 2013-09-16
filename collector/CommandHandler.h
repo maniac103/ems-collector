@@ -67,7 +67,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 
 	CommandResult handleCommand(std::istream& request);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
-	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t cmd);
+	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t offset);
+	CommandResult handleSetHolidayCommand(std::istream& request, uint8_t type, uint8_t offset);
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
@@ -77,6 +78,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	std::string buildErrorMessageResponse(const EmsMessage::ErrorRecord *record);
 	std::string buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry);
 	std::string buildHolidayEntryResponse(const char *type, const EmsMessage::HolidayEntry *entry);
+	bool parseScheduleEntry(std::istream& request, EmsMessage::ScheduleEntry *entry);
+	bool parseHolidayEntry(const std::string& string, EmsMessage::HolidayEntry *entry);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
