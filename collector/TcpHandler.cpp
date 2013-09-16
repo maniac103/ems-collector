@@ -115,7 +115,7 @@ TcpHandler::sendMessage(const EmsMessage& msg)
 	debug << std::endl;
     }
 
-    boost::asio::write(m_socket, boost::asio::buffer(msg.getSendData()),
+    boost::asio::write(m_socket, boost::asio::buffer(sendData),
 		       boost::asio::transfer_all(), error);
 }
 
