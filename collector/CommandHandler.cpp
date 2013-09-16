@@ -601,7 +601,7 @@ CommandConnection::buildErrorMessageResponse(const EmsMessage::ErrorRecord *reco
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->day << "-";
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->month << "-";
 	response << std::setw(4) << (unsigned int) (2000 + record->year) << " ";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << "-";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << ":";
 	response << std::setw(2) << std::setfill('0') << (unsigned int) record->minute;
     } else {
 	response  << "---";
