@@ -75,9 +75,11 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void handleGetErrorsCommand(unsigned int offset);
 	void handleGetScheduleCommand(uint8_t type, unsigned int offset);
 
-	std::string buildErrorMessageResponse(const EmsMessage::ErrorRecord *record);
-	std::string buildScheduleEntryResponse(const EmsMessage::ScheduleEntry *entry);
-	std::string buildHolidayEntryResponse(const char *type, const EmsMessage::HolidayEntry *entry);
+	template<typename T> bool loopOverResponse(const std::vector<uint8_t>& data, size_t offset);
+	std::string buildRecordResponse(const EmsMessage::ErrorRecord *record);
+	std::string buildRecordResponse(const EmsMessage::ScheduleEntry *entry);
+	std::string buildRecordResponse(const char *type, const EmsMessage::HolidayEntry *entry);
+
 	bool parseScheduleEntry(std::istream& request, EmsMessage::ScheduleEntry *entry);
 	bool parseHolidayEntry(const std::string& string, EmsMessage::HolidayEntry *entry);
 
