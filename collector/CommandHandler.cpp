@@ -227,9 +227,15 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
     } else if (cmd == "getschedule") {
 	handleGetScheduleCommand(type + 2, 0);
 	return Ok;
-    } else if (cmd == "getholiday") {
+    } else if (cmd == "getvacation") {
 	const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
 	uint8_t data[] = { 87, 2 * msgSize };
+
+	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data), true);
+	return Ok;
+    } else if (cmd == "getholiday") {
+	const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
+	uint8_t data[] = { 93, 2 * msgSize };
 
 	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data), true);
 	return Ok;
