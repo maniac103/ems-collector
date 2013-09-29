@@ -72,7 +72,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
-	void handleGetErrorsCommand(unsigned int offset);
+	void handleGetErrorsCommand(uint8_t type, unsigned int offset);
 	void handleGetScheduleCommand(uint8_t type, unsigned int offset);
 
 	template<typename T> bool loopOverResponse(const std::vector<uint8_t>& data, size_t offset);

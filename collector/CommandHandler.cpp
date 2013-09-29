@@ -157,7 +157,8 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "ww") {
 	return handleWwCommand(request);
     } else if (category == "geterrors") {
-	handleGetErrorsCommand(0);
+	m_responseCounter = 0;
+	handleGetErrorsCommand(0x12, 0);
 	return Ok;
     }
 
@@ -449,17 +450,13 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 }
 
 void
-CommandConnection::handleGetErrorsCommand(unsigned int offset)
+CommandConnection::handleGetErrorsCommand(uint8_t type, unsigned int offset)
 {
-    /* Service Key: 0x04 0x10 0x12 = 0x04 0xXX 0xYY
-     * -> 0xXX | 0x80, 0xYY, 0x00, <maxlen>
-     */
     const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
     uint8_t offsetBytes = (uint8_t) (offset * msgSize);
     uint8_t data[] = { offsetBytes, 2 * msgSize };
 
-    m_responseCounter = offset;
-    sendCommand(EmsMessage::addressRC, 0x12, data, sizeof(data), true);
+    sendCommand(EmsMessage::addressRC, type, data, sizeof(data), true);
 }
 
 void
@@ -495,15 +492,18 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	m_responseTimeout.cancel();
 
 	switch (message.getType()) {
-	    case 0x12: /* get errors */ {
+	    case 0x12: /* get errors */
+	    case 0x13: /* get errors 2 */ {
 		done = loopOverResponse<EmsMessage::ErrorRecord>(data, offset);
 
-		if (m_responseCounter < 4) {
+		if (m_responseCounter >= 8) {
+		    done = true;
+		} else if (!done) {
+		    uint8_t type = m_responseCounter >= 4 ? 0x13 : 0x12;
+		    unsigned int offset = m_responseCounter % 4;
 		    m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
 		    m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetErrorsCommand,
-						  this, m_responseCounter));
-		} else {
-		    done = true;
+						  this, type, offset));
 		}
 		break;
 	    }
