@@ -40,6 +40,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 
     public:
 	CommandConnection(CommandHandler& handler);
+	~CommandConnection();
 
     public:
 	boost::asio::ip::tcp::socket& socket() {
@@ -72,10 +73,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
-	void handleGetErrorsCommand(uint8_t type, unsigned int offset);
-	void handleGetScheduleCommand(uint8_t type, unsigned int offset);
 
-	template<typename T> bool loopOverResponse(const std::vector<uint8_t>& data, size_t offset);
+	template<typename T> bool loopOverResponse();
 	std::string buildRecordResponse(const EmsMessage::ErrorRecord *record);
 	std::string buildRecordResponse(const EmsMessage::ScheduleEntry *entry);
 	std::string buildRecordResponse(const char *type, const EmsMessage::HolidayEntry *entry);
@@ -90,6 +89,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	}
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
+	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length, bool newRequest = true);
+	bool continueRequest();
 	void sendCommand(uint8_t dest, uint8_t type,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
@@ -99,9 +100,14 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
 	bool m_waitingForResponse;
-	boost::asio::deadline_timer m_nextCommandTimer;
 	boost::asio::deadline_timer m_responseTimeout;
 	unsigned int m_responseCounter;
+	std::vector<uint8_t> m_requestResponse;
+	size_t m_requestOffset;
+	size_t m_requestLength;
+	uint8_t m_requestDestination;
+	uint8_t m_requestType;
+	size_t m_parsePosition;
 };
 
 class CommandHandler : private boost::noncopyable
@@ -118,16 +124,23 @@ class CommandHandler : private boost::noncopyable
 	TcpHandler& getHandler() const {
 	    return m_handler;
 	}
+	void sendMessage(const EmsMessage& msg);
 
     private:
 	void handleAccept(CommandConnection::Ptr connection,
 			  const boost::system::error_code& error);
 	void startAccepting();
+	void doSendMessage(const EmsMessage& msg);
+
+    private:
+	static const long MinDistanceBetweenRequests = 100; /* ms */
 
     private:
 	TcpHandler& m_handler;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;
+	boost::asio::deadline_timer m_sendTimer;
+	std::map<uint8_t, boost::posix_time::ptime> m_lastCommTimes;
 };
 
 #endif /* __COMMANDHANDLER_H__ */

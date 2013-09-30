@@ -26,7 +26,8 @@
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_handler(handler),
-    m_acceptor(handler, endpoint)
+    m_acceptor(handler, endpoint),
+    m_sendTimer(handler)
 {
     startAccepting();
 }
@@ -37,6 +38,7 @@ CommandHandler::~CommandHandler()
     std::for_each(m_connections.begin(), m_connections.end(),
 		  boost::bind(&CommandConnection::close, _1));
     m_connections.clear();
+    m_sendTimer.cancel();
 }
 
 void
@@ -71,6 +73,8 @@ CommandHandler::stopConnection(CommandConnection::Ptr connection)
 void
 CommandHandler::handlePcMessage(const EmsMessage& message)
 {
+    m_lastCommTimes[message.getSource()] = boost::posix_time::microsec_clock::universal_time();
+
     std::for_each(m_connections.begin(), m_connections.end(),
 		  boost::bind(&CommandConnection::handlePcMessage,
 			      _1, message));
@@ -85,15 +89,48 @@ CommandHandler::startAccepting()
 					connection, boost::asio::placeholders::error));
 }
 
+void
+CommandHandler::sendMessage(const EmsMessage& msg)
+{
+    std::map<uint8_t, boost::posix_time::ptime>::iterator timeIter = m_lastCommTimes.find(msg.getDestination());
+    bool scheduled = false;
+
+    if (timeIter != m_lastCommTimes.end()) {
+	boost::posix_time::ptime now(boost::posix_time::microsec_clock::universal_time());
+	boost::posix_time::time_duration diff = now - timeIter->second;
+
+	if (diff.total_milliseconds() <= MinDistanceBetweenRequests) {
+	    m_sendTimer.expires_at(timeIter->second + boost::posix_time::milliseconds(MinDistanceBetweenRequests));
+	    m_sendTimer.async_wait(boost::bind(&CommandHandler::doSendMessage, this, msg));
+	    scheduled = true;
+	}
+    }
+    if (!scheduled) {
+	doSendMessage(msg);
+    }
+}
+
+void
+CommandHandler::doSendMessage(const EmsMessage& msg)
+{
+    m_handler.sendMessage(msg);
+    m_lastCommTimes[msg.getDestination()] = boost::posix_time::microsec_clock::universal_time();
+}
+
 
 CommandConnection::CommandConnection(CommandHandler& handler) :
     m_socket(handler.getHandler()),
     m_handler(handler),
     m_waitingForResponse(false),
-    m_nextCommandTimer(handler.getHandler()),
     m_responseTimeout(handler.getHandler()),
-    m_responseCounter(0)
+    m_responseCounter(0),
+    m_parsePosition(0)
 {
+}
+
+CommandConnection::~CommandConnection()
+{
+    m_responseTimeout.cancel();
 }
 
 void
@@ -157,8 +194,7 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "ww") {
 	return handleWwCommand(request);
     } else if (category == "geterrors") {
-	m_responseCounter = 0;
-	handleGetErrorsCommand(0x12, 0);
+	startRequest(EmsMessage::addressRC, 0x12, 0, 4 * sizeof(EmsMessage::ErrorRecord));
 	return Ok;
     }
 
@@ -225,19 +261,13 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data));
 	return Ok;
     } else if (cmd == "getschedule") {
-	handleGetScheduleCommand(type + 2, 0);
+	startRequest(EmsMessage::addressRC, type + 2, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
 	return Ok;
     } else if (cmd == "getvacation") {
-	const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
-	uint8_t data[] = { 87, 2 * msgSize };
-
-	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data), true);
+	startRequest(EmsMessage::addressRC, type + 2, 87, 2 * sizeof(EmsMessage::HolidayEntry));
 	return Ok;
     } else if (cmd == "getholiday") {
-	const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
-	uint8_t data[] = { 93, 2 * msgSize };
-
-	sendCommand(EmsMessage::addressRC, type + 2, data, sizeof(data), true);
+	startRequest(EmsMessage::addressRC, type + 2, 93, 2 * sizeof(EmsMessage::HolidayEntry));
 	return Ok;
     }
 
@@ -456,28 +486,6 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 }
 
 void
-CommandConnection::handleGetErrorsCommand(uint8_t type, unsigned int offset)
-{
-    const size_t msgSize = sizeof(EmsMessage::ErrorRecord);
-    uint8_t offsetBytes = (uint8_t) (offset * msgSize);
-    uint8_t data[] = { offsetBytes, 2 * msgSize };
-
-    sendCommand(EmsMessage::addressRC, type, data, sizeof(data), true);
-}
-
-void
-CommandConnection::handleGetScheduleCommand(uint8_t type, unsigned int offset)
-{
-    const size_t msgSize = sizeof(EmsMessage::ScheduleEntry);
-    uint8_t offsetBytes = (uint8_t) (offset * msgSize);
-    uint8_t data[] = { offsetBytes, 14 * msgSize };
-
-    m_responseCounter = offset;
-
-    sendCommand(EmsMessage::addressRC, type, data, sizeof(data), true);
-}
-
-void
 CommandConnection::handlePcMessage(const EmsMessage& message)
 {
     if (!m_waitingForResponse) {
@@ -485,83 +493,80 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     const std::vector<uint8_t>& data = message.getData();
+    uint8_t source = message.getSource();
+    uint8_t type = message.getType();
 
-    if (message.getDestination() == EmsMessage::addressPC && message.getType() == 0xff) {
+    if (type == 0xff) {
 	m_waitingForResponse = false;
 	respond(data[0] == 0x04 ? "FAIL" : "OK");
+	return;
     }
-    if (message.getSource() == EmsMessage::addressRC) {
-	/* strip offset */
-	size_t offset = 1;
-	bool done = false;
 
-	m_responseTimeout.cancel();
+    if (source != EmsMessage::addressRC) {
+	return;
+    }
 
-	switch (message.getType()) {
-	    case 0x12: /* get errors */
-	    case 0x13: /* get errors 2 */ {
-		done = loopOverResponse<EmsMessage::ErrorRecord>(data, offset);
+    m_responseTimeout.cancel();
+    m_requestResponse.insert(m_requestResponse.end(), data.begin() + 1, data.end());
 
-		if (m_responseCounter >= 8) {
-		    done = true;
-		} else if (!done) {
-		    uint8_t type = m_responseCounter >= 4 ? 0x13 : 0x12;
-		    unsigned int offset = m_responseCounter % 4;
-		    m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
-		    m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetErrorsCommand,
-						  this, type, offset));
+    bool done = false;
+
+    switch (type) {
+	case 0x12: /* get errors */
+	case 0x13: /* get errors 2 */ {
+	    done = loopOverResponse<EmsMessage::ErrorRecord>();
+	    if (!done) {
+		done = !continueRequest();
+		if (done && type == 0x12) {
+		    startRequest(source, 0x13, 0, 4 * sizeof(EmsMessage::ErrorRecord), false);
+		    done = false;
 		}
-		break;
 	    }
-	    case 0x3f: /* get schedule HK1 */
-	    case 0x49: /* get schedule HK2 */
-	    case 0x53: /* get schedule HK3 */
-	    case 0x5d: /* get schedule HK4 */
-		if (data[0] > 80) {
-		    /* it's at the end -> holiday schedule */
-		    const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
+	    break;
+	}
+	case 0x3f: /* get schedule HK1 */
+	case 0x49: /* get schedule HK2 */
+	case 0x53: /* get schedule HK3 */
+	case 0x5d: /* get schedule HK4 */
+	    if (data[0] > 80) {
+		/* it's at the end -> holiday schedule */
+		const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
 
-		    if (data.size() > 2 * msgSize) {
-			EmsMessage::HolidayEntry *begin = (EmsMessage::HolidayEntry *) &data.at(offset);
-			EmsMessage::HolidayEntry *end = (EmsMessage::HolidayEntry *) &data.at(offset + msgSize);
-			respond(buildRecordResponse("BEGIN", begin));
-			respond(buildRecordResponse("END", end));
-			done = true;
-		    } else {
-			respond("FAIL");
-		    }
+		if (m_requestResponse.size() >= 2 * msgSize) {
+		    EmsMessage::HolidayEntry *begin = (EmsMessage::HolidayEntry *) &m_requestResponse.at(0);
+		    EmsMessage::HolidayEntry *end = (EmsMessage::HolidayEntry *) &m_requestResponse.at(msgSize);
+		    respond(buildRecordResponse("BEGIN", begin));
+		    respond(buildRecordResponse("END", end));
+		    done = true;
 		} else {
-		    /* it's at the beginning -> heating schedule */
-		    done = loopOverResponse<EmsMessage::ScheduleEntry>(data, offset);
-
-		    if (m_responseCounter < 42 && !done) {
-			m_nextCommandTimer.expires_from_now(boost::posix_time::milliseconds(500));
-			m_nextCommandTimer.async_wait(boost::bind(&CommandConnection::handleGetScheduleCommand,
-						      this, message.getType(), m_responseCounter));
-		    } else {
-			done = true;
-		    }
+		    respond("FAIL");
 		}
-		break;
-	}
+	    } else {
+		/* it's at the beginning -> heating schedule */
+		done = loopOverResponse<EmsMessage::ScheduleEntry>();
+		if (!done) {
+		    done = !continueRequest();
+		}
+	    }
+	    break;
+    }
 
-	if (done) {
-	    m_waitingForResponse = false;
-	    respond("OK");
-	}
+    if (done) {
+	m_waitingForResponse = false;
+	respond("OK");
     }
 }
 
 template<typename T> bool
-CommandConnection::loopOverResponse(const std::vector<uint8_t>& data, size_t offset)
+CommandConnection::loopOverResponse()
 {
     const size_t msgSize = sizeof(T);
-    while (offset + msgSize <= data.size()) {
-	T *record = (T *) &data.at(offset);
+    while (m_parsePosition + msgSize <= m_requestResponse.size()) {
+	T *record = (T *) &m_requestResponse.at(m_parsePosition);
 	std::string response = buildRecordResponse(record);
 
+	m_parsePosition += msgSize;
 	m_responseCounter++;
-	offset += msgSize;
 
 	if (response.empty()) {
 	    return true;
@@ -743,6 +748,40 @@ CommandConnection::parseHolidayEntry(const std::string& string, EmsMessage::Holi
 }
 
 void
+CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
+			        size_t length, bool newRequest)
+{
+    m_requestOffset = offset;
+    m_requestLength = length;
+    m_requestDestination = dest;
+    m_requestType = type;
+    m_requestResponse.clear();
+    m_requestResponse.reserve(length);
+    m_parsePosition = 0;
+    if (newRequest) {
+	m_responseCounter = 0;
+    }
+
+    continueRequest();
+}
+
+bool
+CommandConnection::continueRequest()
+{
+    size_t alreadyReceived = m_requestResponse.size();
+
+    if (alreadyReceived >= m_requestLength) {
+	return false;
+    }
+
+    size_t requestLength = std::min(m_requestLength - alreadyReceived, 27UL);
+    uint8_t data[] = { (uint8_t) (m_requestOffset + alreadyReceived), (uint8_t) requestLength };
+
+    sendCommand(m_requestDestination, m_requestType, data, sizeof(data), true);
+    return true;
+}
+
+void
 CommandConnection::sendCommand(uint8_t dest, uint8_t type,
 			       const uint8_t *data, size_t count,
 			       bool expectResponse)
@@ -750,5 +789,5 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type,
     EmsMessage msg(dest, type, std::vector<uint8_t>(data, data + count), expectResponse);
 
     scheduleResponseTimeout();
-    m_handler.getHandler().sendMessage(msg);
+    m_handler.sendMessage(msg);
 }
