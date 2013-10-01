@@ -774,8 +774,10 @@ CommandConnection::continueRequest()
 	return false;
     }
 
-    size_t requestLength = std::min(m_requestLength - alreadyReceived, 27UL);
-    uint8_t data[] = { (uint8_t) (m_requestOffset + alreadyReceived), (uint8_t) requestLength };
+    uint8_t data[] = {
+	(uint8_t) (m_requestOffset + alreadyReceived),
+	(uint8_t) (m_requestLength - alreadyReceived)
+    };
 
     sendCommand(m_requestDestination, m_requestType, data, sizeof(data), true);
     return true;
