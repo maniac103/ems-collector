@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cassert>
+#include <asm/byteorder.h>
 #include "EmsMessage.h"
 #include "Options.h"
 
@@ -129,12 +130,9 @@ EmsMessage::handle()
 		     * 0x8 0x0 0x7 0x0 0x3 0x3 0x0 0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 */
 		    break;
 		case 0x10:
-		    /* yet unknown:
-		     * 0x8 0x10 0x10 0x0 0x34 0x45 0x0 0xe1 0x8a 0x4 0x13 0x1c 0x22 0x0 0x0 0x0 */
-		    break;
 		case 0x11:
-		    /* similar to above:
-		     * 0x8 0x10 0x11 0x24 0x32 0x46 0x1 0x4 0x8a 0x3 0x5 0x5 0x1e 0x0 0x0 0x0 */
+		    parseUBAErrorMessage();
+		    handled = true;
 		    break;
 		case 0x14: parseUBAUnknown1Message(); handled = true; break;
 		case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
@@ -387,6 +385,50 @@ EmsMessage::parseUBAUnknown1Message()
 			  Database::NumericSensorLast);
     printNumberAndAddToDb(2, 2, 1, "Unbekannter Zähler", "",
 			  Database::NumericSensorLast);
+}
+
+void
+EmsMessage::parseUBAErrorMessage()
+{
+    if ((m_data.size() - 1) % sizeof(ErrorRecord) != 0) {
+	std::cerr << "UBA error size mismatch (got " << m_data.size();
+	std::cerr << ", expected a multiple of " << sizeof(ErrorRecord);
+	std::cerr << " plus offset byte)" << std::endl;
+	return;
+    }
+
+    size_t offset = m_data[0];
+    if (offset % sizeof(ErrorRecord) != 0) {
+	std::cerr << "Unexpected offset (got " << offset;
+	std::cerr << ", expected a multiple of " << sizeof(ErrorRecord);
+	std::cerr << ")" << std::endl;
+	return;
+    }
+
+    DebugStream& debug = Options::dataDebug();
+    if (debug) {
+	size_t count = (m_data.size() - 1) / sizeof(ErrorRecord);
+	for (size_t i = 0; i < count; i++) {
+	    ErrorRecord *record = (ErrorRecord *) &m_data.at(i * sizeof(ErrorRecord) + 1);
+	    debug << "DATA: UBA error block " << (int) (m_type - 15) << ", error ";
+	    debug << ((offset / sizeof(ErrorRecord)) + i + 1) << ": ";
+	    if (record->errorAscii[0] == 0) {
+		debug << "Empty" << std::endl;
+	    } else {
+		debug << "Source " << std::hex << (unsigned int) record->source << ", error ";
+		debug << std::dec << record->errorAscii[0] << record->errorAscii[1] << ", code ";
+		debug << __be16_to_cpu(record->code_be16) << ", duration ";
+		debug << __be16_to_cpu(record->durationMinutes_be16) << " minutes" << std::endl;
+		if (record->hasDate) {
+		    debug << "DATA: error date " << BYTEFORMAT_DEC record->day << ".";
+		    debug << BYTEFORMAT_DEC record->month << ".";
+		    debug << BYTEFORMAT_DEC(2000 + record->year) << std::endl;
+		    debug << "DATA: error time " << BYTEFORMAT_DEC record->hour;
+		    debug << ":" << BYTEFORMAT_DEC record->minute << std::endl;
+		}
+	    }
+	}
+    }
 }
 
 void

@@ -87,6 +87,7 @@ class EmsMessage
 	void parseUBAMonitorSlowMessage();
 	void parseUBAMonitorWWMessage();
 	void parseUBAUnknown1Message();
+	void parseUBAErrorMessage();
 
 	void parseRCTimeMessage();
 	void parseRCOutdoorTempMessage();
