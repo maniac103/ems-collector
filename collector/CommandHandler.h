@@ -67,6 +67,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	} CommandResult;
 
 	CommandResult handleCommand(std::istream& request);
+	CommandResult handleUbaCommand(std::istream& request);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t offset);
 	CommandResult handleSetHolidayCommand(std::istream& request, uint8_t type, uint8_t offset);
@@ -91,7 +92,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void responseTimeout(const boost::system::error_code& error);
 	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length, bool newRequest = true);
 	bool continueRequest();
-	void sendCommand(uint8_t dest, uint8_t type,
+	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
 
