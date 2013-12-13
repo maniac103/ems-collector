@@ -440,6 +440,8 @@ EmsMessage::parseUBAParametersMessage()
     DebugStream& debug = Options::dataDebug();
     if (debug) {
 	debug << "DATA: Temperatureinstellung Kessel = " << BYTEFORMAT_DEC m_data[2] << " °C" << std::endl;
+	debug << "DATA: Abschalthysterese = " << BYTEFORMAT_DEC m_data[5] << " K" << std::endl;
+	debug << "DATA: Einschalthysterese = " << BYTEFORMAT_DEC m_data[6] << " K" << std::endl;
 	debug << "DATA: Antipendelzeit = " << BYTEFORMAT_DEC m_data[7] << " min" << std::endl;
 	debug << "DATA: Kesselpumpennachlauf = " << BYTEFORMAT_DEC m_data[9] << " min" << std::endl;
 	debug << "DATA: Min. Kesselpumpenmodulation = " << BYTEFORMAT_DEC m_data[11] << " %" << std::endl;

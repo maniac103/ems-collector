@@ -221,6 +221,20 @@ CommandConnection::handleUbaCommand(std::istream& request)
 
 	sendCommand(EmsMessage::addressUBA, 0x16, 6, &data, 1);
 	return Ok;
+    } else if (cmd == "hyst") {
+	std::string direction;
+	unsigned int hysteresis;
+	uint8_t data;
+
+	request >> direction;
+	request >> hysteresis;
+	if (!request || (direction != "on" && direction != "off") || hysteresis > 20) {
+	    return InvalidArgs;
+	}
+
+	data = hysteresis;
+	sendCommand(EmsMessage::addressUBA, 0x16, direction == "on" ? 5 : 4, &data, 1);
+	return Ok;
     } else if (cmd == "pumpmodulation") {
 	unsigned int min, max;
 	uint8_t data[2];
