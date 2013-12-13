@@ -183,7 +183,10 @@ CommandConnection::handleCommand(std::istream& request)
     std::string category;
     request >> category;
 
-    if (category == "hk1") {
+    if (category == "help") {
+	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nuba\ngeterrors\n");
+	return Ok;
+    } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
     } else if (category == "hk2") {
 	return handleHkCommand(request, 71);
@@ -209,7 +212,13 @@ CommandConnection::handleUbaCommand(std::istream& request)
     std::string cmd;
     request >> cmd;
 
-    if (cmd == "antipendel") {
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"antipendel <minutes>\n"
+		"hyst [on|off] <kelvin>\n"
+		"pumpmodulation <minpercent> <maxpercent>\n");
+	return Ok;
+    } else if (cmd == "antipendel") {
 	unsigned int minutes;
 	uint8_t data;
 
@@ -260,7 +269,22 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
     std::string cmd;
     request >> cmd;
 
-    if (cmd == "mode") {
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"mode [day|night|auto]\n"
+		"daytemperature <temp>\n"
+		"nighttemperature <temp>\n"
+		"holidaytemperature <temp>\n"
+		"getholiday\n"
+		"holidaymode <start:YYYY-MM-DD> <end:YYYY-MM-DD>\n"
+		"getvacation\n"
+		"vacationmode <start:YYYY-MM-DD> <end:YYYY-MM-DD>\n"
+		"partymode <hours>\n"
+		"getschedule\n"
+		"schedule <index> unset\n"
+		"schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n");
+	return Ok;
+    } else if (cmd == "mode") {
 	uint8_t data;
 	std::string mode;
 
@@ -390,7 +414,16 @@ CommandConnection::handleWwCommand(std::istream& request)
     std::string cmd;
     request >> cmd;
 
-    if (cmd == "thermdesinfect") {
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"temperature <temp>\n"
+		"thermdesinfect mode [on|off]\n"
+		"thermdesinfect day [monday|tuesday|wednesday|thursday|friday|saturday|sunday]\n"
+		"thermdesinfect temperature <temp>\n"
+		"zirkpump mode [on|off|auto]\n"
+		"zirkpump count [1|2|3|4|5|6|alwayson]\n");
+	return Ok;
+    } else if (cmd == "thermdesinfect") {
 	return handleThermDesinfectCommand(request);
     } else if (cmd == "zirkpump") {
 	return handleZirkPumpCommand(request);
