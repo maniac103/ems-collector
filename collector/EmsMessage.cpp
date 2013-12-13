@@ -319,6 +319,8 @@ EmsMessage::parseUBAMonitorSlowMessage()
 			  Database::NumericSensorLast);
     printNumberAndAddToDb(5, 2, 10, "Abgastemperatur", "°C",
 			  Database::NumericSensorLast);
+    printNumberAndAddToDb(10, 1, 1, "Pumpenmodulation", "%",
+			  Database::NumericSensorLast);
     printNumberAndAddToDb(11, 3, 1, "Brennerstarts", "",
 			  Database::SensorBrennerstarts);
     printNumberAndAddToDb(14, 3, 1, "Betriebszeit total", "min",
