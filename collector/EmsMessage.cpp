@@ -360,20 +360,12 @@ EmsMessage::parseUBAMonitorWWMessage()
 
     if (debug) {
 	debug << "DATA: Art des Warmwassersystems: ";
-	if (m_data[9] & (1 << 0)) {
-	    debug << "keins ";
-	}
-	if (m_data[9] & (1 << 1)) {
-	    debug << "Durchlauferhitzer ";
-	}
-	if (m_data[9] & (1 << 2)) {
-	    debug << "kleiner Speicher ";
-	}
-	if (m_data[9] & (1 << 3)) {
-	    debug << "großer Speicher ";
-	}
-	if (m_data[9] & (1 << 4)) {
-	    debug << "Speicherladesystem ";
+	switch (m_data[9]) {
+	    case 0: debug << "keins"; break;
+	    case 1: debug << "Durchlauferhitzer"; break;
+	    case 2: debug << "kleiner Speicher"; break;
+	    case 3: debug << "großer Speicher"; break;
+	    case 4: debug << "Speicherladesystem"; break;
 	}
 	debug << std::endl;
     }
