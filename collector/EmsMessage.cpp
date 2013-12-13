@@ -30,12 +30,12 @@
 #define BYTEFORMAT_DEC \
     std::dec << (unsigned int)
 
-#define RETURN_ON_SIZE_MISMATCH(expected,text)             \
-    if (m_data.size() != expected) {                       \
-	std::cerr << text << " size mismatch (";           \
-	std::cerr << std::dec << m_data.size() << " vs. "; \
-	std::cerr << expected << ")" << std::endl;         \
-	return;                                            \
+#define RETURN_ON_SIZE_MISMATCH(expected,text)                        \
+    if (m_data.size() < expected) {                                   \
+	std::cerr << text << " size mismatch (got ";                  \
+	std::cerr << std::dec << m_data.size() << ", expected min. "; \
+	std::cerr << expected << ")" << std::endl;                    \
+	return;                                                       \
     }
 
 EmsMessage::EmsMessage(Database *db, const std::vector<uint8_t>& data) :
