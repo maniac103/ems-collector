@@ -50,6 +50,7 @@ db-path = localhost:3306
 db-user = <user>
 db-pass = <password>
 ```
+close and save.
 
 Make it a service and go
 ========================
