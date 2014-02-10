@@ -200,6 +200,9 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleRcCommand(request);
     } else if (category == "uba") {
 	return handleUbaCommand(request);
+    } else if (category == "getversion") {
+	startRequest(EmsMessage::addressUBA, 0x02, 0, 3);
+	return Ok;
     }
 
     return InvalidCmd;
@@ -598,16 +601,43 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	return;
     }
 
-    if (source != EmsMessage::addressRC) {
-	return;
-    }
-
     m_responseTimeout.cancel();
     m_requestResponse.insert(m_requestResponse.end(), data.begin() + 1, data.end());
 
     bool done = false;
 
     switch (type) {
+	case 0x02: /* get version */ {
+	    static const struct {
+		uint8_t source;
+		const char *name;
+	    } SOURCES[] = {
+		{ EmsMessage::addressUBA, "UBA" },
+		{ EmsMessage::addressBC10, "BC10" },
+		{ EmsMessage::addressRC, "RC" }
+	    };
+	    static const size_t SOURCECOUNT = sizeof(SOURCES) / sizeof(SOURCES[0]);
+
+	    unsigned int major = data[2];
+	    unsigned int minor = data[3];
+	    size_t index;
+
+	    for (index = 0; index < SOURCECOUNT; index++) {
+		if (source == SOURCES[index].source) {
+		    std::ostringstream os;
+		    os << SOURCES[index].name << " version: ";
+		    os << major << "." << std::setw(2) << std::setfill('0') << minor;
+		    respond(os.str());
+		    break;
+		}
+	    }
+	    if (index < (SOURCECOUNT - 1)) {
+		startRequest(SOURCES[index + 1].source, 0x02, 0, 3);
+	    } else {
+		done = true;
+	    }
+	    break;
+	}
 	case 0x10: /* get UBA errors */
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
@@ -693,7 +723,7 @@ void
 CommandConnection::scheduleResponseTimeout()
 {
     m_waitingForResponse = true;
-    m_responseTimeout.expires_from_now(boost::posix_time::seconds(1));
+    m_responseTimeout.expires_from_now(boost::posix_time::seconds(2));
     m_responseTimeout.async_wait(boost::bind(&CommandConnection::responseTimeout,
 					     this, boost::asio::placeholders::error));
 }
