@@ -241,6 +241,7 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"antipendel <minutes>\n"
 		"hyst [on|off] <kelvin>\n"
 		"pumpmodulation <minpercent> <maxpercent>\n"
+		"pumpdelay <minutes>\n"
 		"geterrors\n");
 	return Ok;
     } else if (cmd == "geterrors") {
@@ -285,6 +286,18 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	data[1] = min;
 
 	sendCommand(EmsMessage::addressUBA, 0x16, 9, data, sizeof(data));
+	return Ok;
+    } else if (cmd == "pumpdelay") {
+	unsigned int minutes;
+	uint8_t data;
+
+	request >> minutes;
+	if (!request || minutes > 120) {
+	    return InvalidArgs;
+	}
+	data = minutes;
+
+	sendCommand(EmsMessage::addressUBA, 0x16, 8, &data, 1);
 	return Ok;
     }
 
