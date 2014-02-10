@@ -213,7 +213,11 @@ CommandConnection::handleRcCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
-		"geterrors\n");
+		"geterrors\n"
+		"getcontactinfo\n");
+	return Ok;
+    } else if (cmd == "getcontactinfo") {
+	startRequest(EmsMessage::addressRC, 0xa4, 0, 42);
 	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsMessage::addressRC, 0x12, 0, 4 * sizeof(EmsMessage::ErrorRecord));
@@ -643,6 +647,17 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		}
 	    }
 	    break;
+	case 0xa4: { /* get contact info */
+	    for (size_t i = 1; i < data.size(); i += 21) {
+		size_t len = std::min(data.size() - i, static_cast<size_t>(21));
+		char buffer[22];
+		memcpy(buffer, &data.at(i), len);
+		buffer[len] = 0;
+		respond(buffer);
+	    }
+	    done = true;
+	    break;
+	}
     }
 
     if (done) {
