@@ -67,6 +67,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	} CommandResult;
 
 	CommandResult handleCommand(std::istream& request);
+	CommandResult handleRcCommand(std::istream& request);
 	CommandResult handleUbaCommand(std::istream& request);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t offset);

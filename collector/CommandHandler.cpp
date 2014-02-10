@@ -184,7 +184,7 @@ CommandConnection::handleCommand(std::istream& request)
     request >> category;
 
     if (category == "help") {
-	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nuba\ngeterrors\n");
+	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nuba\nrc\n");
 	return Ok;
     } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
@@ -196,11 +196,28 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleHkCommand(request, 91);
     } else if (category == "ww") {
 	return handleWwCommand(request);
-    } else if (category == "geterrors") {
-	startRequest(EmsMessage::addressRC, 0x12, 0, 4 * sizeof(EmsMessage::ErrorRecord));
-	return Ok;
+    } else if (category == "rc") {
+	return handleRcCommand(request);
     } else if (category == "uba") {
 	return handleUbaCommand(request);
+    }
+
+    return InvalidCmd;
+}
+
+CommandConnection::CommandResult
+CommandConnection::handleRcCommand(std::istream& request)
+{
+    std::string cmd;
+    request >> cmd;
+
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"geterrors\n");
+	return Ok;
+    } else if (cmd == "geterrors") {
+	startRequest(EmsMessage::addressRC, 0x12, 0, 4 * sizeof(EmsMessage::ErrorRecord));
+	return Ok;
     }
 
     return InvalidCmd;
@@ -216,7 +233,11 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	respond("Available subcommands:\n"
 		"antipendel <minutes>\n"
 		"hyst [on|off] <kelvin>\n"
-		"pumpmodulation <minpercent> <maxpercent>\n");
+		"pumpmodulation <minpercent> <maxpercent>\n"
+		"geterrors\n");
+	return Ok;
+    } else if (cmd == "geterrors") {
+	startRequest(EmsMessage::addressUBA, 0x10, 0, 4 * sizeof(EmsMessage::ErrorRecord));
 	return Ok;
     } else if (cmd == "antipendel") {
 	unsigned int minutes;
@@ -583,13 +604,15 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     bool done = false;
 
     switch (type) {
-	case 0x12: /* get errors */
-	case 0x13: /* get errors 2 */ {
+	case 0x10: /* get UBA errors */
+	case 0x11: /* get UBA errors 2 */
+	case 0x12: /* get RC errors */
+	case 0x13: /* get RC errors 2 */ {
 	    done = loopOverResponse<EmsMessage::ErrorRecord>();
 	    if (!done) {
 		done = !continueRequest();
-		if (done && type == 0x12) {
-		    startRequest(source, 0x13, 0, 4 * sizeof(EmsMessage::ErrorRecord), false);
+		if (done && (type == 0x10 || type == 0x12)) {
+		    startRequest(source, type + 1, 0, 4 * sizeof(EmsMessage::ErrorRecord), false);
 		    done = false;
 		}
 	    }
