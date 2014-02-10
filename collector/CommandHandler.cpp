@@ -885,9 +885,9 @@ CommandConnection::parseHolidayEntry(const std::string& string, EmsMessage::Holi
 	return false;
     }
 
-    unsigned int day = boost::lexical_cast<unsigned int>(string.substr(0, pos));
+    unsigned int year = boost::lexical_cast<unsigned int>(string.substr(0, pos));
     unsigned int month = boost::lexical_cast<unsigned int>(string.substr(pos + 1, pos2 - pos - 1));
-    unsigned int year = boost::lexical_cast<unsigned int>(string.substr(pos2 + 1));
+    unsigned int day = boost::lexical_cast<unsigned int>(string.substr(pos2 + 1));
     if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
 	return false;
     }
