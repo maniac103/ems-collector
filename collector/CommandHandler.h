@@ -96,6 +96,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
+	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;

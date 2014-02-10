@@ -248,30 +248,22 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	startRequest(EmsMessage::addressUBA, 0x10, 0, 4 * sizeof(EmsMessage::ErrorRecord));
 	return Ok;
     } else if (cmd == "antipendel") {
-	unsigned int minutes;
-	uint8_t data;
-
-	request >> minutes;
-	if (!request || minutes > 120) {
+	uint8_t minutes;
+	if (!parseIntParameter(request, minutes, 120)) {
 	    return InvalidArgs;
 	}
-	data = minutes;
-
-	sendCommand(EmsMessage::addressUBA, 0x16, 6, &data, 1);
+	sendCommand(EmsMessage::addressUBA, 0x16, 6, &minutes, 1);
 	return Ok;
     } else if (cmd == "hyst") {
 	std::string direction;
-	unsigned int hysteresis;
-	uint8_t data;
+	uint8_t hyst;
 
 	request >> direction;
-	request >> hysteresis;
-	if (!request || (direction != "on" && direction != "off") || hysteresis > 20) {
+	if (!request || (direction != "on" && direction != "off") || !parseIntParameter(request, hyst, 20)) {
 	    return InvalidArgs;
 	}
 
-	data = hysteresis;
-	sendCommand(EmsMessage::addressUBA, 0x16, direction == "on" ? 5 : 4, &data, 1);
+	sendCommand(EmsMessage::addressUBA, 0x16, direction == "on" ? 5 : 4, &hyst, 1);
 	return Ok;
     } else if (cmd == "pumpmodulation") {
 	unsigned int min, max;
@@ -288,16 +280,11 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	sendCommand(EmsMessage::addressUBA, 0x16, 9, data, sizeof(data));
 	return Ok;
     } else if (cmd == "pumpdelay") {
-	unsigned int minutes;
-	uint8_t data;
-
-	request >> minutes;
-	if (!request || minutes > 120) {
+	uint8_t minutes;
+	if (!parseIntParameter(request, minutes, 120)) {
 	    return InvalidArgs;
 	}
-	data = minutes;
-
-	sendCommand(EmsMessage::addressUBA, 0x16, 8, &data, 1);
+	sendCommand(EmsMessage::addressUBA, 0x16, 8, &minutes, 1);
 	return Ok;
     }
 
@@ -349,17 +336,11 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
     } else if (cmd == "vacationmode") {
 	return handleSetHolidayCommand(request, type + 2, 87);
     } else if (cmd == "partymode") {
-	unsigned int hours;
-	uint8_t data;
-
-	request >> hours;
-
-	if (!request || hours > 99) {
+	uint8_t hours;
+	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	data = hours;
-
-	sendCommand(EmsMessage::addressRC, type, 86, &data, 1);
+	sendCommand(EmsMessage::addressRC, type, 86, &hours, 1);
 	return Ok;
     } else if (cmd == "schedule") {
 	unsigned int index;
@@ -482,17 +463,11 @@ CommandConnection::handleWwCommand(std::istream& request)
 	sendCommand(EmsMessage::addressRC, 0x37, 2, &data, 1);
 	return Ok;
     } else if (cmd == "temperature") {
-	unsigned int temperature;
-	uint8_t data;
-
-	request >> temperature;
-
-	if (!request || temperature < 30 || temperature > 60) {
+	uint8_t temperature;
+	if (!parseIntParameter(request, temperature, 60) || temperature < 30) {
 	    return InvalidArgs;
 	}
-	data = temperature;
-
-	sendCommand(EmsMessage::addressUBA, 0x33, 2, &data, 1);
+	sendCommand(EmsMessage::addressUBA, 0x33, 2, &temperature, 1);
 	return Ok;
     }
 
@@ -536,17 +511,11 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	sendCommand(EmsMessage::addressRC, 0x37, 5, &data, 1);
 	return Ok;
     } else if (cmd == "temperature") {
-	unsigned int temperature;
-	uint8_t data;
-
-	request >> temperature;
-
-	if (!request || temperature < 60 || temperature > 80) {
+	uint8_t temperature;
+	if (!parseIntParameter(request, temperature, 80) || temperature < 60) {
 	    return InvalidArgs;
 	}
-	data = temperature;
-
-	sendCommand(EmsMessage::addressUBA, 0x33, 8, &data, 1);
+	sendCommand(EmsMessage::addressUBA, 0x33, 8, &temperature, 1);
 	return Ok;
     }
 
@@ -945,4 +914,18 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 
     EmsMessage msg(dest, type, sendData, expectResponse);
     m_handler.sendMessage(msg);
+}
+
+bool
+CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8_t max)
+{
+    unsigned int value;
+
+    request >> value;
+    if (!request || value > max) {
+	return false;
+    }
+
+    data = value;
+    return true;
 }
