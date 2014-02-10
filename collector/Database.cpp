@@ -249,6 +249,7 @@ Database::createSensorRows()
     query.execute(SensorKesselPumpe, sensorTypeBoolean, "Kessel-Pumpe");
     query.execute(Sensor3WegeVentil, sensorTypeBoolean, "3-Wege-Ventil");
     query.execute(SensorZirkulation, sensorTypeBoolean, "Zirkulation");
+    query.execute(SensorZirkulationTagbetrieb, sensorTypeBoolean, "Zirkulation-Tagbetrieb");
     query.execute(SensorWarmwasserBereitung, sensorTypeBoolean, "Warmwasserbereitung");
     query.execute(SensorWWTagbetrieb, sensorTypeBoolean, "WW-Tagbetrieb");
     query.execute(SensorSommerbetrieb, sensorTypeBoolean, "Sommerbetrieb");

@@ -86,6 +86,7 @@ class EmsMessage
 	void parseUBAMonitorFastMessage();
 	void parseUBAMonitorSlowMessage();
 	void parseUBAMonitorWWMessage();
+	void parseUBAParameterWWMessage();
 	void parseUBAUnknown1Message();
 	void parseUBAErrorMessage();
 	void parseUBAParametersMessage();

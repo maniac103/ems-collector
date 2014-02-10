@@ -144,6 +144,7 @@ EmsMessage::handle()
 		     * 0x8 0x10 0x1c 0x8
 		     */
 		    break;
+		case 0x33: parseUBAParameterWWMessage(); handled = true; break;
 		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
 	    }
 	    break;
@@ -349,13 +350,14 @@ EmsMessage::parseUBAMonitorWWMessage()
     printNumberAndAddToDb(4, 2, 10, "Warmwasser-Isttemperatur (Messstelle 2)", "°C",
 			  Database::NumericSensorLast);
 
-    printBoolAndAddToDb(6, 0, "Tagbetrieb", Database::SensorWWTagbetrieb);
+    printBoolAndAddToDb(6, 0, "WW-Tagbetrieb", Database::SensorWWTagbetrieb);
     printBoolAndAddToDb(6, 1, "Einmalladung", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 2, "Thermische Desinfektion", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 3, "Warmwasserbereitung", Database::SensorWarmwasserBereitung);
     printBoolAndAddToDb(6, 4, "Warmwassernachladung", Database::BooleanSensorLast);
     printBoolAndAddToDb(6, 5, "Warmwassertemp OK", Database::SensorWarmwasserTempOK);
 
+    printBoolAndAddToDb(8, 0, "Zirkulation-Tagbetrieb", Database::SensorZirkulationTagbetrieb);
     printBoolAndAddToDb(8, 2, "Zirkulation", Database::SensorZirkulation);
 
     if (debug) {
@@ -366,6 +368,24 @@ EmsMessage::parseUBAMonitorWWMessage()
 	    case 2: debug << "kleiner Speicher"; break;
 	    case 3: debug << "großer Speicher"; break;
 	    case 4: debug << "Speicherladesystem"; break;
+	}
+	debug << std::endl;
+    }
+}
+
+void
+EmsMessage::parseUBAParameterWWMessage()
+{
+    DebugStream& debug = Options::dataDebug();
+
+    RETURN_ON_SIZE_MISMATCH(10, "UBA Parameter WW");
+
+    if (debug) {
+	debug << "DATA: Anzahl Schaltpunkte Zirkulation = ";
+	if (m_data[8] == 7) {
+	    debug << "dauerhaft an";
+	} else {
+	    debug << (unsigned int) m_data[8] << "x 3min";
 	}
 	debug << std::endl;
     }
