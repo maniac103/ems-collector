@@ -439,11 +439,24 @@ CommandConnection::handleWwCommand(std::istream& request)
     if (cmd == "help") {
 	respond("Available subcommands:\n"
 		"temperature <temp>\n"
+		"limittemperature <temp>\n"
+		"loadonce\n"
+		"cancelload\n"
+		"getschedule\n"
+		"schedule <index> unset\n"
+		"schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"selectschedule [custom|hk]\n"
+		"showloadindicator [on|off]\n"
 		"thermdesinfect mode [on|off]\n"
 		"thermdesinfect day [monday|tuesday|wednesday|thursday|friday|saturday|sunday]\n"
+		"thermdesinfect hour <hour>\n"
 		"thermdesinfect temperature <temp>\n"
 		"zirkpump mode [on|off|auto]\n"
-		"zirkpump count [1|2|3|4|5|6|alwayson]\n");
+		"zirkpump count [1|2|3|4|5|6|alwayson]\n"
+		"zirkpump getschedule\n"
+		"zirkpump schedule <index> unset\n"
+		"zirkpump schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"zirkpump selectschedule [custom|hk]\n");
 	return Ok;
     } else if (cmd == "thermdesinfect") {
 	return handleThermDesinfectCommand(request);
@@ -464,10 +477,66 @@ CommandConnection::handleWwCommand(std::istream& request)
 	return Ok;
     } else if (cmd == "temperature") {
 	uint8_t temperature;
-	if (!parseIntParameter(request, temperature, 60) || temperature < 30) {
+	if (!parseIntParameter(request, temperature, 80) || temperature < 30) {
 	    return InvalidArgs;
 	}
 	sendCommand(EmsMessage::addressUBA, 0x33, 2, &temperature, 1);
+	return Ok;
+    } else if (cmd == "limittemperature") {
+	uint8_t temperature;
+	if (!parseIntParameter(request, temperature, 80) || temperature < 30) {
+	    return InvalidArgs;
+	}
+	sendCommand(EmsMessage::addressRC, 0x37, 8, &temperature, 1);
+	return Ok;
+    } else if (cmd == "loadonce") {
+	uint8_t data = 35;
+	sendCommand(EmsMessage::addressUBA, 0x35, 0, &data, 1);
+	return Ok;
+    } else if (cmd == "cancelload") {
+	uint8_t data = 3;
+	sendCommand(EmsMessage::addressUBA, 0x35, 0, &data, 1);
+	return Ok;
+    } else if (cmd == "showloadindicator") {
+	uint8_t data;
+	std::string mode;
+
+	request >> mode;
+
+	if (mode == "on")       data = 0xff;
+	else if (mode == "off") data = 0x00;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, 9, &data, 1);
+	return Ok;
+    } else if (cmd == "getschedule") {
+	startRequest(EmsMessage::addressRC, 0x38, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
+	return Ok;
+    } else if (cmd == "schedule") {
+	unsigned int index;
+	EmsMessage::ScheduleEntry entry;
+
+	request >> index;
+
+	if (!request || index > 42 || !parseScheduleEntry(request, &entry)) {
+	    return InvalidArgs;
+	}
+
+	sendCommand(EmsMessage::addressRC, 0x38,
+		(index - 1) * sizeof(EmsMessage::ScheduleEntry),
+		(uint8_t *) &entry, sizeof(entry));
+	return Ok;
+    } else if (cmd == "selectschedule") {
+	std::string schedule;
+	uint8_t data;
+
+	request >> schedule;
+
+	if (schedule == "custom")  data = 0xff;
+	else if (schedule == "hk") data = 0x00;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, 0, &data, 1);
 	return Ok;
     }
 
@@ -509,6 +578,13 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	else return InvalidArgs;
 
 	sendCommand(EmsMessage::addressRC, 0x37, 5, &data, 1);
+	return Ok;
+    } else if (cmd == "hour") {
+	uint8_t hour;
+	if (!parseIntParameter(request, hour, 23)) {
+	    return InvalidArgs;
+	}
+	sendCommand(EmsMessage::addressRC, 0x37, 6, &hour, 1);
 	return Ok;
     } else if (cmd == "temperature") {
 	uint8_t temperature;
@@ -560,6 +636,35 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	    }
 	}
 	sendCommand(EmsMessage::addressUBA, 0x33, 7, &count, 1);
+	return Ok;
+    } else if (cmd == "getschedule") {
+	startRequest(EmsMessage::addressRC, 0x39, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
+	return Ok;
+    } else if (cmd == "schedule") {
+	unsigned int index;
+	EmsMessage::ScheduleEntry entry;
+
+	request >> index;
+
+	if (!request || index > 42 || !parseScheduleEntry(request, &entry)) {
+	    return InvalidArgs;
+	}
+
+	sendCommand(EmsMessage::addressRC, 0x39,
+		(index - 1) * sizeof(EmsMessage::ScheduleEntry),
+		(uint8_t *) &entry, sizeof(entry));
+	return Ok;
+    } else if (cmd == "selectschedule") {
+	std::string schedule;
+	uint8_t data;
+
+	request >> schedule;
+
+	if (schedule == "custom")  data = 0xff;
+	else if (schedule == "hk") data = 0x00;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, 0x37, 1,  &data, 1);
 	return Ok;
     }
 
@@ -657,6 +762,13 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		if (!done) {
 		    done = !continueRequest();
 		}
+	    }
+	    break;
+	case 0x38: /* get WW schedule */
+	case 0x39: /* get WW ZP schedule */
+	    done = loopOverResponse<EmsMessage::ScheduleEntry>();
+	    if (!done) {
+		done = !continueRequest();
 	    }
 	    break;
 	case 0xa4: { /* get contact info */
