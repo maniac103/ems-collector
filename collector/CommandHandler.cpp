@@ -1025,13 +1025,17 @@ CommandConnection::parseScheduleEntry(std::istream& request, EmsMessage::Schedul
     if (pos == std::string::npos) {
 	return false;
     }
-    unsigned int hours = boost::lexical_cast<unsigned int>(time.substr(0, pos));
-    unsigned int minutes = boost::lexical_cast<unsigned int>(time.substr(pos + 1));
-    if (hours > 23 || minutes >= 60 || (minutes % 10) != 0) {
+    try {
+	unsigned int hours = boost::lexical_cast<unsigned int>(time.substr(0, pos));
+	unsigned int minutes = boost::lexical_cast<unsigned int>(time.substr(pos + 1));
+	if (hours > 23 || minutes >= 60 || (minutes % 10) != 0) {
+	    return false;
+	}
+
+	entry->time = (uint8_t) ((hours * 60 + minutes) / 10);
+    } catch (boost::bad_lexical_cast& e) {
 	return false;
     }
-
-    entry->time = (uint8_t) ((hours * 60 + minutes) / 10);
 
     return true;
 }
@@ -1062,16 +1066,20 @@ CommandConnection::parseHolidayEntry(const std::string& string, EmsMessage::Holi
 	return false;
     }
 
-    unsigned int year = boost::lexical_cast<unsigned int>(string.substr(0, pos));
-    unsigned int month = boost::lexical_cast<unsigned int>(string.substr(pos + 1, pos2 - pos - 1));
-    unsigned int day = boost::lexical_cast<unsigned int>(string.substr(pos2 + 1));
-    if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+    try {
+	unsigned int year = boost::lexical_cast<unsigned int>(string.substr(0, pos));
+	unsigned int month = boost::lexical_cast<unsigned int>(string.substr(pos + 1, pos2 - pos - 1));
+	unsigned int day = boost::lexical_cast<unsigned int>(string.substr(pos2 + 1));
+	if (year < 2000 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+	    return false;
+	}
+
+	entry->year = (uint8_t) (year - 2000);
+	entry->month = (uint8_t) month;
+	entry->day = (uint8_t) day;
+    } catch (boost::bad_lexical_cast& e) {
 	return false;
     }
-
-    entry->year = (uint8_t) (year - 2000);
-    entry->month = (uint8_t) month;
-    entry->day = (uint8_t) day;
 
     return true;
 }
