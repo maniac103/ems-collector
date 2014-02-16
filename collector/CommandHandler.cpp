@@ -177,6 +177,18 @@ CommandConnection::handleWrite(const boost::system::error_code& error)
     }
 }
 
+static const char * scheduleNames[] = {
+    "custom1", "family", "morning", "early", "evening", "forenoon",
+    "afternoon", "noon", "single", "senior", "custom2"
+};
+static const size_t scheduleNameCount = sizeof(scheduleNames) / sizeof(scheduleNames[0]);
+
+static const char * dayNames[] = {
+    "monday", "tuesday", "wednesday", "thursday",
+    "friday", "saturday", "sunday"
+};
+static const size_t dayNameCount = sizeof(dayNames) / sizeof(dayNames[0]);
+
 CommandConnection::CommandResult
 CommandConnection::handleCommand(std::istream& request)
 {
@@ -314,11 +326,6 @@ CommandConnection::handleUbaCommand(std::istream& request)
     return InvalidCmd;
 }
 
-static const char * scheduleNames[] = {
-    "custom1", "family", "morning", "early", "evening", "forenoon",
-    "afternoon", "noon", "single", "senior", "custom2"
-};
-
 CommandConnection::CommandResult
 CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 {
@@ -339,9 +346,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"pausemode <hours>\n"
 		"getactiveschedule\n"
 		"selectschedule [family|morning|early|evening|forenoon|noon|afternoon|single|senior|custom1|custom2]\n"
-		"getschedule [1|2]\n"
-		"schedule [1|2] <index> unset\n"
-		"schedule [1|2] <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"getcustomschedule [1|2]\n"
+		"customschedule [1|2] <index> unset\n"
+		"customschedule [1|2] <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
 		"scheduleoptimizer [on|off]\n");
 	return Ok;
     } else if (cmd == "mode") {
@@ -381,7 +388,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	}
 	sendCommand(EmsMessage::addressRC, type, 85, &hours, 1);
 	return Ok;
-    } else if (cmd == "schedule") {
+    } else if (cmd == "customschedule") {
 	unsigned int schedule, index;
 	EmsMessage::ScheduleEntry entry;
 
@@ -395,7 +402,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		(index - 1) * sizeof(EmsMessage::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
-    } else if (cmd == "getschedule") {
+    } else if (cmd == "getcustomschedule") {
 	unsigned int schedule;
 
 	request >> schedule;
@@ -409,18 +416,17 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	startRequest(EmsMessage::addressRC, type + 2, 84, 1);
 	return Ok;
     } else if (cmd == "selectschedule") {
-	static const size_t nameCount = sizeof(scheduleNames) / sizeof(scheduleNames[0]);
 	std::string schedule;
 	uint8_t data;
 
 	request >> schedule;
 
-	for (data = 0; data < nameCount; data++) {
+	for (data = 0; data < scheduleNameCount; data++) {
 	    if (schedule == scheduleNames[data]) {
 		break;
 	    }
 	}
-	if (data == nameCount) {
+	if (data == scheduleNameCount) {
 	    return InvalidArgs;
 	}
 
@@ -521,20 +527,20 @@ CommandConnection::handleWwCommand(std::istream& request)
 		"limittemperature <temp>\n"
 		"loadonce\n"
 		"cancelload\n"
-		"getschedule\n"
-		"schedule <index> unset\n"
-		"schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"getcustomschedule\n"
+		"customschedule <index> unset\n"
+		"customschedule <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
 		"selectschedule [custom|hk]\n"
 		"showloadindicator [on|off]\n"
 		"thermdesinfect mode [on|off]\n"
-		"thermdesinfect day [monday|tuesday|wednesday|thursday|friday|saturday|sunday]\n"
+		"thermdesinfect day [monday|tuesday|...|sunday]\n"
 		"thermdesinfect hour <hour>\n"
 		"thermdesinfect temperature <temp>\n"
 		"zirkpump mode [on|off|auto]\n"
 		"zirkpump count [1|2|3|4|5|6|alwayson]\n"
-		"zirkpump getschedule\n"
-		"zirkpump schedule <index> unset\n"
-		"zirkpump schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"zirkpump getcustomschedule\n"
+		"zirkpump customschedule <index> unset\n"
+		"zirkpump customschedule <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
 		"zirkpump selectschedule [custom|hk]\n");
 	return Ok;
     } else if (cmd == "thermdesinfect") {
@@ -588,10 +594,10 @@ CommandConnection::handleWwCommand(std::istream& request)
 
 	sendCommand(EmsMessage::addressRC, 0x37, 9, &data, 1);
 	return Ok;
-    } else if (cmd == "getschedule") {
+    } else if (cmd == "getcustomschedule") {
 	startRequest(EmsMessage::addressRC, 0x38, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
 	return Ok;
-    } else if (cmd == "schedule") {
+    } else if (cmd == "customschedule") {
 	unsigned int index;
 	EmsMessage::ScheduleEntry entry;
 
@@ -641,20 +647,24 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	sendCommand(EmsMessage::addressRC, 0x37, 4, &data, 1);
 	return Ok;
     } else if (cmd == "day") {
+
 	uint8_t data;
 	std::string day;
 
 	request >> day;
 
-	if (day == "monday")         data = 0x00;
-	else if (day == "tuesday")   data = 0x01;
-	else if (day == "wednesday") data = 0x02;
-	else if (day == "thursday")  data = 0x03;
-	else if (day == "friday")    data = 0x04;
-	else if (day == "saturday")  data = 0x05;
-	else if (day == "sunday")    data = 0x06;
-	else if (day == "everyday")  data = 0x07;
-	else return InvalidArgs;
+	if (day == "everyday") {
+	    data = 7;
+	} else {
+	    for (data = 0; data < dayNameCount; data++) {
+		if (day == dayNames[data]) {
+		    break;
+		}
+	    }
+	    if (data == dayNameCount) {
+		return InvalidArgs;
+	    }
+	}
 
 	sendCommand(EmsMessage::addressRC, 0x37, 5, &data, 1);
 	return Ok;
@@ -716,10 +726,10 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	}
 	sendCommand(EmsMessage::addressUBA, 0x33, 7, &count, 1);
 	return Ok;
-    } else if (cmd == "getschedule") {
+    } else if (cmd == "getcustomschedule") {
 	startRequest(EmsMessage::addressRC, 0x39, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
 	return Ok;
-    } else if (cmd == "schedule") {
+    } else if (cmd == "customschedule") {
 	unsigned int index;
 	EmsMessage::ScheduleEntry entry;
 
@@ -826,9 +836,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x5d: /* get schedule HK4 */
 	    if (data[0] == 84) {
 		/* 'get active schedule' response */
-		static const size_t nameCount = sizeof(scheduleNames) / sizeof(scheduleNames[0]);
 		const char *name = "unknown";
-		for (size_t i = 0; i < nameCount; i++) {
+		for (size_t i = 0; i < scheduleNameCount; i++) {
 		    if (data[1] == i) {
 			name = scheduleNames[i];
 			break;
@@ -843,8 +852,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		if (m_requestResponse.size() >= 2 * msgSize) {
 		    EmsMessage::HolidayEntry *begin = (EmsMessage::HolidayEntry *) &m_requestResponse.at(0);
 		    EmsMessage::HolidayEntry *end = (EmsMessage::HolidayEntry *) &m_requestResponse.at(msgSize);
-		    respond(buildRecordResponse("BEGIN", begin));
-		    respond(buildRecordResponse("END", end));
+		    respond(buildRecordResponse("begin", begin));
+		    respond(buildRecordResponse("end", end));
 		    done = true;
 		} else {
 		    respond("FAIL");
@@ -957,10 +966,6 @@ CommandConnection::buildRecordResponse(const EmsMessage::ErrorRecord *record)
     return response.str();
 }
 
-static const char * dayNames[] = {
-    "MO", "TU", "WE", "TH", "FR", "SA", "SU"
-};
-
 std::string
 CommandConnection::buildRecordResponse(const EmsMessage::ScheduleEntry *entry)
 {
@@ -974,7 +979,7 @@ CommandConnection::buildRecordResponse(const EmsMessage::ScheduleEntry *entry)
     response << dayNames[entry->day / 2] << " ";
     response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
     response << std::setw(2) << std::setfill('0') << (minutes % 60) << " ";
-    response << (entry->on ? "ON" : "OFF");
+    response << (entry->on ? "on" : "off");
 
     return response.str();
 }
@@ -1001,16 +1006,16 @@ CommandConnection::parseScheduleEntry(std::istream& request, EmsMessage::Schedul
 	return false;
     }
 
-    if (mode == "ON") {
+    if (mode == "on") {
 	entry->on = 1;
-    } else if (mode == "OFF") {
+    } else if (mode == "off") {
 	entry->on = 0;
     } else {
 	return false;
     }
 
     bool hasDay = false;
-    for (size_t i = 0; i < sizeof(dayNames) / sizeof(dayNames[0]); i++) {
+    for (size_t i = 0; i < dayNameCount; i++) {
 	if (day == dayNames[i]) {
 	    entry->day = 2 * i;
 	    hasDay = true;
@@ -1046,9 +1051,9 @@ CommandConnection::buildRecordResponse(const char *type, const EmsMessage::Holid
     std::ostringstream response;
 
     response << type << " ";
-    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->day << "-";
+    response << std::setw(4) << (unsigned int) (2000 + entry->year) << "-";
     response << std::setw(2) << std::setfill('0') << (unsigned int) entry->month << "-";
-    response << std::setw(4) << (unsigned int) (2000 + entry->year);
+    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->day;
 
     return response.str();
 }
