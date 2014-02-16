@@ -314,6 +314,11 @@ CommandConnection::handleUbaCommand(std::istream& request)
     return InvalidCmd;
 }
 
+static const char * scheduleNames[] = {
+    "custom1", "family", "morning", "early", "evening", "forenoon",
+    "afternoon", "noon", "single", "senior", "custom2"
+};
+
 CommandConnection::CommandResult
 CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 {
@@ -325,15 +330,19 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"mode [day|night|auto]\n"
 		"daytemperature <temp>\n"
 		"nighttemperature <temp>\n"
-		"holidaytemperature <temp>\n"
 		"getholiday\n"
 		"holidaymode <start:YYYY-MM-DD> <end:YYYY-MM-DD>\n"
+		"vacationtemperature <temp>\n"
 		"getvacation\n"
 		"vacationmode <start:YYYY-MM-DD> <end:YYYY-MM-DD>\n"
 		"partymode <hours>\n"
-		"getschedule\n"
-		"schedule <index> unset\n"
-		"schedule <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n");
+		"pausemode <hours>\n"
+		"getactiveschedule\n"
+		"selectschedule [family|morning|early|evening|forenoon|noon|afternoon|single|senior|custom1|custom2]\n"
+		"getschedule [1|2]\n"
+		"schedule [1|2] <index> unset\n"
+		"schedule [1|2] <index> [MO|TU|WE|TH|FR|SA|SU] HH:MM [ON|OFF]\n"
+		"scheduleoptimizer [on|off]\n");
 	return Ok;
     } else if (cmd == "mode") {
 	uint8_t data;
@@ -352,7 +361,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	return handleHkTemperatureCommand(request, type, 2);
     } else if (cmd == "nighttemperature") {
 	return handleHkTemperatureCommand(request, type, 1);
-    } else if (cmd == "holidaytemperature") {
+    } else if (cmd == "vacationtemperature") {
 	return handleHkTemperatureCommand(request, type, 3);
     } else if (cmd == "holidaymode") {
 	return handleSetHolidayCommand(request, type + 2, 93);
@@ -365,28 +374,75 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	}
 	sendCommand(EmsMessage::addressRC, type, 86, &hours, 1);
 	return Ok;
+    } else if (cmd == "pausemode") {
+	uint8_t hours;
+	if (!parseIntParameter(request, hours, 99)) {
+	    return InvalidArgs;
+	}
+	sendCommand(EmsMessage::addressRC, type, 85, &hours, 1);
+	return Ok;
     } else if (cmd == "schedule") {
-	unsigned int index;
+	unsigned int schedule, index;
 	EmsMessage::ScheduleEntry entry;
 
-	request >> index;
+	request >> schedule >> index;
 
-	if (!request || index > 42 || !parseScheduleEntry(request, &entry)) {
+	if (!request || schedule < 1 || schedule > 2 || index > 42 || !parseScheduleEntry(request, &entry)) {
 	    return InvalidArgs;
 	}
 
-	sendCommand(EmsMessage::addressRC, type + 2,
+	sendCommand(EmsMessage::addressRC, type + schedule + 1,
 		(index - 1) * sizeof(EmsMessage::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
     } else if (cmd == "getschedule") {
-	startRequest(EmsMessage::addressRC, type + 2, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
+	unsigned int schedule;
+
+	request >> schedule;
+	if (!request || schedule < 1 || schedule > 2) {
+	    return InvalidArgs;
+	}
+
+	startRequest(EmsMessage::addressRC, type + schedule + 1, 0, 42 * sizeof(EmsMessage::ScheduleEntry));
+	return Ok;
+    } else if (cmd == "getactiveschedule") {
+	startRequest(EmsMessage::addressRC, type + 2, 84, 1);
+	return Ok;
+    } else if (cmd == "selectschedule") {
+	static const size_t nameCount = sizeof(scheduleNames) / sizeof(scheduleNames[0]);
+	std::string schedule;
+	uint8_t data;
+
+	request >> schedule;
+
+	for (data = 0; data < nameCount; data++) {
+	    if (schedule == scheduleNames[data]) {
+		break;
+	    }
+	}
+	if (data == nameCount) {
+	    return InvalidArgs;
+	}
+
+	sendCommand(EmsMessage::addressRC, type + 2, 84, &data, 1);
 	return Ok;
     } else if (cmd == "getvacation") {
 	startRequest(EmsMessage::addressRC, type + 2, 87, 2 * sizeof(EmsMessage::HolidayEntry));
 	return Ok;
     } else if (cmd == "getholiday") {
 	startRequest(EmsMessage::addressRC, type + 2, 93, 2 * sizeof(EmsMessage::HolidayEntry));
+	return Ok;
+    } else if (cmd == "scheduleoptimizer") {
+	std::string value;
+	uint8_t data;
+
+	request >> value;
+
+	if (value == "on")       data = 0xff;
+	else if (value == "off") data = 0x00;
+	else return InvalidArgs;
+
+	sendCommand(EmsMessage::addressRC, type, 19, &data, 1);
 	return Ok;
     }
 
@@ -768,7 +824,19 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
 	case 0x5d: /* get schedule HK4 */
-	    if (data[0] > 80) {
+	    if (data[0] == 84) {
+		/* 'get active schedule' response */
+		static const size_t nameCount = sizeof(scheduleNames) / sizeof(scheduleNames[0]);
+		const char *name = "unknown";
+		for (size_t i = 0; i < nameCount; i++) {
+		    if (data[1] == i) {
+			name = scheduleNames[i];
+			break;
+		    }
+		}
+		respond(name);
+		done = true;
+	    } else if (data[0] > 80) {
 		/* it's at the end -> holiday schedule */
 		const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
 
