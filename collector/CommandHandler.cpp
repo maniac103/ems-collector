@@ -217,10 +217,33 @@ CommandConnection::handleRcCommand(std::istream& request)
     if (cmd == "help") {
 	respond("Available subcommands:\n"
 		"geterrors\n"
-		"getcontactinfo\n");
+		"getcontactinfo\n"
+		"setcontactinfo [1|2] <text>\n");
 	return Ok;
     } else if (cmd == "getcontactinfo") {
 	startRequest(EmsMessage::addressRC, 0xa4, 0, 42);
+	return Ok;
+    } else if (cmd == "setcontactinfo") {
+	unsigned int line;
+	std::ostringstream buffer;
+	std::string text;
+
+	request >> line;
+	if (!request || line < 1 || line > 2) {
+	    return InvalidArgs;
+	}
+
+	while (request) {
+	    std::string token;
+	    request >> token;
+	    buffer << token << " ";
+	}
+
+	// make sure there's at least 21 characters in there
+	buffer << "                     ";
+
+	text = buffer.str().substr(0, 21);
+	sendCommand(EmsMessage::addressRC, 0xa4, line, (uint8_t *) text.c_str(), 21);
 	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsMessage::addressRC, 0x12, 0, 4 * sizeof(EmsMessage::ErrorRecord));
