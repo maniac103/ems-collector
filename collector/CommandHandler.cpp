@@ -808,7 +808,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
 	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = type == 0x12 ? "S" : type == 0x11 ? "L" : "B";
+	    const char *prefix = type >= 0x12 ? "S" : type == 0x11 ? "L" : "B";
 	    done = loopOverResponse<EmsMessage::ErrorRecord>(prefix);
 	    if (!done) {
 		done = !continueRequest();
