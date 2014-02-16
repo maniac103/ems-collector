@@ -245,7 +245,7 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"geterrors\n");
 	return Ok;
     } else if (cmd == "geterrors") {
-	startRequest(EmsMessage::addressUBA, 0x10, 0, 4 * sizeof(EmsMessage::ErrorRecord));
+	startRequest(EmsMessage::addressUBA, 0x10, 0, 8 * sizeof(EmsMessage::ErrorRecord));
 	return Ok;
     } else if (cmd == "antipendel") {
 	uint8_t minutes;
@@ -729,11 +729,13 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
 	case 0x13: /* get RC errors 2 */ {
-	    done = loopOverResponse<EmsMessage::ErrorRecord>();
+	    const char *prefix = type == 0x12 ? "S" : type == 0x11 ? "L" : "B";
+	    done = loopOverResponse<EmsMessage::ErrorRecord>(prefix);
 	    if (!done) {
 		done = !continueRequest();
 		if (done && (type == 0x10 || type == 0x12)) {
-		    startRequest(source, type + 1, 0, 4 * sizeof(EmsMessage::ErrorRecord), false);
+		    unsigned int count = type == 0x10 ? 5 : 4;
+		    startRequest(source, type + 1, 0, count * sizeof(EmsMessage::ErrorRecord), false);
 		    done = false;
 		}
 	    }
@@ -793,7 +795,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 }
 
 template<typename T> bool
-CommandConnection::loopOverResponse()
+CommandConnection::loopOverResponse(const char *prefix)
 {
     const size_t msgSize = sizeof(T);
     while (m_parsePosition + msgSize <= m_requestResponse.size()) {
@@ -808,7 +810,7 @@ CommandConnection::loopOverResponse()
 	}
 
 	std::ostringstream os;
-	os << std::setw(2) << std::setfill('0') << m_responseCounter << " " << response;
+	os << prefix << std::setw(2) << std::setfill('0') << m_responseCounter << " " << response;
 	respond(os.str());
     }
 

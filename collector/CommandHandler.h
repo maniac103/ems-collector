@@ -76,7 +76,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
 
-	template<typename T> bool loopOverResponse();
+	template<typename T> bool loopOverResponse(const char *prefix = "");
 	std::string buildRecordResponse(const EmsMessage::ErrorRecord *record);
 	std::string buildRecordResponse(const EmsMessage::ScheduleEntry *entry);
 	std::string buildRecordResponse(const char *type, const EmsMessage::HolidayEntry *entry);
