@@ -277,7 +277,9 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"hyst [on|off] <kelvin>\n"
 		"pumpmodulation <minpercent> <maxpercent>\n"
 		"pumpdelay <minutes>\n"
-		"geterrors\n");
+		"geterrors\n"
+		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
+		"checkmaintenanceneeded\n");
 	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsMessage::addressUBA, 0x10, 0, 8 * sizeof(EmsMessage::ErrorRecord));
@@ -320,6 +322,43 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	    return InvalidArgs;
 	}
 	sendCommand(EmsMessage::addressUBA, 0x16, 8, &minutes, 1);
+	return Ok;
+    } else if (cmd == "schedulemaintenance") {
+	std::string kind;
+	uint8_t data[5] = { 0, 60, 1, 1, 4 };
+
+	request >> kind;
+	if (kind == "bydate") {
+	    std::string due;
+	    EmsMessage::HolidayEntry dueDate;
+
+	    request >> due;
+	    if (!request || !parseHolidayEntry(due, &dueDate)) {
+		return InvalidArgs;
+	    }
+
+	    data[0] = 2;
+	    data[2] = dueDate.day;
+	    data[3] = dueDate.month;
+	    data[4] = dueDate.year;
+	} else if (kind == "byhours") {
+	    uint8_t hours;
+	    if (!parseIntParameter(request, hours, 60)) {
+		return InvalidArgs;
+	    }
+
+	    data[0] = 1;
+	    data[1] = hours;
+	} else if (kind == "off") {
+	    /* initializer is sufficient */
+	} else {
+	    return InvalidArgs;
+	}
+
+	sendCommand(EmsMessage::addressUBA, 0x15, 0, data, sizeof(data));
+	return Ok;
+    } else if (cmd == "checkmaintenanceneeded") {
+	startRequest(EmsMessage::addressUBA, 0x1c, 5, 3);
 	return Ok;
     }
 
@@ -830,6 +869,14 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	}
+	case 0x1c: /* check for maintenance */
+	    switch (data[1]) {
+		case 0: respond("not due"); break;
+		case 3: respond("due: hours"); break;
+		case 8: respond("due: date"); break;
+	    }
+	    done = true;
+	    break;
 	case 0x3f: /* get schedule HK1 */
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
