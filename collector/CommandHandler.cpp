@@ -797,7 +797,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	case 0xa4: { /* get contact info */
-	    done = !continueRequest();
+	    // RC30 doesn't support this and always returns empty responses
+	    done = !continueRequest() || data.size() == 1;
 	    if (done) {
 		for (size_t i = 1; i < data.size(); i += 21) {
 		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
