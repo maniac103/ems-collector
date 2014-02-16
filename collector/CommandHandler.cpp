@@ -772,14 +772,16 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	case 0xa4: { /* get contact info */
-	    for (size_t i = 1; i < data.size(); i += 21) {
-		size_t len = std::min(data.size() - i, static_cast<size_t>(21));
-		char buffer[22];
-		memcpy(buffer, &data.at(i), len);
-		buffer[len] = 0;
-		respond(buffer);
+	    done = !continueRequest();
+	    if (done) {
+		for (size_t i = 1; i < data.size(); i += 21) {
+		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
+		    char buffer[22];
+		    memcpy(buffer, &data.at(i), len);
+		    buffer[len] = 0;
+		    respond(buffer);
+		}
 	    }
-	    done = true;
 	    break;
 	}
     }
