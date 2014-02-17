@@ -88,6 +88,9 @@ class Options
 	static const std::string& databasePassword() {
 	    return m_dbPass;
 	}
+	static unsigned int commandPort() {
+	    return m_commandPort;
+	}
 
 	static ParseResult parse(int argc, char *argv[]);
 
@@ -121,6 +124,7 @@ class Options
 	static std::string m_dbPath;
 	static std::string m_dbUser;
 	static std::string m_dbPass;
+	static unsigned int m_commandPort;
 };
 
 #endif /* __OPTIONS_H__ */

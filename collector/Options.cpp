@@ -34,6 +34,7 @@ bool Options::m_daemonize = true;
 std::string Options::m_dbPath;
 std::string Options::m_dbUser;
 std::string Options::m_dbPass;
+unsigned int Options::m_commandPort = 0;
 
 static void
 usage(std::ostream& stream, const char *programName,
@@ -80,6 +81,11 @@ Options::parse(int argc, char *argv[])
 	("db-pass,p", bpo::value<std::string>(&m_dbPass)->composing(),
 	 "Database password");
 
+    bpo::options_description tcp("TCP options");
+    tcp.add_options()
+	("command-port,C", bpo::value<unsigned int>(&m_commandPort)->composing(),
+	 "TCP port for remote command interface (0 to disable)");
+
     bpo::options_description hidden("Hidden options");
     hidden.add_options()
 	("target", bpo::value<std::string>(&m_target), "Connection target (serial:<device> or tcp:<host>:<port>)");
@@ -88,16 +94,19 @@ Options::parse(int argc, char *argv[])
     options.add(general);
     options.add(daemon);
     options.add(db);
+    options.add(tcp);
     options.add(hidden);
 
     bpo::options_description configOptions;
     configOptions.add(general);
     configOptions.add(db);
+    configOptions.add(tcp);
 
     bpo::options_description visible;
     visible.add(general);
     visible.add(daemon);
     visible.add(db);
+    visible.add(tcp);
 
     bpo::positional_options_description p;
     p.add("target", 1);
