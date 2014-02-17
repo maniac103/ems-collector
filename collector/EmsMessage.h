@@ -28,7 +28,8 @@ class EmsMessage
 {
     public:
 	EmsMessage(Database *db, const std::vector<uint8_t>& data);
-	EmsMessage(uint8_t dest, uint8_t type, const std::vector<uint8_t>& data, bool expectResponse);
+	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
+		   const std::vector<uint8_t>& data, bool expectResponse);
 
 	void handle();
 
@@ -48,6 +49,9 @@ class EmsMessage
 	}
 	uint8_t getType() const {
 	    return m_type;
+	}
+	uint8_t getOffset() const {
+	    return m_offset;
 	}
 	const std::vector<uint8_t>& getData() const {
 	    return m_data;
@@ -120,6 +124,7 @@ class EmsMessage
 	uint8_t m_source;
 	uint8_t m_dest;
 	uint8_t m_type;
+	uint8_t m_offset;
 };
 
 #endif /* __EMSMESSAGE_H__ */

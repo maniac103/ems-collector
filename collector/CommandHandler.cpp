@@ -809,15 +809,16 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     const std::vector<uint8_t>& data = message.getData();
     uint8_t source = message.getSource();
     uint8_t type = message.getType();
+    uint8_t offset = message.getOffset();
 
     if (type == 0xff) {
 	m_waitingForResponse = false;
-	respond(data[0] == 0x04 ? "FAIL" : "OK");
+	respond(offset == 0x04 ? "FAIL" : "OK");
 	return;
     }
 
     m_responseTimeout.cancel();
-    m_requestResponse.insert(m_requestResponse.end(), data.begin() + 1, data.end());
+    m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
     bool done = false;
 
@@ -833,8 +834,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    };
 	    static const size_t SOURCECOUNT = sizeof(SOURCES) / sizeof(SOURCES[0]);
 
-	    unsigned int major = data[2];
-	    unsigned int minor = data[3];
+	    unsigned int major = data[1];
+	    unsigned int minor = data[2];
 	    size_t index;
 
 	    for (index = 0; index < SOURCECOUNT; index++) {
@@ -870,7 +871,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    break;
 	}
 	case 0x1c: /* check for maintenance */
-	    switch (data[1]) {
+	    switch (data[0]) {
 		case 0: respond("not due"); break;
 		case 3: respond("due: hours"); break;
 		case 8: respond("due: date"); break;
@@ -881,18 +882,18 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
 	case 0x5d: /* get schedule HK4 */
-	    if (data[0] == 84) {
+	    if (offset == 84) {
 		/* 'get active schedule' response */
 		const char *name = "unknown";
 		for (size_t i = 0; i < scheduleNameCount; i++) {
-		    if (data[1] == i) {
+		    if (data[0] == i) {
 			name = scheduleNames[i];
 			break;
 		    }
 		}
 		respond(name);
 		done = true;
-	    } else if (data[0] > 80) {
+	    } else if (offset > 80) {
 		/* it's at the end -> holiday schedule */
 		const size_t msgSize = sizeof(EmsMessage::HolidayEntry);
 
@@ -922,9 +923,9 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    break;
 	case 0xa4: { /* get contact info */
 	    // RC30 doesn't support this and always returns empty responses
-	    done = !continueRequest() || data.size() == 1;
+	    done = !continueRequest() || data.empty();
 	    if (done) {
-		for (size_t i = 1; i < data.size(); i += 21) {
+		for (size_t i = 0; i < data.size(); i += 21) {
 		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
 		    char buffer[22];
 		    memcpy(buffer, &data.at(i), len);
@@ -1176,11 +1177,10 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 			       bool expectResponse)
 {
     std::vector<uint8_t> sendData(data, data + count);
-    sendData.insert(sendData.begin(), offset);
 
     scheduleResponseTimeout();
 
-    EmsMessage msg(dest, type, sendData, expectResponse);
+    EmsMessage msg(dest, type, offset, sendData, expectResponse);
     m_handler.sendMessage(msg);
 }
 
