@@ -24,6 +24,7 @@
 #include <boost/shared_ptr.hpp>
 
 class CommandHandler;
+class DataHandler;
 
 class TcpHandler : public IoHandler
 {
@@ -53,6 +54,7 @@ class TcpHandler : public IoHandler
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::deadline_timer m_watchdog;
 	boost::shared_ptr<CommandHandler> m_cmdHandler;
+	boost::shared_ptr<DataHandler> m_dataHandler;
 };
 
 #endif /* __TCPHANDLER_H__ */

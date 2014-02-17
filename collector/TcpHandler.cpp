@@ -21,6 +21,7 @@
 #include <iomanip>
 #include "TcpHandler.h"
 #include "CommandHandler.h"
+#include "DataHandler.h"
 #include "Options.h"
 
 TcpHandler::TcpHandler(const std::string& host,
@@ -64,6 +65,12 @@ TcpHandler::handleConnect(const boost::system::error_code& error)
 	    m_pcMessageCallback = boost::bind(&CommandHandler::handlePcMessage,
 					      m_cmdHandler, _1);
 	}
+	port = Options::dataPort();
+	if (port != 0) {
+	    boost::asio::ip::tcp::endpoint dataEndpoint(boost::asio::ip::tcp::v4(), port);
+	    m_dataHandler.reset(new DataHandler(*this, dataEndpoint));
+	    m_valueCallback = boost::bind(&DataHandler::handleValue, m_dataHandler, _1);
+	}
 	resetWatchdog();
 	readStart();
     }
@@ -98,6 +105,8 @@ TcpHandler::doCloseImpl()
     m_watchdog.cancel();
     m_cmdHandler.reset();
     m_pcMessageCallback.clear();
+    m_dataHandler.reset();
+    m_valueCallback.clear();
     m_socket.close();
 }
 

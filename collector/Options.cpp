@@ -35,6 +35,7 @@ std::string Options::m_dbPath;
 std::string Options::m_dbUser;
 std::string Options::m_dbPass;
 unsigned int Options::m_commandPort = 0;
+unsigned int Options::m_dataPort = 0;
 
 static void
 usage(std::ostream& stream, const char *programName,
@@ -84,7 +85,9 @@ Options::parse(int argc, char *argv[])
     bpo::options_description tcp("TCP options");
     tcp.add_options()
 	("command-port,C", bpo::value<unsigned int>(&m_commandPort)->composing(),
-	 "TCP port for remote command interface (0 to disable)");
+	 "TCP port for remote command interface (0 to disable)")
+	("data-port,D", bpo::value<unsigned int>(&m_dataPort)->composing(),
+	 "TCP port for broadcasting live sensor data (0 to disable)");
 
     bpo::options_description hidden("Hidden options");
     hidden.add_options()

@@ -327,5 +327,8 @@ IoHandler::handleValue(const EmsValue& value)
 	printDescriptive(Options::dataDebug(), value);
 	Options::dataDebug() << std::endl;
     }
+    if (m_valueCallback) {
+	m_valueCallback(value);
+    }
     m_db.handleValue(value);
 }

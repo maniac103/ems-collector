@@ -56,6 +56,7 @@ class IoHandler : public boost::asio::io_service
 	bool m_active;
 	unsigned char m_recvBuffer[maxReadLength];
 	boost::function<void (const EmsMessage& message)> m_pcMessageCallback;
+	boost::function<void (const EmsValue& value)> m_valueCallback;
 
     private:
 	typedef enum {
