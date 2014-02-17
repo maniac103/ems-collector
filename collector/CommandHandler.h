@@ -56,6 +56,11 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	}
 	void handlePcMessage(const EmsMessage& message);
 
+    public:
+	static std::string buildRecordResponse(const EmsProto::ErrorRecord *record);
+	static std::string buildRecordResponse(const EmsProto::ScheduleEntry *entry);
+	static std::string buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry);
+
     private:
 	void handleRequest(const boost::system::error_code& error);
 	void handleWrite(const boost::system::error_code& error);
@@ -77,9 +82,6 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleZirkPumpCommand(std::istream& request);
 
 	template<typename T> bool loopOverResponse(const char *prefix = "");
-	std::string buildRecordResponse(const EmsProto::ErrorRecord *record);
-	std::string buildRecordResponse(const EmsProto::ScheduleEntry *entry);
-	std::string buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry);
 
 	bool parseScheduleEntry(std::istream& request, EmsProto::ScheduleEntry *entry);
 	bool parseHolidayEntry(const std::string& string, EmsProto::HolidayEntry *entry);
