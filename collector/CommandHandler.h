@@ -77,12 +77,12 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleZirkPumpCommand(std::istream& request);
 
 	template<typename T> bool loopOverResponse(const char *prefix = "");
-	std::string buildRecordResponse(const EmsMessage::ErrorRecord *record);
-	std::string buildRecordResponse(const EmsMessage::ScheduleEntry *entry);
-	std::string buildRecordResponse(const char *type, const EmsMessage::HolidayEntry *entry);
+	std::string buildRecordResponse(const EmsProto::ErrorRecord *record);
+	std::string buildRecordResponse(const EmsProto::ScheduleEntry *entry);
+	std::string buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry);
 
-	bool parseScheduleEntry(std::istream& request, EmsMessage::ScheduleEntry *entry);
-	bool parseHolidayEntry(const std::string& string, EmsMessage::HolidayEntry *entry);
+	bool parseScheduleEntry(std::istream& request, EmsProto::ScheduleEntry *entry);
+	bool parseHolidayEntry(const std::string& string, EmsProto::HolidayEntry *entry);
 
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),

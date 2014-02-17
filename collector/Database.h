@@ -24,6 +24,7 @@
 #include <queue>
 #include <mysql++/connection.h>
 #include <mysql++/query.h>
+#include "EmsMessage.h"
 
 class Database {
     public:
@@ -34,6 +35,9 @@ class Database {
 	bool connect(const std::string& server, const std::string& user, const std::string& password);
 
     public:
+	void handleValue(const EmsValue& value);
+
+    private:
 	typedef enum {
 	    SensorKesselSollTemp = 1,
 	    SensorKesselIstTemp = 2,
@@ -58,8 +62,6 @@ class Database {
 	    SensorBrennerstarts = 20,
 	    SensorWarmwasserbereitungsZeit = 21,
 	    SensorWarmwasserBereitungen = 22,
-	    /* not valid for DB */
-	    NumericSensorLast = 24
 	} NumericSensors;
 
 	typedef enum {

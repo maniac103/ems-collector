@@ -21,7 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cassert>
-#include <asm/byteorder.h>
+#include <cmath>
 #include "EmsMessage.h"
 #include "Options.h"
 
@@ -38,8 +38,68 @@
 	return;                                                       \
     }
 
-EmsMessage::EmsMessage(Database *db, const std::vector<uint8_t>& data) :
-    m_db(db),
+EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, int divider) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Numeric)
+{
+    int value = 0;
+    for (size_t i = 0; i < len; i++) {
+	value = (value << 8) | data[i];
+    }
+
+    /* treat values with highest bit set as negative
+     * e.g. size = 2, value = 0xfffe -> real value -2
+     */
+    if (data[0] & 0x80) {
+	value = value - (1 << (len * 8));
+    }
+
+    m_value = (float) value / (float) divider;
+}
+
+EmsValue::EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Boolean),
+    m_value((value & (1 << bit)) != 0)
+{
+}
+
+EmsValue::EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint8_t high) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Kennlinie),
+    m_value(std::vector<uint8_t>({ low, medium, high }))
+{
+}
+
+EmsValue::EmsValue(Type type, SubType subType, uint8_t value) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Enumeration),
+    m_value(value)
+{
+}
+
+EmsValue::EmsValue(Type type, SubType subType, const ErrorEntry& error) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Error),
+    m_value(error)
+{
+}
+
+EmsValue::EmsValue(Type type, SubType subType, const std::string& value) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(Formatted),
+    m_value(value)
+{
+}
+
+EmsMessage::EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data) :
+    m_valueHandler(valueHandler),
     m_data(data)
 {
     if (m_data.size() >= 4) {
@@ -59,9 +119,9 @@ EmsMessage::EmsMessage(Database *db, const std::vector<uint8_t>& data) :
 EmsMessage::EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
 		       const std::vector<uint8_t>& data,
 		       bool expectResponse) :
-    m_db(NULL),
+    m_valueHandler(),
     m_data(data),
-    m_source(addressPC),
+    m_source(EmsProto::addressPC),
     m_dest(dest | (expectResponse ? 0x80 : 0)),
     m_type(type),
     m_offset(offset)
@@ -121,13 +181,13 @@ EmsMessage::handle()
 	return;
     }
 
-    if (m_dest == addressPC) {
+    if (m_dest == EmsProto::addressPC) {
 	/* don't handle responses that were meant for ourself */
 	return;
     }
 
     switch (m_source) {
-	case addressUBA:
+	case EmsProto::addressUBA:
 	    /* UBA message */
 	    switch (m_type) {
 		case 0x07:
@@ -139,7 +199,6 @@ EmsMessage::handle()
 		    parseUBAErrorMessage();
 		    handled = true;
 		    break;
-		case 0x14: parseUBAUnknown1Message(); handled = true; break;
 		case 0x16: parseUBAParametersMessage(); handled = true; break;
 		case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
 		case 0x19: parseUBAMonitorSlowMessage(); handled = true; break;
@@ -153,7 +212,7 @@ EmsMessage::handle()
 		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
 	    }
 	    break;
-	case addressBC10:
+	case EmsProto::addressBC10:
 	    /* BC10 message */
 	    switch (m_type) {
 		case 0x29:
@@ -161,28 +220,18 @@ EmsMessage::handle()
 		    break;
 	    }
 	    break;
-	case addressRC:
+	case EmsProto::addressRC:
 	    /* RC message */
 	    switch (m_type) {
 		case 0x06: parseRCTimeMessage(); handled = true; break;
 		case 0x1A: /* command for UBA3 */ handled = true; break;
 		case 0x35: /* command for UBA3 */ handled = true; break;
 		case 0x3E:
-		    parseRCHKMonitorMessage("HK1",
-					    Database::SensorVorlaufHK1SollTemp,
-					    Database::SensorHK1Automatik,
-					    Database::SensorHK1Tagbetrieb,
-					    Database::SensorHK1Ferien,
-					    Database::SensorHK1Party);
+		    parseRCHKMonitorMessage("HK1", EmsValue::HK1);
 		    handled = true;
 		    break;
 		case 0x48:
-		    parseRCHKMonitorMessage("HK2",
-					    Database::SensorVorlaufHK2SollTemp,
-					    Database::SensorHK2Automatik,
-					    Database::SensorHK2Tagbetrieb,
-					    Database::SensorHK2Ferien,
-					    Database::SensorHK2Party);
+		    parseRCHKMonitorMessage("HK2", EmsValue::HK2);
 		    handled = true;
 		    break;
 		case 0x9D: /* command for WM10 */ handled = true; break;
@@ -190,14 +239,14 @@ EmsMessage::handle()
 		case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
 		case 0xAC: /* command for MM10 */ handled = true; break;
 	    }
-	case addressWM10:
+	case EmsProto::addressWM10:
 	    /* WM10 message */
 	    switch (m_type) {
 		case 0x9C: parseWMTemp1Message(); handled = true; break;
 		case 0x1E: parseWMTemp2Message(); handled = true; break;
 	    }
 	    break;
-	case addressMM10:
+	case EmsProto::addressMM10:
 	    /* MM10 message */
 	    switch (m_type) {
 		case 0xAB: parseMMTempMessage(); handled = true; break;
@@ -216,102 +265,58 @@ EmsMessage::handle()
 }
 
 void
-EmsMessage::printNumberAndAddToDb(size_t offset, size_t size, int divider,
-				  const char *name, const char *unit,
-				  Database::NumericSensors sensor)
+EmsMessage::parseNumeric(size_t offset, size_t size, int divider,
+			 EmsValue::Type type, EmsValue::SubType subtype)
 {
-    int value = 0;
-    float floatVal;
-
-    for (size_t i = offset; i < offset + size; i++) {
-	value = (value << 8) | m_data[i];
-    }
-
-    /* treat values with highest bit set as negative
-     * e.g. size = 2, value = 0xfffe -> real value -2
-     */
-    if (m_data[offset] & 0x80) {
-	value = value - (1 << (size * 8));
-    }
-
-    floatVal = value;
-    if (divider > 1) {
-	floatVal /= divider;
-    }
-
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: " << name << " = " << floatVal << " " << unit << std::endl;
-    }
-    if (m_db && sensor != Database::NumericSensorLast) {
-	m_db->addSensorValue(sensor, floatVal);
+    if (m_valueHandler && canAccess(offset, size)) {
+	EmsValue value(type, subtype, &m_data.at(offset - m_offset), size, divider);
+	m_valueHandler(value);
     }
 }
 
 void
-EmsMessage::printBoolAndAddToDb(int byte, int bit, const char *name,
-				Database::BooleanSensors sensor)
+EmsMessage::parseBool(size_t offset, uint8_t bit,
+		      EmsValue::Type type, EmsValue::SubType subtype)
 {
-    bool flagSet = m_data[byte] & (1 << bit);
-
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: " << name << " = "
-			     << (flagSet ? "AN" : "AUS") << std::endl;
-    }
-
-    if (m_db && sensor != Database::BooleanSensorLast) {
-	m_db->addSensorValue(sensor, flagSet);
-    }
-}
-
-void
-EmsMessage::printStateAndAddToDb(const std::string& value, const char *name,
-				 Database::StateSensors sensor)
-{
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: " << name << " = " << value << std::endl;
-    }
-
-    if (m_db && sensor != Database::StateSensorLast) {
-	m_db->addSensorValue(sensor, value);
+    if (m_valueHandler && canAccess(offset, 1)) {
+	EmsValue value(type, subtype, m_data.at(offset - m_offset), bit);
+	m_valueHandler(value);
     }
 }
 
 void
 EmsMessage::parseUBAMonitorFastMessage()
 {
-    std::ostringstream ss;
-
     RETURN_ON_SIZE_MISMATCH(25, "Monitor Fast");
 
-    printNumberAndAddToDb(0, 1, 1, "Kessel-Solltemperatur",
-			  "°C", Database::SensorKesselSollTemp);
-    printNumberAndAddToDb(1, 2, 10, "Kessel-Isttemperatur",
-			  "°C", Database::SensorKesselIstTemp);
-    printNumberAndAddToDb(11, 2, 10, "Warmwassertemperatur",
-			  "°C", Database::NumericSensorLast);
-    printNumberAndAddToDb(13, 2, 10, "Rücklauftemperatur",
-			  "°C", Database::SensorRuecklaufTemp);
-    printNumberAndAddToDb(3, 1, 1, "Max. Leistung", "%",
-			  Database::SensorMaxLeistung /* FIXME: remove */);
-    printNumberAndAddToDb(4, 1, 1, "Mom. Leistung", "%",
-			  Database::SensorMomLeistung);
-    printNumberAndAddToDb(15, 2, 10, "Flammenstrom", "µA",
-			  Database::SensorFlammenstrom);
-    printNumberAndAddToDb(17, 1, 10, "Systemdruck", "bar",
-			  Database::SensorSystemdruck);
+    parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::Kessel);
+    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
+    parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
+    parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
+    parseNumeric(3, 1, 1, EmsValue::MaxLeistung, EmsValue::None);
+    parseNumeric(4, 1, 1, EmsValue::MomLeistung, EmsValue::None);
+    parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
+    parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None);
 
-    ss << m_data[18] << m_data[19];
-    printStateAndAddToDb(ss.str(), "Servicecode", Database::SensorServiceCode);
-    ss.str(std::string());
-    ss << std::dec << (m_data[20] << 8 | m_data[21]);
-    printStateAndAddToDb(ss.str(), "Fehlercode", Database::SensorFehlerCode);
+    if (m_valueHandler) {
+	if (canAccess(18, 2)) {
+	    std::ostringstream ss;
+	    ss << m_data[18] << m_data[19];
+	    m_valueHandler(EmsValue(EmsValue::ServiceCode, EmsValue::None, ss.str()));
+	}
+	if (canAccess(20, 2)) {
+	    std::ostringstream ss;
+	    ss << std::dec << (m_data[20] << 8 | m_data[21]);
+	    m_valueHandler(EmsValue(EmsValue::FehlerCode, EmsValue::None, ss.str()));
+	}
+    }
 
-    printBoolAndAddToDb(7, 0, "Flamme", Database::SensorFlamme);
-    printBoolAndAddToDb(7, 2, "Brenner/Abluft", Database::SensorBrenner);
-    printBoolAndAddToDb(7, 3, "Zündung", Database::SensorZuendung);
-    printBoolAndAddToDb(7, 5, "Kessel-Pumpe", Database::SensorKesselPumpe);
-    printBoolAndAddToDb(7, 6, "3-Wege-Ventil auf WW", Database::Sensor3WegeVentil);
-    printBoolAndAddToDb(7, 7, "Zirkulation", Database::SensorZirkulation);
+    parseBool(7, 0, EmsValue::FlammeAktiv, EmsValue::None);
+    parseBool(7, 2, EmsValue::BrennerAktiv, EmsValue::None);
+    parseBool(7, 3, EmsValue::ZuendungAktiv, EmsValue::None);
+    parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::Kessel);
+    parseBool(7, 6, EmsValue::DreiWegeVentilAufWW, EmsValue::None);
+    parseBool(7, 7, EmsValue::ZirkulationAktiv, EmsValue::None);
 }
 
 void
@@ -319,132 +324,74 @@ EmsMessage::parseUBAMonitorSlowMessage()
 {
     RETURN_ON_SIZE_MISMATCH(25, "Monitor Slow");
 
-    printNumberAndAddToDb(0, 2, 10, "Außentemperatur", "°C",
-			  Database::SensorAussenTemp);
-    printNumberAndAddToDb(2, 2, 10, "Kesseltemperatur", "°C",
-			  Database::NumericSensorLast);
-    printNumberAndAddToDb(4, 2, 10, "Abgastemperatur", "°C",
-			  Database::NumericSensorLast);
-    printNumberAndAddToDb(9, 1, 1, "Pumpenmodulation", "%",
-			  Database::NumericSensorLast);
-    printNumberAndAddToDb(10, 3, 1, "Brennerstarts", "",
-			  Database::SensorBrennerstarts);
-    printNumberAndAddToDb(13, 3, 1, "Betriebszeit total", "min",
-			  Database::SensorBetriebszeit);
-    printNumberAndAddToDb(19, 3, 1, "Betriebszeit Heizen", "min",
-			  Database::SensorHeizZeit);
-    printNumberAndAddToDb(22, 3, 1, "Betriebszeit 2", "min",
-			  Database::NumericSensorLast);
+    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
+    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
+    parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
+    parseNumeric(9, 1, 1, EmsValue::PumpenModulation, EmsValue::None);
+    parseNumeric(10, 3, 1, EmsValue::Brennerstarts, EmsValue::None);
+    parseNumeric(13, 3, 1, EmsValue::BetriebsZeit, EmsValue::None);
+    parseNumeric(19, 3, 1, EmsValue::HeizZeit, EmsValue::None);
 }
 
 void
 EmsMessage::parseUBAMonitorWWMessage()
 {
-    DebugStream& debug = Options::dataDebug();
-
     RETURN_ON_SIZE_MISMATCH(16, "Monitor WW");
 
-    printNumberAndAddToDb(0, 1, 1, "Warmwasser-Solltemperatur", "°C",
-			  Database::SensorWarmwasserSollTemp);
-    printNumberAndAddToDb(1, 2, 10, "Warmwasser-Isttemperatur (Messstelle 1)", "°C",
-			  Database::SensorWarmwasserIstTemp);
-    printNumberAndAddToDb(10, 3, 1, "Warmwasserbereitungszeit", "min",
-			  Database::SensorWarmwasserbereitungsZeit);
-    printNumberAndAddToDb(13, 3, 1, "Warmwasserbereitungen", "",
-			  Database::SensorWarmwasserBereitungen);
-    printNumberAndAddToDb(3, 2, 10, "Warmwasser-Isttemperatur (Messstelle 2)", "°C",
-			  Database::NumericSensorLast);
+    parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::WW);
+    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::WW);
+    parseNumeric(10, 3, 1, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
+    parseNumeric(13, 3, 1, EmsValue::WarmwasserBereitungen, EmsValue::None);
 
-    printBoolAndAddToDb(5, 0, "WW-Tagbetrieb", Database::SensorWWTagbetrieb);
-    printBoolAndAddToDb(5, 1, "Einmalladung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(5, 2, "Thermische Desinfektion", Database::BooleanSensorLast);
-    printBoolAndAddToDb(5, 3, "Warmwasserbereitung", Database::SensorWarmwasserBereitung);
-    printBoolAndAddToDb(5, 4, "Warmwassernachladung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(5, 5, "Warmwassertemp OK", Database::SensorWarmwasserTempOK);
+    parseBool(5, 0, EmsValue::Tagbetrieb, EmsValue::WW);
+    parseBool(5, 1, EmsValue::EinmalLadungAktiv, EmsValue::WW);
+    parseBool(5, 2, EmsValue::DesinfektionAktiv, EmsValue::WW);
+    parseBool(5, 3, EmsValue::WarmwasserBereitung, EmsValue::None);
+    parseBool(5, 4, EmsValue::NachladungAktiv, EmsValue::WW);
+    parseBool(5, 5, EmsValue::WarmwasserTempOK, EmsValue::None);
+    parseBool(7, 0, EmsValue::Tagbetrieb, EmsValue::Zirkulation);
+    parseBool(7, 2, EmsValue::ZirkulationAktiv, EmsValue::None);
 
-    printBoolAndAddToDb(7, 0, "Zirkulation-Tagbetrieb", Database::SensorZirkulationTagbetrieb);
-    printBoolAndAddToDb(7, 2, "Zirkulation", Database::SensorZirkulation);
-
-    if (debug) {
-	debug << "DATA: Art des Warmwassersystems: ";
-	switch (m_data[8]) {
-	    case 0: debug << "keins"; break;
-	    case 1: debug << "Durchlauferhitzer"; break;
-	    case 2: debug << "kleiner Speicher"; break;
-	    case 3: debug << "großer Speicher"; break;
-	    case 4: debug << "Speicherladesystem"; break;
-	}
-	debug << std::endl;
+    if (m_valueHandler) {
+	EmsValue value(EmsValue::WWSystemType, EmsValue::None, m_data[8]);
+	m_valueHandler(value);
     }
 }
 
 void
 EmsMessage::parseUBAParameterWWMessage()
 {
-    DebugStream& debug = Options::dataDebug();
-
     RETURN_ON_SIZE_MISMATCH(9, "UBA Parameter WW");
 
-    if (debug) {
-	debug << "DATA: Anzahl Schaltpunkte Zirkulation = ";
-	if (m_data[7] == 7) {
-	    debug << "dauerhaft an";
-	} else {
-	    debug << (unsigned int) m_data[7] << "x 3min";
-	}
-	debug << std::endl;
+    if (m_valueHandler && canAccess(7, 1)) {
+	m_valueHandler(EmsValue(EmsValue::Schaltpunkte, EmsValue::Zirkulation, m_data[7]));
     }
-}
-
-void
-EmsMessage::parseUBAUnknown1Message()
-{
-    RETURN_ON_SIZE_MISMATCH(3, "Unknown1");
-
-    printNumberAndAddToDb(0, 2, 1, "Unbekannte Temperatur1", "°C",
-			  Database::NumericSensorLast);
-    printNumberAndAddToDb(2, 2, 1, "Unbekannter Zähler", "",
-			  Database::NumericSensorLast);
 }
 
 void
 EmsMessage::parseUBAErrorMessage()
 {
-    if (m_data.size() % sizeof(ErrorRecord) != 0) {
+    if (m_data.size() % sizeof(EmsProto::ErrorRecord) != 0) {
 	std::cerr << "UBA error size mismatch (got " << m_data.size();
-	std::cerr << ", expected a multiple of " << sizeof(ErrorRecord) << ")" << std::endl;
+	std::cerr << ", expected a multiple of " << sizeof(EmsProto::ErrorRecord) << ")" << std::endl;
 	return;
     }
 
-    if (m_offset % sizeof(ErrorRecord) != 0) {
+    if (m_offset % sizeof(EmsProto::ErrorRecord) != 0) {
 	std::cerr << "Unexpected offset (got " << m_offset;
-	std::cerr << ", expected a multiple of " << sizeof(ErrorRecord);
+	std::cerr << ", expected a multiple of " << sizeof(EmsProto::ErrorRecord);
 	std::cerr << ")" << std::endl;
 	return;
     }
 
-    DebugStream& debug = Options::dataDebug();
-    if (debug) {
-	size_t count = m_data.size() / sizeof(ErrorRecord);
+    if (m_valueHandler) {
+	size_t count = m_data.size() / sizeof(EmsProto::ErrorRecord);
 	for (size_t i = 0; i < count; i++) {
-	    ErrorRecord *record = (ErrorRecord *) &m_data.at(i * sizeof(ErrorRecord));
-	    debug << "DATA: UBA error block " << (int) (m_type - 15) << ", error ";
-	    debug << ((m_offset / sizeof(ErrorRecord)) + i + 1) << ": ";
-	    if (record->errorAscii[0] == 0) {
-		debug << "Empty" << std::endl;
-	    } else {
-		debug << "Source " << std::hex << (unsigned int) record->source << ", error ";
-		debug << std::dec << record->errorAscii[0] << record->errorAscii[1] << ", code ";
-		debug << __be16_to_cpu(record->code_be16) << ", duration ";
-		debug << __be16_to_cpu(record->durationMinutes_be16) << " minutes" << std::endl;
-		if (record->hasDate) {
-		    debug << "DATA: error date " << BYTEFORMAT_DEC record->day << ".";
-		    debug << BYTEFORMAT_DEC record->month << ".";
-		    debug << BYTEFORMAT_DEC(2000 + record->year) << std::endl;
-		    debug << "DATA: error time " << BYTEFORMAT_DEC record->hour;
-		    debug << ":" << BYTEFORMAT_DEC record->minute << std::endl;
-		}
-	    }
+	    EmsProto::ErrorRecord *record = (EmsProto::ErrorRecord *) &m_data.at(i * sizeof(EmsProto::ErrorRecord));
+	    unsigned int index = (m_offset / sizeof(EmsProto::ErrorRecord)) + i;
+	    EmsValue::ErrorEntry entry = { m_type, index, *record };
+
+	    m_valueHandler(EmsValue(EmsValue::Fehler, EmsValue::None, entry));
 	}
     }
 }
@@ -454,16 +401,13 @@ EmsMessage::parseUBAParametersMessage()
 {
     RETURN_ON_SIZE_MISMATCH(12, "UBA Parameters");
 
-    DebugStream& debug = Options::dataDebug();
-    if (debug) {
-	debug << "DATA: Temperatureinstellung Kessel = " << BYTEFORMAT_DEC m_data[1] << " °C" << std::endl;
-	debug << "DATA: Abschalthysterese = " << BYTEFORMAT_DEC m_data[4] << " K" << std::endl;
-	debug << "DATA: Einschalthysterese = " << BYTEFORMAT_DEC m_data[5] << " K" << std::endl;
-	debug << "DATA: Antipendelzeit = " << BYTEFORMAT_DEC m_data[6] << " min" << std::endl;
-	debug << "DATA: Kesselpumpennachlauf = " << BYTEFORMAT_DEC m_data[8] << " min" << std::endl;
-	debug << "DATA: Min. Kesselpumpenmodulation = " << BYTEFORMAT_DEC m_data[10] << " %" << std::endl;
-	debug << "DATA: Max. Kesselpumpenmodulation = " << BYTEFORMAT_DEC m_data[9] << " %" << std::endl;
-    }
+    parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
+    parseNumeric(4, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
+    parseNumeric(5, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
+    parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::Kessel);
+    parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::Kessel);
+    parseNumeric(6, 1, 1, EmsValue::AntipendelZeit, EmsValue::None);
+    parseNumeric(8, 1, 1, EmsValue::PumpenNachlaufZeit, EmsValue::Kessel);
 }
 
 void
@@ -509,20 +453,13 @@ EmsMessage::parseRCTimeMessage()
 void
 EmsMessage::parseRCOutdoorTempMessage()
 {
-    printNumberAndAddToDb(0, 1, 1, "Gedämpfte Außentemperatur", "°C",
-			  Database::SensorGedaempfteAussenTemp);
+    parseNumeric(0, 1, 1, EmsValue::GedaempfteTemp, EmsValue::Aussen);
 }
 
 void
-EmsMessage::parseRCHKMonitorMessage(const char *name,
-				    Database::NumericSensors vorlaufSollSensor,
-				    Database::BooleanSensors automatikSensor,
-				    Database::BooleanSensors tagSensor,
-				    Database::BooleanSensors ferienSensor,
-				    Database::BooleanSensors partySensor)
+EmsMessage::parseRCHKMonitorMessage(const char *name, EmsValue::SubType subtype)
 {
     std::string text;
-    DebugStream& debug = Options::dataDebug();
 
     text = "RC ";
     text += name;
@@ -530,55 +467,33 @@ EmsMessage::parseRCHKMonitorMessage(const char *name,
 
     RETURN_ON_SIZE_MISMATCH(15, text);
 
-    printNumberAndAddToDb(2, 1, 2, "Raum-Solltemperatur", "°C",
-			  Database::SensorRaumSollTemp);
-    printNumberAndAddToDb(3, 2, 10, "Raum-Isttemperatur", "°C",
-			  Database::SensorRaumIstTemp);
+    parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
+    parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
 
-    if (debug) {
-	debug << "DATA: Kennlinie " << name << " "
-	      << "10°C -> " << BYTEFORMAT_DEC m_data[7]
-	      << "°C / 0°C -> " << BYTEFORMAT_DEC m_data[8]
-	      << "°C / -10°C -> " << BYTEFORMAT_DEC m_data[9]
-	      << "°C" << std::endl;
-
-	debug << "DATA: Einschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_data[5] << " min" << std::endl;
-	debug << "DATA: Ausschaltoptimierungszeit "
-	      << BYTEFORMAT_DEC m_data[6] << " min" << std::endl;
+    if (m_valueHandler && canAccess(7, 3)) {
+	EmsValue value(EmsValue::HKKennlinie, subtype, m_data[7], m_data[8], m_data[9]);
+	m_valueHandler(value);
     }
 
-    text = "Vorlauf ";
-    text += name;
-    text += " Solltemperatur";
-    printNumberAndAddToDb(14, 1, 1, text.c_str(), "°C", vorlaufSollSensor);
+    parseNumeric(14, 1, 1, EmsValue::SollTemp, subtype);
+    parseNumeric(5, 1, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
+    parseNumeric(6, 1, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
-    if (m_data[15] & (1 << 0)) {
-	if (debug) {
-	    debug << "DATA: " << name << " Keine Raumtemperatur vorhanden" << std::endl;
-	}
-    } else {
-	text = name;
-	text += " Raumtemperatur-Änderungsgeschwindigkeit";
-	printNumberAndAddToDb(10, 2, 100, text.c_str(),
-			      "K/min", Database::NumericSensorLast);
+    if (canAccess(15, 1) && (m_data[15] & 1) == 0) {
+	parseNumeric(10, 2, 100, EmsValue::TemperaturAenderung, EmsValue::Raum);
     }
 
-    printBoolAndAddToDb(0, 2, "Automatikbetrieb", automatikSensor);
-    printBoolAndAddToDb(0, 0, "Ausschaltoptimierung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(0, 1, "Einschaltoptimierung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(0, 3, "Warmwasservorrang", Database::SensorWWVorrang);
-    printBoolAndAddToDb(0, 4, "Estrichtrocknung", Database::BooleanSensorLast);
-    printBoolAndAddToDb(0, 5, "Ferienbetrieb", ferienSensor);
-    printBoolAndAddToDb(0, 6, "Frostschutz", Database::BooleanSensorLast);
-    printBoolAndAddToDb(0, 7, "Manueller Betrieb", Database::BooleanSensorLast);
-    printBoolAndAddToDb(1, 0, "Sommerbetrieb", Database::SensorSommerbetrieb);
-    printBoolAndAddToDb(1, 1, "Tagbetrieb", tagSensor);
-    printBoolAndAddToDb(1, 7, "Partybetrieb", partySensor);
-
-    text = "Schaltuhr ";
-    text += name;
-    printBoolAndAddToDb(13, 4, text.c_str(), Database::BooleanSensorLast);
+    parseBool(0, 2, EmsValue::Automatikbetrieb, subtype);
+    parseBool(0, 0, EmsValue::Ausschaltoptimierung, subtype);
+    parseBool(0, 1, EmsValue::Einschaltoptimierung, subtype);
+    parseBool(0, 3, EmsValue::WWVorrang, subtype);
+    parseBool(0, 4, EmsValue::Estrichtrocknung, subtype);
+    parseBool(0, 5, EmsValue::Ferien, subtype);
+    parseBool(0, 6, EmsValue::Frostschutz, subtype);
+    parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
+    parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
+    parseBool(1, 7, EmsValue::Party, subtype);
+    parseBool(13, 4, EmsValue::SchaltuhrEin, subtype);
 }
 
 void
@@ -586,11 +501,10 @@ EmsMessage::parseWMTemp1Message()
 {
     RETURN_ON_SIZE_MISMATCH(5, "WM1 Temp");
 
-    printNumberAndAddToDb(0, 2, 10, "Vorlauf HK1 Isttemperatur", "°C",
-			  Database::SensorVorlaufHK1IstTemp);
+    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
 
-    /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
-    printBoolAndAddToDb(2, 2, "HK1 Pumpe", Database::SensorHK1Pumpe);
+    /* Byte 2 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
+    parseBool(2, 2, EmsValue::PumpeAktiv, EmsValue::HK1);
 }
 
 void
@@ -598,8 +512,7 @@ EmsMessage::parseWMTemp2Message()
 {
     RETURN_ON_SIZE_MISMATCH(2, "WM2 Temp");
 
-    printNumberAndAddToDb(0, 2, 10, "Vorlauf HK1 Isttemperatur", "°C",
-			  Database::SensorVorlaufHK1IstTemp);
+    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
 }
 
 void
@@ -607,15 +520,12 @@ EmsMessage::parseMMTempMessage()
 {
     RETURN_ON_SIZE_MISMATCH(7, "MM Temp");
 
-    printNumberAndAddToDb(0, 1, 1, "Vorlauf HK2 Solltemperatur", "°C",
-			  Database::SensorVorlaufHK2SollTemp);
-    printNumberAndAddToDb(1, 2, 10, "Vorlauf HK2 Isttemperatur", "°C",
-			  Database::SensorVorlaufHK2IstTemp);
-    printNumberAndAddToDb(4, 1, 1, "Mischersteuerung", "",
-			  Database::SensorMischersteuerung);
+    parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::HK2);
+    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::HK2);
+    parseNumeric(3, 1, 1, EmsValue::Mischersteuerung, EmsValue::None);
 
-    /* Byte 4 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
-    printBoolAndAddToDb(3, 2, "HK2 Pumpe", Database::SensorHK2Pumpe);
+    /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
+    parseBool(3, 2, EmsValue::PumpeAktiv, EmsValue::HK2);
 
     if (Options::dataDebug()) {
 	Options::dataDebug() << "DATA: MM10 Flags "

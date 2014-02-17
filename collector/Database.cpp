@@ -310,6 +310,100 @@ Database::executeQuery(mysqlpp::Query& query)
 }
 
 void
+Database::handleValue(const EmsValue& value)
+{
+    static const struct {
+	EmsValue::Type type;
+	EmsValue::SubType subtype;
+	NumericSensors sensor;
+    } NUMERICMAPPING[] = {
+	{ EmsValue::SollTemp, EmsValue::Kessel, SensorKesselSollTemp },
+	{ EmsValue::IstTemp, EmsValue::Kessel, SensorKesselIstTemp },
+	{ EmsValue::SollTemp, EmsValue::WW, SensorWarmwasserSollTemp },
+	{ EmsValue::IstTemp, EmsValue::WW, SensorWarmwasserIstTemp },
+	{ EmsValue::SollTemp, EmsValue::HK1, SensorVorlaufHK1SollTemp },
+	{ EmsValue::IstTemp, EmsValue::HK1, SensorVorlaufHK1IstTemp },
+	{ EmsValue::SollTemp, EmsValue::HK2, SensorVorlaufHK2SollTemp },
+	{ EmsValue::IstTemp, EmsValue::HK2, SensorVorlaufHK2IstTemp },
+	{ EmsValue::Mischersteuerung, EmsValue::None, SensorMischersteuerung },
+	{ EmsValue::IstTemp, EmsValue::Ruecklauf, SensorRuecklaufTemp },
+	{ EmsValue::IstTemp, EmsValue::Aussen, SensorAussenTemp },
+	{ EmsValue::GedaempfteTemp, EmsValue::Aussen, SensorGedaempfteAussenTemp },
+	{ EmsValue::SollTemp, EmsValue::Raum, SensorRaumSollTemp },
+	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
+	{ EmsValue::MomLeistung, EmsValue::None, SensorMomLeistung },
+	{ EmsValue::MaxLeistung, EmsValue::None, SensorMaxLeistung },
+	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
+	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
+	{ EmsValue::BetriebsZeit, EmsValue::None, SensorBetriebszeit },
+	{ EmsValue::HeizZeit, EmsValue::None, SensorHeizZeit },
+	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
+	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
+	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen }
+    };
+
+    static const struct {
+	EmsValue::Type type;
+	EmsValue::SubType subtype;
+	BooleanSensors sensor;
+    } BOOLMAPPING[] = {
+	{ EmsValue::FlammeAktiv, EmsValue::None, SensorFlamme },
+	{ EmsValue::BrennerAktiv, EmsValue::None, SensorBrenner },
+	{ EmsValue::ZuendungAktiv, EmsValue::None, SensorZuendung },
+	{ EmsValue::PumpeAktiv, EmsValue::Kessel, SensorKesselPumpe },
+	{ EmsValue::DreiWegeVentilAufWW, EmsValue::None, Sensor3WegeVentil },
+	{ EmsValue::Automatikbetrieb, EmsValue::HK1, SensorHK1Automatik },
+	{ EmsValue::Tagbetrieb, EmsValue::HK1, SensorHK1Tagbetrieb },
+	{ EmsValue::PumpeAktiv, EmsValue::HK1, SensorHK1Pumpe },
+	{ EmsValue::Ferien, EmsValue::HK1, SensorHK1Ferien },
+	{ EmsValue::Party, EmsValue::HK1, SensorHK1Party },
+	{ EmsValue::Automatikbetrieb, EmsValue::HK2, SensorHK2Automatik },
+	{ EmsValue::Tagbetrieb, EmsValue::HK2, SensorHK2Tagbetrieb },
+	{ EmsValue::PumpeAktiv, EmsValue::HK2, SensorHK2Pumpe },
+	{ EmsValue::Ferien, EmsValue::HK2, SensorHK2Ferien },
+	{ EmsValue::Party, EmsValue::HK2, SensorHK2Party },
+	{ EmsValue::WarmwasserBereitung, EmsValue::None, SensorWarmwasserBereitung },
+	{ EmsValue::WarmwasserTempOK, EmsValue::None, SensorWarmwasserTempOK },
+	{ EmsValue::ZirkulationAktiv, EmsValue::None, SensorZirkulation },
+	{ EmsValue::Tagbetrieb, EmsValue::Zirkulation, SensorZirkulationTagbetrieb },
+	{ EmsValue::WWVorrang, EmsValue::None, SensorWWVorrang },
+	{ EmsValue::Tagbetrieb, EmsValue::WW, SensorWWTagbetrieb },
+	{ EmsValue::Sommerbetrieb, EmsValue::None, SensorSommerbetrieb }
+    };
+
+    static const struct {
+	EmsValue::Type type;
+	StateSensors sensor;
+    } STATEMAPPING[] = {
+	{ EmsValue::FehlerCode, SensorFehlerCode },
+	{ EmsValue::ServiceCode, SensorServiceCode }
+    };
+
+    EmsValue::Type type = value.getType();
+    EmsValue::SubType subtype = value.getSubType();
+
+    for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
+	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
+	    addSensorValue(NUMERICMAPPING[i].sensor, boost::get<float>(value.getValue()));
+	    return;
+	}
+    }
+    for (size_t i = 0; i < sizeof(BOOLMAPPING) / sizeof(BOOLMAPPING[0]); i++) {
+	if (type == BOOLMAPPING[i].type) {
+	    if (BOOLMAPPING[i].subtype == EmsValue::None || subtype == BOOLMAPPING[i].subtype) {
+		addSensorValue(BOOLMAPPING[i].sensor, boost::get<bool>(value.getValue()));
+		return;
+	    }
+	}
+    }
+    for (size_t i = 0; i < sizeof(STATEMAPPING) / sizeof(STATEMAPPING[0]); i++) {
+	if (type == STATEMAPPING[i].type) {
+	    addSensorValue(STATEMAPPING[i].sensor, boost::get<std::string>(value.getValue()));
+	}
+    }
+}
+
+void
 Database::addSensorValue(NumericSensors sensor, float value)
 {
     time_t now = time(NULL);

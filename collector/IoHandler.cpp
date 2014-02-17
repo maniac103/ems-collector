@@ -19,6 +19,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <asm/byteorder.h>
+#include <boost/bind.hpp>
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -31,6 +33,8 @@ IoHandler::IoHandler(Database& db) :
 {
     /* pre-alloc buffer to avoid reallocations */
     m_data.reserve(256);
+
+    m_valueCb = boost::bind(&IoHandler::handleValue, this, _1);
 }
 
 IoHandler::~IoHandler()
@@ -89,9 +93,9 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		break;
 	    case Checksum:
 		if (m_checkSum == dataByte) {
-		    EmsMessage message(&m_db, m_data);
+		    EmsMessage message(m_valueCb, m_data);
 		    message.handle();
-		    if (message.getDestination() == EmsMessage::addressPC && m_pcMessageCallback) {
+		    if (message.getDestination() == EmsProto::addressPC && m_pcMessageCallback) {
 			m_pcMessageCallback(message);
 		    }
 		}
@@ -115,4 +119,213 @@ IoHandler::doClose(const boost::system::error_code& error)
     doCloseImpl();
     m_active = false;
     stop();
+}
+
+static void
+printDescriptive(std::ostream& stream, const EmsValue& value)
+{
+    static const std::map<EmsValue::Type, const char *> TYPEMAPPING = {
+	{ EmsValue::SollTemp, "Solltemperatur" },
+	{ EmsValue::IstTemp, "Isttemperatur" },
+	{ EmsValue::SetTemp, "Temperatureinstellung" },
+	{ EmsValue::GedaempfteTemp, "Temperatur (gedämpft)" },
+	{ EmsValue::TemperaturAenderung, "Temperaturänderung" },
+	{ EmsValue::Mischersteuerung, "Mischersteuerung" },
+	{ EmsValue::MomLeistung, "Momentane Leistung" },
+	{ EmsValue::MaxLeistung, "Maximale Leistung" },
+	{ EmsValue::Flammenstrom, "Flammenstrom" },
+	{ EmsValue::Systemdruck, "Systemdruck" },
+	{ EmsValue::BetriebsZeit, "Betriebszeit" },
+	{ EmsValue::PumpenModulation, "Pumpenmodulation" },
+	{ EmsValue::MinModulation, "Min. Modulation" },
+	{ EmsValue::MaxModulation, "Max. Modulation" },
+	{ EmsValue::HeizZeit, "Heizzeit" },
+	{ EmsValue::WarmwasserbereitungsZeit, "WW-Bereitungszeit" },
+	{ EmsValue::Brennerstarts, "Brennerstarts" },
+	{ EmsValue::WarmwasserBereitungen, "WW-Bereitungen " },
+	{ EmsValue::EinschaltoptimierungsZeit, "Einschaltoptimierungszeit" },
+	{ EmsValue::AusschaltoptimierungsZeit, "Abschaltoptimierungszeit" },
+	{ EmsValue::EinschaltHysterese, "Einschalthysterese" },
+	{ EmsValue::AusschaltHysterese, "Abschalthysterese" },
+	{ EmsValue::AntipendelZeit, "Antipendelzeit" },
+	{ EmsValue::PumpenNachlaufZeit, "Pumpennachlaufzeit" },
+
+	{ EmsValue::FlammeAktiv, "Flamme" },
+	{ EmsValue::BrennerAktiv, "Brenner" },
+	{ EmsValue::ZuendungAktiv, "Zündung" },
+	{ EmsValue::PumpeAktiv, "Pumpe" },
+	{ EmsValue::ZirkulationAktiv, "Zirkulation" },
+	{ EmsValue::DreiWegeVentilAufWW, "3-Wege-Ventil auf WW" },
+	{ EmsValue::EinmalLadungAktiv, "Einmalladung" },
+	{ EmsValue::DesinfektionAktiv, "Therm. Desinfektion" },
+	{ EmsValue::NachladungAktiv, "Nachladung" },
+	{ EmsValue::WarmwasserBereitung, "WW-Bereitung" },
+	{ EmsValue::WarmwasserTempOK, "WW-Temperatur OK" },
+	{ EmsValue::Automatikbetrieb, "Automatikbetrieb" },
+	{ EmsValue::Tagbetrieb, "Tagbetrieb" },
+	{ EmsValue::Sommerbetrieb, "Sommerbetrieb" },
+	{ EmsValue::Ausschaltoptimierung, "Ausschaltoptimierung" },
+	{ EmsValue::Einschaltoptimierung, "Einschaltoptimierung" },
+	{ EmsValue::Estrichtrocknung, "Estrichtrocknung" },
+	{ EmsValue::WWVorrang, "WW-Vorrang" },
+	{ EmsValue::Ferien, "Ferienbetrieb" },
+	{ EmsValue::Party, "Partybetrieb" },
+	{ EmsValue::Frostschutz, "Frostschutz" },
+	{ EmsValue::SchaltuhrEin, "Schaltuhr aktiv" },
+
+	{ EmsValue::WWSystemType, "WW-System-Typ" },
+	{ EmsValue::Schaltpunkte, "Schaltpunkte" },
+
+	{ EmsValue::HKKennlinie, "Kennlinie" },
+	{ EmsValue::Fehler, "Fehler" },
+
+	{ EmsValue::ServiceCode, "Servicecode" },
+	{ EmsValue::FehlerCode, "Fehlercode" }
+    };
+    static const std::map<EmsValue::SubType, const char *> SUBTYPEMAPPING = {
+	{ EmsValue::HK1, "HK1" },
+	{ EmsValue::HK2, "HK2" },
+	{ EmsValue::HK3, "HK3" },
+	{ EmsValue::HK4, "HK4" },
+	{ EmsValue::Kessel, "Kessel" },
+	{ EmsValue::Ruecklauf, "Rücklauf" },
+	{ EmsValue::WW, "Warmwasser" },
+	{ EmsValue::Zirkulation, "Zirkulation" },
+	{ EmsValue::Raum, "Raum" },
+	{ EmsValue::Aussen, "Außen" },
+	{ EmsValue::Abgas, "Abgas" },
+    };
+    static const std::map<EmsValue::Type, const char *> UNITMAPPING = {
+	{ EmsValue::SollTemp, "°C" },
+	{ EmsValue::IstTemp, "°C" },
+	{ EmsValue::SetTemp, "°C" },
+	{ EmsValue::GedaempfteTemp, "°C" },
+	{ EmsValue::TemperaturAenderung, "K/min" },
+	{ EmsValue::EinschaltHysterese, "K" },
+	{ EmsValue::AusschaltHysterese, "K" },
+	{ EmsValue::MomLeistung, "%" },
+	{ EmsValue::MaxLeistung, "%" },
+	{ EmsValue::PumpenModulation, "%" },
+	{ EmsValue::MinModulation, "%" },
+	{ EmsValue::MaxModulation, "%" },
+	{ EmsValue::Flammenstrom, "µA" },
+	{ EmsValue::Systemdruck, "bar" },
+	{ EmsValue::BetriebsZeit, "min" },
+	{ EmsValue::HeizZeit, "min" },
+	{ EmsValue::WarmwasserbereitungsZeit, "min" },
+	{ EmsValue::EinschaltoptimierungsZeit, "min" },
+	{ EmsValue::AusschaltoptimierungsZeit, "min" },
+	{ EmsValue::AntipendelZeit, "min" },
+	{ EmsValue::PumpenNachlaufZeit, "min" }
+    };
+
+    static const std::map<uint8_t, const char *> WWSYSTEMMAPPING = {
+	{ EmsProto::WWSystemNone, "keins" },
+	{ EmsProto::WWSystemDurchlauf, "Durchlauferhitzer" },
+	{ EmsProto::WWSystemKlein, "klein" },
+	{ EmsProto::WWSystemGross, "groß" },
+	{ EmsProto::WWSystemSpeicherlade, "Speicherladesystem" }
+    };
+
+    static const std::map<uint8_t, const char *> ZIRKSPMAPPING = {
+	{ 0, "aus" },
+	{ 1, "1x 3min" }, { 2, "2x 3min" }, { 3, "3x 3min" },
+	{ 4, "4x 3min" }, { 5, "5x 3min" }, { 6, "6x 3min" },
+	{ 7, "dauerhaft an" }
+    };
+
+    static const std::map<uint8_t, const char *> ERRORTYPEMAPPING = {
+	{ 0x10, "Blockierender Fehler" },
+	{ 0x11, "Verriegelnder Fehler" },
+	{ 0x12, "Anlagenfehler" },
+	{ 0x13, "Anlagenfehler" }
+    };
+
+    auto typeIter = TYPEMAPPING.find(value.getType());
+    const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
+    auto subtypeIter = SUBTYPEMAPPING.find(value.getSubType());
+    const char *subtype = subtypeIter != SUBTYPEMAPPING.end() ? subtypeIter->second : NULL;
+
+    if (subtype) {
+	stream << subtype;
+	if (type) {
+	    stream << "-";
+	}
+    }
+    if (type) {
+	stream << type;
+    } else {
+	stream << "???";
+    }
+    stream << " = ";
+
+    switch (value.getReadingType()) {
+	case EmsValue::Numeric: {
+	    auto unitIter = UNITMAPPING.find(value.getType());
+	    stream << boost::get<float>(value.getValue());
+	    if (unitIter != UNITMAPPING.end()) {
+		stream << " " << unitIter->second;
+	    }
+	    break;
+	}
+	case EmsValue::Boolean:
+	    stream << (boost::get<bool>(value.getValue()) ? "AN" : "AUS");
+	    break;
+	case EmsValue::Enumeration: {
+	    const std::map<uint8_t, const char *> *map = NULL;
+	    uint8_t enumValue = boost::get<uint8_t>(value.getValue());
+	    switch (value.getType()) {
+		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
+		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
+		default: break;
+	    }
+	    if (map && map->find(enumValue) != map->end()) {
+		stream << map->at(enumValue);
+	    } else {
+		stream << "??? (" << (unsigned int) enumValue << ")";
+	    }
+	    break;
+	}
+	case EmsValue::Kennlinie: {
+	    std::vector<uint8_t> kennlinie = boost::get<std::vector<uint8_t> >(value.getValue());
+	    stream << "-10 °C: " << (unsigned int) kennlinie[0] << " °C / ";
+	    stream << "0 °C: " << (unsigned int) kennlinie[1] << " °C / ";
+	    stream << "10 °C: " << (unsigned int) kennlinie[2] << " °C";
+	    break;
+	}
+	case EmsValue::Error: {
+	    EmsValue::ErrorEntry entry = boost::get<EmsValue::ErrorEntry>(value.getValue());
+	    EmsProto::ErrorRecord& record = entry.record;
+	    stream << ERRORTYPEMAPPING.at(entry.type) << " " << entry.index << ": ";
+	    if (record.errorAscii[0] == 0) {
+		stream << "Empty" << std::endl;
+	    } else {
+		stream << "Source " << std::hex << (unsigned int) record.source << ", error ";
+		stream << std::dec << record.errorAscii[0] << record.errorAscii[1] << ", code ";
+		stream << __be16_to_cpu(record.code_be16) << ", duration ";
+		stream << __be16_to_cpu(record.durationMinutes_be16) << " minutes" << std::endl;
+		if (record.hasDate) {
+		    stream << "; error date " << (2000 + record.year) << "-";
+		    stream << record.month << "-" << record.day << "; time ";
+		    stream << record.hour << ":" << record.minute;
+		}
+	    }
+	    break;
+	}
+	case EmsValue::Formatted:
+	    stream << boost::get<std::string>(value.getValue());
+	    break;
+    }
+}
+
+
+void
+IoHandler::handleValue(const EmsValue& value)
+{
+    if (Options::dataDebug()) {
+	Options::dataDebug() << "DATA: ";
+	printDescriptive(Options::dataDebug(), value);
+	Options::dataDebug() << std::endl;
+    }
+    m_db.handleValue(value);
 }

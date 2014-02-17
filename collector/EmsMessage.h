@@ -22,17 +22,10 @@
 
 #include <vector>
 #include <ostream>
-#include "Database.h"
+#include <boost/function.hpp>
+#include <boost/variant.hpp>
 
-class EmsMessage
-{
-    public:
-	EmsMessage(Database *db, const std::vector<uint8_t>& data);
-	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
-		   const std::vector<uint8_t>& data, bool expectResponse);
-
-	void handle();
-
+class EmsProto {
     public:
 	static const uint8_t addressUBA  = 0x08;
 	static const uint8_t addressBC10 = 0x09;
@@ -40,23 +33,6 @@ class EmsMessage
 	static const uint8_t addressRC   = 0x10;
 	static const uint8_t addressWM10 = 0x11;
 	static const uint8_t addressMM10 = 0x21;
-
-	uint8_t getSource() const {
-	    return m_source;
-	}
-	uint8_t getDestination() const {
-	    return m_dest & 0x7f;
-	}
-	uint8_t getType() const {
-	    return m_type;
-	}
-	uint8_t getOffset() const {
-	    return m_offset;
-	}
-	const std::vector<uint8_t>& getData() const {
-	    return m_data;
-	}
-	std::vector<uint8_t> getSendData() const;
 
     public:
 #pragma pack(push,1)
@@ -86,6 +62,172 @@ class EmsMessage
 	} HolidayEntry;
 #pragma pack(pop)
 
+	static const uint8_t WWSystemNone = 0;
+	static const uint8_t WWSystemDurchlauf = 1;
+	static const uint8_t WWSystemKlein = 2;
+	static const uint8_t WWSystemGross = 3;
+	static const uint8_t WWSystemSpeicherlade = 4;
+};
+
+class EmsValue {
+    public:
+	enum Type {
+	    /* numeric */
+	    SollTemp, /* HKx, Kessel */
+	    IstTemp, /* HKx, Kessel, Ruecklauf, WW, Raum, Aussen */
+	    SetTemp, /* Kessel */
+	    GedaempfteTemp, /* Aussen */
+	    TemperaturAenderung,
+	    Mischersteuerung,
+	    MomLeistung,
+	    MaxLeistung,
+	    Flammenstrom,
+	    Systemdruck,
+	    PumpenModulation,
+	    MinModulation,
+	    MaxModulation,
+	    BetriebsZeit,
+	    HeizZeit,
+	    WarmwasserbereitungsZeit,
+	    Brennerstarts,
+	    WarmwasserBereitungen,
+	    EinschaltoptimierungsZeit,
+	    AusschaltoptimierungsZeit,
+	    EinschaltHysterese,
+	    AusschaltHysterese,
+	    AntipendelZeit,
+	    PumpenNachlaufZeit,
+	    /* boolean */
+	    FlammeAktiv,
+	    BrennerAktiv,
+	    ZuendungAktiv,
+	    PumpeAktiv,
+	    ZirkulationAktiv,
+	    DreiWegeVentilAufWW,
+	    EinmalLadungAktiv,
+	    DesinfektionAktiv,
+	    NachladungAktiv,
+	    WarmwasserBereitung,
+	    WarmwasserTempOK,
+	    Automatikbetrieb,
+	    Tagbetrieb,
+	    Sommerbetrieb,
+	    Ausschaltoptimierung,
+	    Einschaltoptimierung,
+	    Estrichtrocknung,
+	    WWVorrang,
+	    Ferien,
+	    Party,
+	    Frostschutz,
+	    SchaltuhrEin,
+	    /* enum */
+	    WWSystemType,
+	    Schaltpunkte,
+	    /* kennlinie */
+	    HKKennlinie,
+	    /* error */
+	    Fehler,
+	    /* state */
+	    ServiceCode,
+	    FehlerCode,
+	};
+
+	enum SubType {
+	    None,
+	    HK1,
+	    HK2,
+	    HK3,
+	    HK4,
+	    Kessel,
+	    Ruecklauf,
+	    WW,
+	    Zirkulation,
+	    Raum,
+	    Aussen,
+	    Abgas
+	};
+
+	enum ReadingType {
+	    Numeric,
+	    Boolean,
+	    Enumeration,
+	    Kennlinie,
+	    Error,
+	    Formatted
+	};
+
+	struct ErrorEntry {
+	    uint8_t type;
+	    unsigned int index;
+	    EmsProto::ErrorRecord record;
+	};
+
+	typedef boost::variant<
+	    float, // numeric
+	    bool, // boolean
+	    uint8_t, // enumeration
+	    std::vector<uint8_t>, // kennlinie
+	    ErrorEntry, // error
+	    std::string // formatted
+	> Reading;
+
+    public:
+	EmsValue(Type type, SubType subType, const uint8_t *value, size_t len, int divider);
+	EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit);
+	EmsValue(Type type, SubType subType, uint8_t value);
+	EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint8_t high);
+	EmsValue(Type type, SubType subType, const ErrorEntry& error);
+	EmsValue(Type type, SubType subType, const std::string& value);
+
+	Type getType() const {
+	    return m_type;
+	}
+	SubType getSubType() const {
+	    return m_subType;
+	}
+	ReadingType getReadingType() const {
+	    return m_readingType;
+	}
+	const Reading& getValue() const {
+	    return m_value;
+	}
+
+    private:
+	Type m_type;
+	SubType m_subType;
+	ReadingType m_readingType;
+	Reading m_value;
+};
+
+class EmsMessage
+{
+    public:
+	typedef boost::function<void (const EmsValue& value)> ValueHandler;
+
+	EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data);
+	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
+		   const std::vector<uint8_t>& data, bool expectResponse);
+
+	void handle();
+
+    public:
+	uint8_t getSource() const {
+	    return m_source;
+	}
+	uint8_t getDestination() const {
+	    return m_dest & 0x7f;
+	}
+	uint8_t getType() const {
+	    return m_type;
+	}
+	uint8_t getOffset() const {
+	    return m_offset;
+	}
+	const std::vector<uint8_t>& getData() const {
+	    return m_data;
+	}
+	std::vector<uint8_t> getSendData() const;
+
     private:
 	void parseUBAMonitorFastMessage();
 	void parseUBAMonitorSlowMessage();
@@ -97,12 +239,7 @@ class EmsMessage
 
 	void parseRCTimeMessage();
 	void parseRCOutdoorTempMessage();
-	void parseRCHKMonitorMessage(const char *name,
-				     Database::NumericSensors vorlaufSollSensor,
-				     Database::BooleanSensors automatikSensor,
-				     Database::BooleanSensors tagSensor,
-				     Database::BooleanSensors ferienSensor,
-				     Database::BooleanSensors partySensor);
+	void parseRCHKMonitorMessage(const char *name, EmsValue::SubType subType);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();
@@ -110,16 +247,16 @@ class EmsMessage
 	void parseMMTempMessage();
 
     private:
-	void printNumberAndAddToDb(size_t offset, size_t size, int divider,
-				   const char *name, const char *unit,
-				   Database::NumericSensors sensor);
-	void printBoolAndAddToDb(int byte, int bit, const char *name,
-				 Database::BooleanSensors sensor);
-	void printStateAndAddToDb(const std::string& value, const char *name,
-				  Database::StateSensors sensor);
+	void parseNumeric(size_t offset, size_t size, int divider,
+			  EmsValue::Type type, EmsValue::SubType subtype);
+	void parseBool(size_t offset, uint8_t bit,
+		       EmsValue::Type type, EmsValue::SubType subtype);
+	bool canAccess(size_t offset, size_t size) {
+	    return offset >= m_offset && offset + size <= m_offset + m_data.size();
+	}
 
     private:
-	Database *m_db;
+	ValueHandler m_valueHandler;
 	std::vector<unsigned char> m_data;
 	uint8_t m_source;
 	uint8_t m_dest;
