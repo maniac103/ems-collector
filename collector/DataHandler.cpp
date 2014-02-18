@@ -156,6 +156,7 @@ DataConnection::handleValue(const EmsValue& value)
 
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
+	{ EmsValue::SystemZeit, "systemtime" },
 
 	{ EmsValue::ServiceCode, "servicecode" },
 	{ EmsValue::FehlerCode, "errorcode" }
@@ -207,14 +208,14 @@ DataConnection::handleValue(const EmsValue& value)
 
     switch (value.getReadingType()) {
 	case EmsValue::Numeric:
-	    stream << boost::get<float>(value.getValue());
+	    stream << value.getValue<float>();
 	    break;
 	case EmsValue::Boolean:
-	    stream << (boost::get<bool>(value.getValue()) ? "on" : "off");
+	    stream << (value.getValue<bool>() ? "on" : "off");
 	    break;
 	case EmsValue::Enumeration: {
 	    const std::map<uint8_t, const char *> *map = NULL;
-	    uint8_t enumValue = boost::get<uint8_t>(value.getValue());
+	    uint8_t enumValue = value.getValue<uint8_t>();
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
@@ -228,14 +229,14 @@ DataConnection::handleValue(const EmsValue& value)
 	    break;
 	}
 	case EmsValue::Kennlinie: {
-	    std::vector<uint8_t> kennlinie = boost::get<std::vector<uint8_t> >(value.getValue());
+	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
 	    stream << (unsigned int) kennlinie[0] << "/";
 	    stream << (unsigned int) kennlinie[1] << "/";
 	    stream << (unsigned int) kennlinie[2];
 	    break;
 	}
 	case EmsValue::Error: {
-	    EmsValue::ErrorEntry entry = boost::get<EmsValue::ErrorEntry>(value.getValue());
+	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
 	    std::string formatted = CommandConnection::buildRecordResponse(&entry.record);
 
 	    stream << ERRORTYPEMAPPING.at(entry.type);
@@ -243,8 +244,18 @@ DataConnection::handleValue(const EmsValue& value)
 	    stream << (formatted.empty() ? "empty" : formatted);
 	    break;
 	}
+	case EmsValue::SystemTime: {
+	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
+	    stream << std::setw(4) << (unsigned int) (2000 + record.common.year) << "-";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.month << "-";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.day << " ";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.hour << ":";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.minute << ":";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.second;
+	    break;
+	}
 	case EmsValue::Formatted:
-	    stream << boost::get<std::string>(value.getValue());
+	    stream << value.getValue<std::string>();
 	    break;
     }
 

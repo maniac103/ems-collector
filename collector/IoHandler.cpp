@@ -178,6 +178,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 
 	{ EmsValue::HKKennlinie, "Kennlinie" },
 	{ EmsValue::Fehler, "Fehler" },
+	{ EmsValue::SystemZeit, "Systemzeit" },
 
 	{ EmsValue::ServiceCode, "Servicecode" },
 	{ EmsValue::FehlerCode, "Fehlercode" }
@@ -241,6 +242,11 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 0x13, "Anlagenfehler" }
     };
 
+    static const std::map<uint8_t, const char *> WEEKDAYMAPPING = {
+	{ 0, "Montag" }, { 1, "Dienstag" }, { 2, "Mittwoch" }, { 3, "Donnerstag" },
+	{ 4, "Freitag" }, { 5, "Samstag" }, { 6, "Sonntag" }
+    };
+
     auto typeIter = TYPEMAPPING.find(value.getType());
     const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
     auto subtypeIter = SUBTYPEMAPPING.find(value.getSubType());
@@ -262,18 +268,18 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     switch (value.getReadingType()) {
 	case EmsValue::Numeric: {
 	    auto unitIter = UNITMAPPING.find(value.getType());
-	    stream << boost::get<float>(value.getValue());
+	    stream << value.getValue<float>();
 	    if (unitIter != UNITMAPPING.end()) {
 		stream << " " << unitIter->second;
 	    }
 	    break;
 	}
 	case EmsValue::Boolean:
-	    stream << (boost::get<bool>(value.getValue()) ? "AN" : "AUS");
+	    stream << (value.getValue<bool>() ? "AN" : "AUS");
 	    break;
 	case EmsValue::Enumeration: {
 	    const std::map<uint8_t, const char *> *map = NULL;
-	    uint8_t enumValue = boost::get<uint8_t>(value.getValue());
+	    uint8_t enumValue = value.getValue<uint8_t>();
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
@@ -287,37 +293,70 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    break;
 	}
 	case EmsValue::Kennlinie: {
-	    std::vector<uint8_t> kennlinie = boost::get<std::vector<uint8_t> >(value.getValue());
+	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
 	    stream << "-10 °C: " << (unsigned int) kennlinie[0] << " °C / ";
 	    stream << "0 °C: " << (unsigned int) kennlinie[1] << " °C / ";
 	    stream << "10 °C: " << (unsigned int) kennlinie[2] << " °C";
 	    break;
 	}
 	case EmsValue::Error: {
-	    EmsValue::ErrorEntry entry = boost::get<EmsValue::ErrorEntry>(value.getValue());
+	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
 	    EmsProto::ErrorRecord& record = entry.record;
 	    stream << ERRORTYPEMAPPING.at(entry.type) << " " << entry.index << ": ";
 	    if (record.errorAscii[0] == 0) {
-		stream << "Empty" << std::endl;
+		stream << "Leer" << std::endl;
 	    } else {
-		stream << "Source " << std::hex << (unsigned int) record.source << ", error ";
-		stream << std::dec << record.errorAscii[0] << record.errorAscii[1] << ", code ";
-		stream << __be16_to_cpu(record.code_be16) << ", duration ";
-		stream << __be16_to_cpu(record.durationMinutes_be16) << " minutes" << std::endl;
-		if (record.hasDate) {
-		    stream << "; error date " << (2000 + record.year) << "-";
-		    stream << record.month << "-" << record.day << "; time ";
-		    stream << record.hour << ":" << record.minute;
+		stream << "Quelle " << std::hex << (unsigned int) record.source << ", Fehler ";
+		stream << std::dec << record.errorAscii[0] << record.errorAscii[1] << ", Code ";
+		stream << __be16_to_cpu(record.code_be16) << ", Dauer ";
+		stream << __be16_to_cpu(record.durationMinutes_be16) << " Minuten" << std::endl;
+		if (record.time.valid) {
+		    stream << "; Zeitpunkt " << (unsigned int) record.time.day << ":";
+		    stream << (unsigned int) record.time.month << ":" << (2000 + record.time.year);
+		    stream << " " << record.time.hour << ":" << record.time.minute;
 		}
 	    }
 	    break;
 	}
+	case EmsValue::SystemTime: {
+	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
+	    auto dayIter = WEEKDAYMAPPING.find(record.dayOfWeek);
+
+	    stream << std::dec << (2000 + record.common.year) << "-";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.month << "-";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.day;
+	    if (dayIter != WEEKDAYMAPPING.end()) {
+		stream << " (" << dayIter->second << ")";
+	    }
+	    stream << ", " << (unsigned int) record.common.hour << ":";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.minute << ":";
+	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.second;
+	    if (record.running || record.dcf || record.dst) {
+		bool hasOutput = false;
+		stream << " (";
+		if (record.running) {
+		    stream << "läuft";
+		    hasOutput = true;
+		}
+		if (record.dcf) {
+		    if (hasOutput) stream << ", ";
+		    stream << "DCF";
+		    hasOutput = true;
+		}
+		if (record.dst) {
+		    if (hasOutput) stream << ", ";
+		    stream << "Sommerzeit";
+		    hasOutput = true;
+		}
+		stream << ")";
+	    }
+	    break;
+	}
 	case EmsValue::Formatted:
-	    stream << boost::get<std::string>(value.getValue());
+	    stream << value.getValue<std::string>();
 	    break;
     }
 }
-
 
 void
 IoHandler::handleValue(const EmsValue& value)

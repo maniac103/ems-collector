@@ -37,14 +37,29 @@ class EmsProto {
     public:
 #pragma pack(push,1)
 	typedef struct {
-	    uint8_t errorAscii[2];
-	    uint16_t code_be16;
 	    uint8_t year : 7;
-	    uint8_t hasDate : 1;
+	    uint8_t valid : 1;
 	    uint8_t month;
 	    uint8_t hour;
 	    uint8_t day;
 	    uint8_t minute;
+	} DateTimeRecord;
+
+	typedef struct {
+	    DateTimeRecord common;
+	    uint8_t second;
+	    uint8_t dayOfWeek;
+	    uint8_t reserved1 : 3;
+	    uint8_t running : 1;
+	    uint8_t reserved2 : 2;
+	    uint8_t dcf : 1;
+	    uint8_t dst : 1;
+	} SystemTimeRecord;
+
+	typedef struct {
+	    uint8_t errorAscii[2];
+	    uint16_t code_be16;
+	    DateTimeRecord time;
 	    uint16_t durationMinutes_be16;
 	    uint8_t source;
 	} ErrorRecord;
@@ -127,6 +142,8 @@ class EmsValue {
 	    HKKennlinie,
 	    /* error */
 	    Fehler,
+	    /* systemtime */
+	    SystemZeit,
 	    /* state */
 	    ServiceCode,
 	    FehlerCode,
@@ -153,6 +170,7 @@ class EmsValue {
 	    Enumeration,
 	    Kennlinie,
 	    Error,
+	    SystemTime,
 	    Formatted
 	};
 
@@ -168,6 +186,7 @@ class EmsValue {
 	    uint8_t, // enumeration
 	    std::vector<uint8_t>, // kennlinie
 	    ErrorEntry, // error
+	    EmsProto::SystemTimeRecord, // systemtime
 	    std::string // formatted
 	> Reading;
 
@@ -177,6 +196,7 @@ class EmsValue {
 	EmsValue(Type type, SubType subType, uint8_t value);
 	EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint8_t high);
 	EmsValue(Type type, SubType subType, const ErrorEntry& error);
+	EmsValue(Type type, SubType subType, const EmsProto::SystemTimeRecord& time);
 	EmsValue(Type type, SubType subType, const std::string& value);
 
 	Type getType() const {
@@ -188,8 +208,8 @@ class EmsValue {
 	ReadingType getReadingType() const {
 	    return m_readingType;
 	}
-	const Reading& getValue() const {
-	    return m_value;
+	template<typename T> const T& getValue() const {
+	    return boost::get<T>(m_value);
 	}
 
     private:
@@ -239,7 +259,7 @@ class EmsMessage
 
 	void parseRCTimeMessage();
 	void parseRCOutdoorTempMessage();
-	void parseRCHKMonitorMessage(const char *name, EmsValue::SubType subType);
+	void parseRCHKMonitorMessage(EmsValue::SubType subType);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();

@@ -1000,12 +1000,12 @@ CommandConnection::buildRecordResponse(const EmsProto::ErrorRecord *record)
 
     std::ostringstream response;
 
-    if (record->hasDate) {
-	response << std::setw(4) << (unsigned int) (2000 + record->year) << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->month << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->day << " ";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << ":";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->minute;
+    if (record->time.valid) {
+	response << std::setw(4) << (unsigned int) (2000 + record->time.year) << "-";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.month << "-";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.day << " ";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.hour << ":";
+	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.minute;
     } else {
 	response  << "xxxx-xx-xx xx:xx";
     }

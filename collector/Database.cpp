@@ -384,21 +384,21 @@ Database::handleValue(const EmsValue& value)
 
     for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
 	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
-	    addSensorValue(NUMERICMAPPING[i].sensor, boost::get<float>(value.getValue()));
+	    addSensorValue(NUMERICMAPPING[i].sensor, value.getValue<float>());
 	    return;
 	}
     }
     for (size_t i = 0; i < sizeof(BOOLMAPPING) / sizeof(BOOLMAPPING[0]); i++) {
 	if (type == BOOLMAPPING[i].type) {
 	    if (BOOLMAPPING[i].subtype == EmsValue::None || subtype == BOOLMAPPING[i].subtype) {
-		addSensorValue(BOOLMAPPING[i].sensor, boost::get<bool>(value.getValue()));
+		addSensorValue(BOOLMAPPING[i].sensor, value.getValue<bool>());
 		return;
 	    }
 	}
     }
     for (size_t i = 0; i < sizeof(STATEMAPPING) / sizeof(STATEMAPPING[0]); i++) {
 	if (type == STATEMAPPING[i].type) {
-	    addSensorValue(STATEMAPPING[i].sensor, boost::get<std::string>(value.getValue()));
+	    addSensorValue(STATEMAPPING[i].sensor, value.getValue<std::string>());
 	}
     }
 }
