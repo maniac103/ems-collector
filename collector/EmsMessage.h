@@ -92,6 +92,7 @@ class EmsValue {
 	    IstTemp, /* HKx, Kessel, Ruecklauf, WW, Raum, Aussen */
 	    SetTemp, /* Kessel */
 	    GedaempfteTemp, /* Aussen */
+	    DesinfektionTemp,
 	    TemperaturAenderung,
 	    Mischersteuerung,
 	    MomLeistung,
@@ -99,6 +100,8 @@ class EmsValue {
 	    Flammenstrom,
 	    Systemdruck,
 	    PumpenModulation,
+	    MinPumpenModulation,
+	    MaxPumpenModulation,
 	    MinModulation,
 	    MaxModulation,
 	    BetriebsZeit,
@@ -135,6 +138,8 @@ class EmsValue {
 	    Party,
 	    Frostschutz,
 	    SchaltuhrEin,
+	    KesselHeizSchalter,
+	    KesselWWSchalter,
 	    /* enum */
 	    WWSystemType,
 	    Schaltpunkte,
