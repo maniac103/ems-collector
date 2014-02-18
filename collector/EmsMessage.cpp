@@ -313,7 +313,7 @@ void
 EmsMessage::parseUBAMonitorSlowMessage()
 {
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
-    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
+    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
     parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
     parseNumeric(9, 1, 1, EmsValue::PumpenModulation, EmsValue::None);
     parseNumeric(10, 3, 1, EmsValue::Brennerstarts, EmsValue::None);
