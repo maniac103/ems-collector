@@ -358,6 +358,10 @@ EmsMessage::parseUBAParameterWWMessage()
 {
     RETURN_ON_SIZE_MISMATCH(9, "UBA Parameter WW");
 
+    parseBool(1, 0, EmsValue::KesselWWSchalter, EmsValue::None);
+    parseNumeric(2, 1, 1, EmsValue::SetTemp, EmsValue::WW);
+    parseNumeric(8, 1, 1, EmsValue::DesinfektionTemp, EmsValue::WW);
+
     if (m_valueHandler && canAccess(7, 1)) {
 	m_valueHandler(EmsValue(EmsValue::Schaltpunkte, EmsValue::Zirkulation, m_data[7]));
     }
@@ -396,13 +400,16 @@ EmsMessage::parseUBAParametersMessage()
 {
     RETURN_ON_SIZE_MISMATCH(12, "UBA Parameters");
 
+    parseBool(0, 1, EmsValue::KesselHeizSchalter, EmsValue::None);
     parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
+    parseNumeric(2, 1, 1, EmsValue::MaxModulation, EmsValue::Kessel);
+    parseNumeric(3, 1, 1, EmsValue::MinModulation, EmsValue::Kessel);
     parseNumeric(4, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
     parseNumeric(5, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
-    parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::Kessel);
-    parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::Kessel);
     parseNumeric(6, 1, 1, EmsValue::AntipendelZeit, EmsValue::None);
     parseNumeric(8, 1, 1, EmsValue::PumpenNachlaufZeit, EmsValue::Kessel);
+    parseNumeric(9, 1, 1, EmsValue::MaxPumpenModulation, EmsValue::Kessel);
+    parseNumeric(10, 1, 1, EmsValue::MinPumpenModulation, EmsValue::Kessel);
 }
 
 void
