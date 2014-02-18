@@ -74,7 +74,7 @@ class EmsValue {
 	enum Type {
 	    /* numeric */
 	    SollTemp, /* HKx, Kessel */
-	    IstTemp, /* HKx, Kessel, Ruecklauf, WW, Raum, Aussen */
+	    IstTemp, /* HKx, Kessel, Waermetauscher, Ruecklauf, WW, Raum, Aussen */
 	    SetTemp, /* Kessel */
 	    GedaempfteTemp, /* Aussen */
 	    DesinfektionTemp,
@@ -146,6 +146,7 @@ class EmsValue {
 	    HK4,
 	    Kessel,
 	    Ruecklauf,
+            Waermetauscher,
 	    WW,
 	    Zirkulation,
 	    Raum,

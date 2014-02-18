@@ -172,6 +172,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::HK4, "hk4" },
 	{ EmsValue::Kessel, "heater" },
 	{ EmsValue::Ruecklauf, "returnflow" },
+	{ EmsValue::Waermetauscher, "heatexchanger" },
 	{ EmsValue::WW, "ww" },
 	{ EmsValue::Zirkulation, "zirkpump" },
 	{ EmsValue::Raum, "indoor" },

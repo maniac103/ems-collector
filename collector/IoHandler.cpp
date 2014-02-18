@@ -194,6 +194,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::HK4, "HK4" },
 	{ EmsValue::Kessel, "Kessel" },
 	{ EmsValue::Ruecklauf, "Rücklauf" },
+	{ EmsValue::Waermetauscher, "Waermetauscher" },
 	{ EmsValue::WW, "Warmwasser" },
 	{ EmsValue::Zirkulation, "Zirkulation" },
 	{ EmsValue::Raum, "Raum" },

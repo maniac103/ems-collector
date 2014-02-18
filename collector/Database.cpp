@@ -241,6 +241,11 @@ Database::createSensorRows()
 		  "Warmwasserbereitungszeit", readingTypeTime, "min");
     query.execute(SensorWarmwasserBereitungen, sensorTypeNumeric,
 		  "Warmwasserbereitungen", readingTypeCount, "");
+    query.execute(SensorPumpenModulation, sensorTypeNumeric,
+		  "Kesselpumpenmodulation", readingTypePercent, "%", 0);
+    query.execute(SensorWaermetauscherTemp, sensorTypeNumeric,
+		  "Temperatur Ausgang Waermetauscher", readingTypeTemperature, "°C", 1);
+
 
     /* Boolean sensors */
     query.execute(SensorFlamme, sensorTypeBoolean, "Flamme");
@@ -339,7 +344,9 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::HeizZeit, EmsValue::None, SensorHeizZeit },
 	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
-	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen }
+	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
+	{ EmsValue::PumpenModulation, EmsValue::None, SensorPumpenModulation },
+	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
     };
 
     static const struct {
