@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <asm/byteorder.h>
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -294,9 +295,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	}
 	case EmsValue::Kennlinie: {
 	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
-	    stream << "-10 °C: " << (unsigned int) kennlinie[0] << " °C / ";
-	    stream << "0 °C: " << (unsigned int) kennlinie[1] << " °C / ";
-	    stream << "10 °C: " << (unsigned int) kennlinie[2] << " °C";
+	    stream << boost::format("-10 °C: %d °C / 0 °C: %d °C / 10 °C: %d °C")
+		    % (unsigned int) kennlinie[0] % (unsigned int) kennlinie[1]
+		    % (unsigned int) kennlinie[2];
 	    break;
 	}
 	case EmsValue::Error: {
@@ -306,14 +307,16 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    if (record.errorAscii[0] == 0) {
 		stream << "Leer" << std::endl;
 	    } else {
-		stream << "Quelle " << std::hex << (unsigned int) record.source << ", Fehler ";
-		stream << std::dec << record.errorAscii[0] << record.errorAscii[1] << ", Code ";
-		stream << __be16_to_cpu(record.code_be16) << ", Dauer ";
-		stream << __be16_to_cpu(record.durationMinutes_be16) << " Minuten" << std::endl;
+		boost::format f("Quelle 0x%02x, Fehler %c%c, Code %d, Dauer %d Minuten");
+		f % (unsigned int) record.source % record.errorAscii[0] % record.errorAscii[1];
+		f % __be16_to_cpu(record.code_be16) % __be16_to_cpu(record.durationMinutes_be16);
+		stream << f << std::endl;
 		if (record.time.valid) {
-		    stream << "; Zeitpunkt " << (unsigned int) record.time.day << ":";
-		    stream << (unsigned int) record.time.month << ":" << (2000 + record.time.year);
-		    stream << " " << record.time.hour << ":" << record.time.minute;
+		    boost::format ft("%d.%d.%d %d:%02d");
+		    ft % (unsigned int) record.time.day % (unsigned int) record.time.month;
+		    ft % (2000 + record.time.year);
+		    ft % (unsigned int) record.time.hour % (unsigned int) record.time.minute;
+		    stream << "; Zeitpunkt " << ft << std::endl;
 		}
 	    }
 	    break;
@@ -322,15 +325,16 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
 	    auto dayIter = WEEKDAYMAPPING.find(record.dayOfWeek);
 
-	    stream << std::dec << (2000 + record.common.year) << "-";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.month << "-";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.day;
+	    stream << boost::format("%d.%d.%d")
+		    % (2000 + record.common.year)
+		    % (unsigned int) record.common.month % (unsigned int) record.common.day;
+
 	    if (dayIter != WEEKDAYMAPPING.end()) {
 		stream << " (" << dayIter->second << ")";
 	    }
-	    stream << ", " << (unsigned int) record.common.hour << ":";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.minute << ":";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.second;
+	    stream << ", " << boost::format("%d:%02d:%02d")
+		    % (unsigned int) record.common.hour % (unsigned int) record.common.minute
+		    % (unsigned int) record.second;
 	    if (record.running || record.dcf || record.dst) {
 		bool hasOutput = false;
 		stream << " (";

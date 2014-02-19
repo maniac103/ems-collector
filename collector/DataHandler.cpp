@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/format.hpp>
 #include "DataHandler.h"
 #include "CommandHandler.h"
 
@@ -230,28 +231,28 @@ DataConnection::handleValue(const EmsValue& value)
 	}
 	case EmsValue::Kennlinie: {
 	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
-	    stream << (unsigned int) kennlinie[0] << "/";
-	    stream << (unsigned int) kennlinie[1] << "/";
-	    stream << (unsigned int) kennlinie[2];
+	    stream << boost::format("%d/%d/%d")
+		    % (unsigned int) kennlinie[0] % (unsigned int) kennlinie[1]
+		    % (unsigned int) kennlinie[2];
 	    break;
 	}
 	case EmsValue::Error: {
 	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
 	    std::string formatted = CommandConnection::buildRecordResponse(&entry.record);
+	    if (formatted.empty()) {
+		formatted = "empty";
+	    }
 
-	    stream << ERRORTYPEMAPPING.at(entry.type);
-	    stream << std::setw(2) << std::setfill('0') << entry.index << " ";
-	    stream << (formatted.empty() ? "empty" : formatted);
+	    stream << boost::format("%s%02d %s")
+		    % ERRORTYPEMAPPING.at(entry.type) % entry.index % formatted;
 	    break;
 	}
 	case EmsValue::SystemTime: {
 	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
-	    stream << std::setw(4) << (unsigned int) (2000 + record.common.year) << "-";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.month << "-";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.day << " ";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.hour << ":";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.common.minute << ":";
-	    stream << std::setw(2) << std::setfill('0') << (unsigned int) record.second;
+	    stream << boost::format("%04d-%04d-%04d %02d:%02d:%02d")
+		    % (2000 + record.common.year) % (unsigned int) record.common.month
+		    % (unsigned int) record.common.day % (unsigned int) record.common.hour
+		    % (unsigned int)  record.common.minute % (unsigned int) record.second;
 	    break;
 	}
 	case EmsValue::Formatted:

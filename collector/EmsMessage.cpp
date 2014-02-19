@@ -22,13 +22,9 @@
 #include <iomanip>
 #include <cassert>
 #include <cmath>
+#include <boost/format.hpp>
 #include "EmsMessage.h"
 #include "Options.h"
-
-#define BYTEFORMAT_HEX \
-    "0x" << std::setbase(16) << std::setw(2) << std::setfill('0') << (unsigned int)
-#define BYTEFORMAT_DEC \
-    std::dec << (unsigned int)
 
 EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, int divider) :
     m_type(type),
@@ -153,20 +149,17 @@ EmsMessage::handle()
 	struct tm time;
 
 	localtime_r(&now, &time);
-	debug << std::dec << "MESSAGE[";
-	debug << std::setw(2) << std::setfill('0') << time.tm_mday;
-	debug << "." << std::setw(2) << std::setfill('0') << (time.tm_mon + 1);
-	debug << "." << (time.tm_year + 1900) << " ";
-	debug << std::setw(2) << std::setfill('0') << time.tm_hour;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_min;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_sec;
-	debug << "]: source " << BYTEFORMAT_HEX m_source;
-	debug << ", dest " << BYTEFORMAT_HEX m_dest;
-	debug << ", type " << BYTEFORMAT_HEX m_type;
-	debug << ", offset " << BYTEFORMAT_DEC m_offset;
-	debug << ", data ";
+	boost::format f("MESSAGE[%02d.%02d.%04d %02d:%02d:%02d]: "
+			"source 0x%02x, dest 0x%02x, type 0x%02x, offset %d");
+	f  % time.tm_mday % (time.tm_mon + 1) % (time.tm_year + 1900);
+	f % time.tm_hour % time.tm_min % time.tm_sec;
+	f % (unsigned int) m_source % (unsigned int) m_dest;
+	f % (unsigned int) m_type % (unsigned int) m_offset;
+
+	debug << f << ", data:";
 	for (size_t i = 0; i < m_data.size(); i++) {
-	    debug << " " << BYTEFORMAT_HEX m_data[i];
+	    debug << " 0x" << std::hex << std::setw(2)
+		  << std::setfill('0') << (unsigned int) m_data[i];
 	}
 	debug << std::endl;
     }
@@ -258,8 +251,9 @@ EmsMessage::handle()
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
 	    dataDebug << "DATA: Unhandled message received";
-	    dataDebug << "(source " << BYTEFORMAT_HEX m_source << ", type ";
-	    dataDebug << BYTEFORMAT_HEX m_type << ")." << std::endl;
+	    dataDebug << boost::format("(source 0x%02x, type 0x%02x).")
+		    % (unsigned int) m_source % (unsigned int) m_type;
+	    dataDebug << std::endl;
 	}
     }
 }
@@ -362,7 +356,7 @@ EmsMessage::parseUBAParameterWWMessage()
 void
 EmsMessage::parseUBAErrorMessage()
 {
-    size_t start, bytes = m_data.size();
+    size_t start;
 
     if (m_offset % sizeof(EmsProto::ErrorRecord)) {
 	start = ((m_offset / sizeof(EmsProto::ErrorRecord)) + 1) * sizeof(EmsProto::ErrorRecord);

@@ -18,6 +18,7 @@
  */
 
 #include <asm/byteorder.h>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
@@ -846,10 +847,9 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 
 	    for (index = 0; index < SOURCECOUNT; index++) {
 		if (source == SOURCES[index].source) {
-		    std::ostringstream os;
-		    os << SOURCES[index].name << " version: ";
-		    os << major << "." << std::setw(2) << std::setfill('0') << minor;
-		    respond(os.str());
+		    boost::format f("%s version: %d.%02d");
+		    f % SOURCES[index].name % major % minor;
+		    respond(f.str());
 		    break;
 		}
 	    }
@@ -964,9 +964,9 @@ CommandConnection::loopOverResponse(const char *prefix)
 	    return true;
 	}
 
-	std::ostringstream os;
-	os << prefix << std::setw(2) << std::setfill('0') << m_responseCounter << " " << response;
-	respond(os.str());
+	boost::format f("%s%02d %s");
+	f % prefix % m_responseCounter % response;
+	respond(f.str());
     }
 
     return false;
@@ -1001,21 +1001,18 @@ CommandConnection::buildRecordResponse(const EmsProto::ErrorRecord *record)
     std::ostringstream response;
 
     if (record->time.valid) {
-	response << std::setw(4) << (unsigned int) (2000 + record->time.year) << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.month << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.day << " ";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.hour << ":";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->time.minute;
+	response << boost::format("%04d-%02d-%02d %02d:%02d")
+		% (2000 + record->time.year) % (unsigned int) record->time.month
+		% (unsigned int) record->time.day % (unsigned int) record->time.hour
+		% (unsigned int) record->time.minute;
     } else {
 	response  << "xxxx-xx-xx xx:xx";
     }
 
     response << " ";
-    response << std::hex << (unsigned int) record->source << " ";
-
-    response << std::dec << record->errorAscii[0] << record->errorAscii[1] << " ";
-    response << __be16_to_cpu(record->code_be16) << " ";
-    response << __be16_to_cpu(record->durationMinutes_be16);
+    response << boost::format("%02x %c%c %d %d")
+	    % (unsigned int) record->source % record->errorAscii[0] % record->errorAscii[1]
+	    % __be16_to_cpu(record->code_be16) % __be16_to_cpu(record->durationMinutes_be16);
 
     return response.str();
 }
@@ -1028,14 +1025,11 @@ CommandConnection::buildRecordResponse(const EmsProto::ScheduleEntry *entry)
 	return "";
     }
 
-    std::ostringstream response;
     unsigned int minutes = entry->time * 10;
-    response << dayNames[entry->day / 2] << " ";
-    response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
-    response << std::setw(2) << std::setfill('0') << (minutes % 60) << " ";
-    response << (entry->on ? "on" : "off");
+    boost::format f("%s %02d:%02d %s");
+    f % dayNames[entry->day / 2] % (minutes / 60) % (minutes % 60) % (entry->on ? "on" : "off");
 
-    return response.str();
+    return f.str();
 }
 
 bool
@@ -1102,14 +1096,10 @@ CommandConnection::parseScheduleEntry(std::istream& request, EmsProto::ScheduleE
 std::string
 CommandConnection::buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry)
 {
-    std::ostringstream response;
+    boost::format f("%s %04d-%02d-%02d");
+    f % type % (2000 + entry->year) % (unsigned int) entry->month % (unsigned int) entry->day;
 
-    response << type << " ";
-    response << std::setw(4) << (unsigned int) (2000 + entry->year) << "-";
-    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->month << "-";
-    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->day;
-
-    return response.str();
+    return f.str();
 }
 
 bool
