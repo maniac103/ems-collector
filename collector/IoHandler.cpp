@@ -129,18 +129,16 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::SollTemp, "Solltemperatur" },
 	{ EmsValue::IstTemp, "Isttemperatur" },
 	{ EmsValue::SetTemp, "Temperatureinstellung" },
+	{ EmsValue::MaxTemp, "Maximale Temperatur" },
 	{ EmsValue::GedaempfteTemp, "Temperatur (gedämpft)" },
-	{ EmsValue::DesinfektionTemp, "Desinfektionstemperatur" },
+	{ EmsValue::DesinfektionsTemp, "Desinfektionstemperatur" },
 	{ EmsValue::TemperaturAenderung, "Temperaturänderung" },
 	{ EmsValue::Mischersteuerung, "Mischersteuerung" },
-	{ EmsValue::MomLeistung, "Momentane Leistung" },
-	{ EmsValue::MaxLeistung, "Maximale Leistung" },
 	{ EmsValue::Flammenstrom, "Flammenstrom" },
 	{ EmsValue::Systemdruck, "Systemdruck" },
 	{ EmsValue::BetriebsZeit, "Betriebszeit" },
-	{ EmsValue::PumpenModulation, "Pumpenmodulation" },
-	{ EmsValue::MinPumpenModulation, "Min. Pumpenmodulation" },
-	{ EmsValue::MaxPumpenModulation, "Max. Pumpenmodulation" },
+	{ EmsValue::SollModulation, "Sollwert Modulation" },
+	{ EmsValue::IstModulation, "Istwert Modulation" },
 	{ EmsValue::MinModulation, "Min. Modulation" },
 	{ EmsValue::MaxModulation, "Max. Modulation" },
 	{ EmsValue::HeizZeit, "Heizzeit" },
@@ -152,7 +150,8 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::EinschaltHysterese, "Einschalthysterese" },
 	{ EmsValue::AusschaltHysterese, "Abschalthysterese" },
 	{ EmsValue::AntipendelZeit, "Antipendelzeit" },
-	{ EmsValue::PumpenNachlaufZeit, "Pumpennachlaufzeit" },
+	{ EmsValue::NachlaufZeit, "Nachlaufzeit" },
+	{ EmsValue::DesinfektionStunde, "Thermische Desinfektion Stunde" },
 
 	{ EmsValue::FlammeAktiv, "Flamme" },
 	{ EmsValue::BrennerAktiv, "Brenner" },
@@ -176,10 +175,16 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::Party, "Partybetrieb" },
 	{ EmsValue::Frostschutz, "Frostschutz" },
 	{ EmsValue::SchaltuhrEin, "Schaltuhr aktiv" },
-	{ EmsValue::KesselHeizSchalter, "Heizfunktion per Kesselschalter freigegeben" },
-	{ EmsValue::KesselWWSchalter, "Warmwasserfunktion per Kesselschalter freigegeben" },
+	{ EmsValue::KesselSchalter, "per Kesselschalter freigegeben" },
+	{ EmsValue::EigenesProgrammAktiv, "Eigenes Programm aktiv" },
+	{ EmsValue::EinmalLadungsLED, "Einmalladungs-LED" },
+	{ EmsValue::Desinfektion, "Thermische Desinfektion" },
 
 	{ EmsValue::WWSystemType, "WW-System-Typ" },
+	{ EmsValue::Betriebsart, "Betriebsart" },
+	{ EmsValue::Wartungsmeldungen, "Wartungsmeldungen" },
+	{ EmsValue::WartungFaellig, "Wartung fällig?" },
+	{ EmsValue::DesinfektionTag, "Thermische Desinfektion Tag" },
 	{ EmsValue::Schaltpunkte, "Schaltpunkte" },
 
 	{ EmsValue::HKKennlinie, "Kennlinie" },
@@ -195,6 +200,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::HK3, "HK3" },
 	{ EmsValue::HK4, "HK4" },
 	{ EmsValue::Kessel, "Kessel" },
+	{ EmsValue::KesselPumpe, "Kesselpumpe" },
 	{ EmsValue::Ruecklauf, "Rücklauf" },
 	{ EmsValue::Waermetauscher, "Waermetauscher" },
 	{ EmsValue::WW, "Warmwasser" },
@@ -207,16 +213,14 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::SollTemp, "°C" },
 	{ EmsValue::IstTemp, "°C" },
 	{ EmsValue::SetTemp, "°C" },
+	{ EmsValue::MaxTemp, "°C" },
 	{ EmsValue::GedaempfteTemp, "°C" },
-	{ EmsValue::DesinfektionTemp, "°C" },
+	{ EmsValue::DesinfektionsTemp, "°C" },
 	{ EmsValue::TemperaturAenderung, "K/min" },
 	{ EmsValue::EinschaltHysterese, "K" },
 	{ EmsValue::AusschaltHysterese, "K" },
-	{ EmsValue::MomLeistung, "%" },
-	{ EmsValue::MaxLeistung, "%" },
-	{ EmsValue::PumpenModulation, "%" },
-	{ EmsValue::MinPumpenModulation, "%" },
-	{ EmsValue::MaxPumpenModulation, "%" },
+	{ EmsValue::IstModulation, "%" },
+	{ EmsValue::SollModulation, "%" },
 	{ EmsValue::MinModulation, "%" },
 	{ EmsValue::MaxModulation, "%" },
 	{ EmsValue::Flammenstrom, "µA" },
@@ -227,7 +231,8 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::EinschaltoptimierungsZeit, "min" },
 	{ EmsValue::AusschaltoptimierungsZeit, "min" },
 	{ EmsValue::AntipendelZeit, "min" },
-	{ EmsValue::PumpenNachlaufZeit, "min" }
+	{ EmsValue::NachlaufZeit, "min" },
+	{ EmsValue::DesinfektionStunde, "h" }
     };
 
     static const std::map<uint8_t, const char *> WWSYSTEMMAPPING = {
@@ -245,6 +250,18 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 7, "dauerhaft an" }
     };
 
+    static const std::map<uint8_t, const char *> MAINTENANCEMESSAGESMAPPING = {
+	{ 0, "keine" },
+	{ 1, "nach Betriebsstunden" },
+	{ 2, "nach Datum" }
+    };
+
+    static const std::map<uint8_t, const char *> MAINTENANCENEEDEDMAPPING = {
+	{ 0, "nein" },
+	{ 3, "ja, wegen Betriebsstunden" },
+	{ 8, "ja, wegen Datum" }
+    };
+
     static const std::map<uint8_t, const char *> ERRORTYPEMAPPING = {
 	{ 0x10, "Blockierender Fehler" },
 	{ 0x11, "Verriegelnder Fehler" },
@@ -255,6 +272,10 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     static const std::map<uint8_t, const char *> WEEKDAYMAPPING = {
 	{ 0, "Montag" }, { 1, "Dienstag" }, { 2, "Mittwoch" }, { 3, "Donnerstag" },
 	{ 4, "Freitag" }, { 5, "Samstag" }, { 6, "Sonntag" }
+    };
+
+    static const std::map<uint8_t, const char *> OPMODEMAPPING = {
+        { 0, "ständig aus" }, { 1, "ständig an" }, { 2, "Automatik" }
     };
 
     auto typeIter = TYPEMAPPING.find(value.getType());
@@ -293,6 +314,10 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
+		case EmsValue::Wartungsmeldungen: map = &MAINTENANCEMESSAGESMAPPING; break;
+		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
+		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
+		case EmsValue::DesinfektionTag: map = &WEEKDAYMAPPING; break;
 		default: break;
 	    }
 	    if (map && map->find(enumValue) != map->end()) {

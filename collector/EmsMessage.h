@@ -91,19 +91,17 @@ class EmsValue {
 	    SollTemp, /* HKx, Kessel */
 	    IstTemp, /* HKx, Kessel, Waermetauscher, Ruecklauf, WW, Raum, Aussen */
 	    SetTemp, /* Kessel */
+	    MaxTemp, /* WW */
 	    GedaempfteTemp, /* Aussen */
-	    DesinfektionTemp,
+	    DesinfektionsTemp,
 	    TemperaturAenderung,
 	    Mischersteuerung,
-	    MomLeistung,
-	    MaxLeistung,
 	    Flammenstrom,
 	    Systemdruck,
-	    PumpenModulation,
-	    MinPumpenModulation,
-	    MaxPumpenModulation,
+	    IstModulation,
 	    MinModulation,
 	    MaxModulation,
+	    SollModulation,
 	    BetriebsZeit,
 	    HeizZeit,
 	    WarmwasserbereitungsZeit,
@@ -114,7 +112,12 @@ class EmsValue {
 	    EinschaltHysterese,
 	    AusschaltHysterese,
 	    AntipendelZeit,
-	    PumpenNachlaufZeit,
+	    NachlaufZeit,
+	    HektoStundenVorWartung,
+	    WartungsterminTag,
+	    WartungsterminMonat,
+	    WartungsterminJahr,
+	    DesinfektionStunde,
 	    /* boolean */
 	    FlammeAktiv,
 	    BrennerAktiv,
@@ -138,11 +141,17 @@ class EmsValue {
 	    Party,
 	    Frostschutz,
 	    SchaltuhrEin,
-	    KesselHeizSchalter,
-	    KesselWWSchalter,
+	    KesselSchalter,
+	    EigenesProgrammAktiv,
+	    Desinfektion,
+	    EinmalLadungsLED,
 	    /* enum */
 	    WWSystemType,
 	    Schaltpunkte,
+	    Wartungsmeldungen,
+	    WartungFaellig,
+	    Betriebsart,
+	    DesinfektionTag,
 	    /* kennlinie */
 	    HKKennlinie,
 	    /* error */
@@ -160,7 +169,9 @@ class EmsValue {
 	    HK2,
 	    HK3,
 	    HK4,
+	    Brenner,
 	    Kessel,
+	    KesselPumpe,
 	    Ruecklauf,
 	    Waermetauscher,
 	    WW,
@@ -255,9 +266,12 @@ class EmsMessage
 	std::vector<uint8_t> getSendData() const;
 
     private:
+	void parseUBATotalUptimeMessage();
 	void parseUBAMonitorFastMessage();
 	void parseUBAMonitorSlowMessage();
 	void parseUBAMonitorWWMessage();
+	void parseUBAMaintenanceSettingsMessage();
+	void parseUBAMaintenanceStatusMessage();
 	void parseUBAParameterWWMessage();
 	void parseUBAUnknown1Message();
 	void parseUBAErrorMessage();
@@ -265,7 +279,11 @@ class EmsMessage
 
 	void parseRCTimeMessage();
 	void parseRCOutdoorTempMessage();
+	void parseRCSystemParameterMessage();
+	void parseRCWWOpmodeMessage();
 	void parseRCHKMonitorMessage(EmsValue::SubType subType);
+	void parseRCHKOpmodeMessage(EmsValue::SubType subType);
+	void parseRCHKScheduleMessage(EmsValue::SubType subType);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();
@@ -277,6 +295,9 @@ class EmsMessage
 			  EmsValue::Type type, EmsValue::SubType subtype);
 	void parseBool(size_t offset, uint8_t bit,
 		       EmsValue::Type type, EmsValue::SubType subtype);
+        void parseEnum(size_t offset,
+		       EmsValue::Type type, EmsValue::SubType subtype);
+
 	bool canAccess(size_t offset, size_t size) {
 	    return offset >= m_offset && offset + size <= m_offset + m_data.size();
 	}

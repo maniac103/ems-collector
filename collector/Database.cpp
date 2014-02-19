@@ -336,8 +336,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::GedaempfteTemp, EmsValue::Aussen, SensorGedaempfteAussenTemp },
 	{ EmsValue::SollTemp, EmsValue::Raum, SensorRaumSollTemp },
 	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
-	{ EmsValue::MomLeistung, EmsValue::None, SensorMomLeistung },
-	{ EmsValue::MaxLeistung, EmsValue::None, SensorMaxLeistung },
+	{ EmsValue::IstModulation, EmsValue::Brenner, SensorMomLeistung },
+	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
 	{ EmsValue::BetriebsZeit, EmsValue::None, SensorBetriebszeit },
@@ -345,7 +345,7 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
 	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
-	{ EmsValue::PumpenModulation, EmsValue::None, SensorPumpenModulation },
+	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
     };
 

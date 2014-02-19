@@ -107,20 +107,18 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::SollTemp, "targettemperature" },
 	{ EmsValue::IstTemp, "currenttemperature" },
 	{ EmsValue::SetTemp, "settemperature" },
+	{ EmsValue::MaxTemp, "maxtemperature" },
 	{ EmsValue::GedaempfteTemp, "dampedtemperature" },
-	{ EmsValue::DesinfektionTemp, "desinfectiontemperature" },
+	{ EmsValue::DesinfektionsTemp, "desinfectiontemperature" },
 	{ EmsValue::TemperaturAenderung, "temperaturechange" },
 	{ EmsValue::Mischersteuerung, "mixercontrol" },
-	{ EmsValue::MomLeistung, "currentpower" },
-	{ EmsValue::MaxLeistung, "maxpower" },
 	{ EmsValue::Flammenstrom, "flamecurrent" },
 	{ EmsValue::Systemdruck, "pressure" },
 	{ EmsValue::BetriebsZeit, "operatingminutes" },
-	{ EmsValue::PumpenModulation, "pumpmodulation" },
 	{ EmsValue::MinModulation, "minmodulation" },
 	{ EmsValue::MaxModulation, "maxmodulation" },
-	{ EmsValue::MinPumpenModulation, "minpumpmodulation" },
-	{ EmsValue::MaxPumpenModulation, "maxpumpmodulation" },
+	{ EmsValue::SollModulation, "targetmodulation" },
+	{ EmsValue::IstModulation, "currentmodulation" },
 	{ EmsValue::HeizZeit, "heatingminutes" },
 	{ EmsValue::WarmwasserbereitungsZeit, "warmwaterminutes" },
 	{ EmsValue::Brennerstarts, "heaterstarts" },
@@ -130,7 +128,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::EinschaltHysterese, "onhysteresis" },
 	{ EmsValue::AusschaltHysterese, "offhysteresis" },
 	{ EmsValue::AntipendelZeit, "antipendelminutes" },
-	{ EmsValue::PumpenNachlaufZeit, "pumpfollowupminutes" },
+	{ EmsValue::NachlaufZeit, "followupminutes" },
 
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
@@ -154,11 +152,16 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::Party, "partymode" },
 	{ EmsValue::Frostschutz, "frostsafemode" },
 	{ EmsValue::SchaltuhrEin, "switchpointactive" },
-	{ EmsValue::KesselHeizSchalter, "masterheatswitch" },
-	{ EmsValue::KesselWWSchalter, "masterwwswitch" },
+	{ EmsValue::KesselSchalter, "masterswitch" },
+	{ EmsValue::EigenesProgrammAktiv, "ownschedule" },
+	{ EmsValue::EinmalLadungsLED, "onetimeloadindicator" },
 
 	{ EmsValue::WWSystemType, "warmwatersystemtype" },
 	{ EmsValue::Schaltpunkte, "switchpoints" },
+	{ EmsValue::Wartungsmeldungen, "maintenancereminder" },
+	{ EmsValue::WartungFaellig, "maintenancedue" },
+	{ EmsValue::Betriebsart, "opmode" },
+	{ EmsValue::DesinfektionTag, "desinfectionday" },
 
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
@@ -173,6 +176,8 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::HK3, "hk3" },
 	{ EmsValue::HK4, "hk4" },
 	{ EmsValue::Kessel, "heater" },
+	{ EmsValue::KesselPumpe, "heaterpump" },
+	{ EmsValue::Brenner, "burner" },
 	{ EmsValue::Ruecklauf, "returnflow" },
 	{ EmsValue::Waermetauscher, "heatexchanger" },
 	{ EmsValue::WW, "ww" },
@@ -194,8 +199,25 @@ DataConnection::handleValue(const EmsValue& value)
 	{ 4, "4x" }, { 5, "5x" }, { 6, "6x" }, { 7, "alwayson" }
     };
 
+    static const std::map<uint8_t, const char *> MAINTENANCEMESSAGESMAPPING = {
+	{ 0, "off" }, { 1, "byhours" }, { 2, "bydate" }
+    };
+
+    static const std::map<uint8_t, const char *> MAINTENANCENEEDEDMAPPING = {
+	{ 0, "no" }, { 3, "byhours" }, { 8, "bydate" }
+    };
+
     static const std::map<uint8_t, const char *> ERRORTYPEMAPPING = {
 	{ 0x10, "B" }, { 0x11, "L" }, { 0x12, "S" }, { 0x13, "S" }
+    };
+
+    static const std::map<uint8_t, const char *> OPMODEMAPPING = {
+	{ 0, "off" }, { 1, "on" }, { 2, "auto" }
+    };
+
+    static const std::map<uint8_t, const char *> DAYMAPPING = {
+	{ 0, "monday" }, { 1, "tuesday" }, { 2, "wednesday"}, { 3, "thursday" },
+	{ 4, "friday" }, { 5, "saturday" }, { 6, "sunday" }, { 7, "everyday" }
     };
 
     std::ostringstream stream;
@@ -226,6 +248,10 @@ DataConnection::handleValue(const EmsValue& value)
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
+		case EmsValue::Wartungsmeldungen: map = &MAINTENANCEMESSAGESMAPPING; break;
+		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
+		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
+		case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
 		default: break;
 	    }
 	    if (map && map->find(enumValue) != map->end()) {
