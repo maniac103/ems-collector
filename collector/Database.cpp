@@ -336,8 +336,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::GedaempfteTemp, EmsValue::Aussen, SensorGedaempfteAussenTemp },
 	{ EmsValue::SollTemp, EmsValue::Raum, SensorRaumSollTemp },
 	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
-	{ EmsValue::MomLeistung, EmsValue::None, SensorMomLeistung },
-	{ EmsValue::MaxLeistung, EmsValue::None, SensorMaxLeistung },
+	{ EmsValue::IstModulation, EmsValue::Brenner, SensorMomLeistung },
+	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
 	{ EmsValue::BetriebsZeit, EmsValue::None, SensorBetriebszeit },
@@ -345,7 +345,7 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
 	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
-	{ EmsValue::PumpenModulation, EmsValue::None, SensorPumpenModulation },
+	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
     };
 
@@ -391,7 +391,7 @@ Database::handleValue(const EmsValue& value)
 
     for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
 	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
-	    addSensorValue(NUMERICMAPPING[i].sensor, boost::get<float>(value.getValue()));
+	    addSensorValue(NUMERICMAPPING[i].sensor, boost::get<double>(value.getValue()));
 	    return;
 	}
     }
@@ -411,7 +411,7 @@ Database::handleValue(const EmsValue& value)
 }
 
 void
-Database::addSensorValue(NumericSensors sensor, float value)
+Database::addSensorValue(NumericSensors sensor, double value)
 {
     time_t now = time(NULL);
     if (!m_connection || !checkAndUpdateRateLimit(sensor, now)) {
@@ -419,7 +419,7 @@ Database::addSensorValue(NumericSensors sensor, float value)
     }
 
     mysqlpp::Query query = m_connection->query();
-    std::map<unsigned int, float>::iterator cacheIter = m_numericCache.find(sensor);
+    std::map<unsigned int, double>::iterator cacheIter = m_numericCache.find(sensor);
     std::map<unsigned int, mysqlpp::ulonglong>::iterator idIter = m_lastInsertIds.find(sensor);
     bool valueChanged = cacheIter == m_numericCache.end() || cacheIter->second != value;
     bool idValid = idIter != m_lastInsertIds.end() && idIter->second != 0;
