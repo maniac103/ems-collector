@@ -310,14 +310,15 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		boost::format f("Quelle 0x%02x, Fehler %c%c, Code %d, Dauer %d Minuten");
 		f % (unsigned int) record.source % record.errorAscii[0] % record.errorAscii[1];
 		f % __be16_to_cpu(record.code_be16) % __be16_to_cpu(record.durationMinutes_be16);
-		stream << f << std::endl;
+		stream << f;
 		if (record.time.valid) {
 		    boost::format ft("%d.%d.%d %d:%02d");
 		    ft % (unsigned int) record.time.day % (unsigned int) record.time.month;
 		    ft % (2000 + record.time.year);
 		    ft % (unsigned int) record.time.hour % (unsigned int) record.time.minute;
-		    stream << "; Zeitpunkt " << ft << std::endl;
+		    stream << "; Zeitpunkt " << ft;
 		}
+		stream << std::endl;
 	    }
 	    break;
 	}
