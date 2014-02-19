@@ -101,12 +101,16 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
 
     private:
+	static const unsigned int MaxRequestRetries = 5;
+	static const unsigned int RequestTimeout = 400; /* ms */
+
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::streambuf m_request;
 	CommandHandler& m_handler;
-	bool m_waitingForResponse;
 	boost::asio::deadline_timer m_responseTimeout;
 	unsigned int m_responseCounter;
+	unsigned int m_retriesLeft;
+	std::unique_ptr<EmsMessage> m_activeRequest;
 	std::vector<uint8_t> m_requestResponse;
 	size_t m_requestOffset;
 	size_t m_requestLength;

@@ -122,7 +122,6 @@ CommandHandler::doSendMessage(const EmsMessage& msg)
 CommandConnection::CommandConnection(CommandHandler& handler) :
     m_socket(handler.getHandler()),
     m_handler(handler),
-    m_waitingForResponse(false),
     m_responseTimeout(handler.getHandler()),
     m_responseCounter(0),
     m_parsePosition(0)
@@ -146,7 +145,7 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
 
     std::istream requestStream(&m_request);
 
-    if (m_waitingForResponse) {
+    if (m_activeRequest) {
 	respond("ERRBUSY");
     } else if (m_request.size() > 2) {
 	CommandResult result = handleCommand(requestStream);
@@ -803,7 +802,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 void
 CommandConnection::handlePcMessage(const EmsMessage& message)
 {
-    if (!m_waitingForResponse) {
+    if (!m_activeRequest) {
 	return;
     }
 
@@ -813,14 +812,14 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     uint8_t offset = message.getOffset();
 
     if (type == 0xff) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond(offset == 0x04 ? "FAIL" : "OK");
 	return;
     }
 
     m_responseTimeout.cancel();
     if (offset != (m_requestResponse.size() + m_requestOffset)) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond("ERRFAIL");
 	return;
     }
@@ -944,7 +943,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     if (done) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond("OK");
     }
 }
@@ -975,8 +974,7 @@ CommandConnection::loopOverResponse(const char *prefix)
 void
 CommandConnection::scheduleResponseTimeout()
 {
-    m_waitingForResponse = true;
-    m_responseTimeout.expires_from_now(boost::posix_time::seconds(2));
+    m_responseTimeout.expires_from_now(boost::posix_time::milliseconds(RequestTimeout));
     m_responseTimeout.async_wait(boost::bind(&CommandConnection::responseTimeout,
 					     this, boost::asio::placeholders::error));
 }
@@ -984,9 +982,16 @@ CommandConnection::scheduleResponseTimeout()
 void
 CommandConnection::responseTimeout(const boost::system::error_code& error)
 {
-    if (m_waitingForResponse && error != boost::asio::error::operation_aborted) {
+    if (!m_activeRequest || error == boost::asio::error::operation_aborted) {
+	return;
+    }
+    m_retriesLeft--;
+    if (m_retriesLeft == 0) {
+	m_activeRequest.reset();
 	respond("ERRTIMEOUT");
-	m_waitingForResponse = false;
+    } else {
+	scheduleResponseTimeout();
+	m_handler.sendMessage(*m_activeRequest);
     }
 }
 
@@ -1174,10 +1179,12 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 {
     std::vector<uint8_t> sendData(data, data + count);
 
+    m_retriesLeft = MaxRequestRetries;
+    m_activeRequest.reset(new EmsMessage(dest, type, offset, sendData, expectResponse));
+
     scheduleResponseTimeout();
 
-    EmsMessage msg(dest, type, offset, sendData, expectResponse);
-    m_handler.sendMessage(msg);
+    m_handler.sendMessage(*m_activeRequest);
 }
 
 bool
