@@ -102,22 +102,23 @@ class EmsValue {
 	    MinModulation,
 	    MaxModulation,
 	    SollModulation,
+	    EinschaltHysterese,
+	    AusschaltHysterese,
+	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,
 	    WarmwasserbereitungsZeit,
 	    Brennerstarts,
 	    WarmwasserBereitungen,
+	    DesinfektionStunde,
+	    HektoStundenVorWartung,
 	    EinschaltoptimierungsZeit,
 	    AusschaltoptimierungsZeit,
-	    EinschaltHysterese,
-	    AusschaltHysterese,
 	    AntipendelZeit,
 	    NachlaufZeit,
-	    HektoStundenVorWartung,
 	    WartungsterminTag,
 	    WartungsterminMonat,
 	    WartungsterminJahr,
-	    DesinfektionStunde,
 	    /* boolean */
 	    FlammeAktiv,
 	    BrennerAktiv,
@@ -183,6 +184,7 @@ class EmsValue {
 
 	enum ReadingType {
 	    Numeric,
+	    Integer,
 	    Boolean,
 	    Enumeration,
 	    Kennlinie,
@@ -199,6 +201,7 @@ class EmsValue {
 
 	typedef boost::variant<
 	    float, // numeric
+	    unsigned int, // integer
 	    bool, // boolean
 	    uint8_t, // enumeration
 	    std::vector<uint8_t>, // kennlinie
@@ -292,6 +295,8 @@ class EmsMessage
 
     private:
 	void parseNumeric(size_t offset, size_t size, int divider,
+			  EmsValue::Type type, EmsValue::SubType subtype);
+	void parseInteger(size_t offset, size_t size,
 			  EmsValue::Type type, EmsValue::SubType subtype);
 	void parseBool(size_t offset, uint8_t bit,
 		       EmsValue::Type type, EmsValue::SubType subtype);

@@ -36,14 +36,18 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	value = (value << 8) | data[i];
     }
 
-    /* treat values with highest bit set as negative
-     * e.g. size = 2, value = 0xfffe -> real value -2
-     */
-    if (data[0] & 0x80) {
-	value = value - (1 << (len * 8));
-    }
+    if (divider == 0) {
+	m_value = (unsigned int) value;
+    } else {
+	/* treat values with highest bit set as negative
+	 * e.g. size = 2, value = 0xfffe -> real value -2
+	 */
+	if (data[0] & 0x80) {
+	    value = value - (1 << (len * 8));
+	}
 
-    m_value = (float) value / (float) divider;
+	m_value = (float) value / (float) divider;
+    }
 }
 
 EmsValue::EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit) :
@@ -271,6 +275,13 @@ EmsMessage::parseEnum(size_t offset, EmsValue::Type type, EmsValue::SubType subt
 }
 
 void
+EmsMessage::parseInteger(size_t offset, size_t size,
+			 EmsValue::Type type, EmsValue::SubType subtype)
+{
+    parseNumeric(offset, size, 0, type, subtype);
+}
+
+void
 EmsMessage::parseNumeric(size_t offset, size_t size, int divider,
 			 EmsValue::Type type, EmsValue::SubType subtype)
 {
@@ -324,17 +335,17 @@ EmsMessage::parseUBAMonitorFastMessage()
 void
 EmsMessage::parseUBATotalUptimeMessage()
 {
-    parseNumeric(0, 3, 1, EmsValue::BetriebsZeit, EmsValue::None);
+    parseInteger(0, 3, EmsValue::BetriebsZeit, EmsValue::None);
 }
 
 void
 EmsMessage::parseUBAMaintenanceSettingsMessage()
 {
     parseEnum(0,EmsValue::Wartungsmeldungen, EmsValue::Kessel);
-    parseNumeric(1, 1, 1, EmsValue::HektoStundenVorWartung, EmsValue::Kessel);
-    parseNumeric(2, 1, 1, EmsValue::WartungsterminTag, EmsValue::Kessel);
-    parseNumeric(3, 1, 1, EmsValue::WartungsterminMonat, EmsValue::Kessel);
-    parseNumeric(4, 1, 1, EmsValue::WartungsterminJahr, EmsValue::Kessel);
+    parseInteger(1, 1, EmsValue::HektoStundenVorWartung, EmsValue::Kessel);
+    parseInteger(2, 1, EmsValue::WartungsterminTag, EmsValue::Kessel);
+    parseInteger(3, 1, EmsValue::WartungsterminMonat, EmsValue::Kessel);
+    parseInteger(4, 1, EmsValue::WartungsterminJahr, EmsValue::Kessel);
 
 }
 
@@ -351,9 +362,9 @@ EmsMessage::parseUBAMonitorSlowMessage()
     parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
     parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
     parseNumeric(9, 1, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
-    parseNumeric(10, 3, 1, EmsValue::Brennerstarts, EmsValue::Kessel);
-    parseNumeric(13, 3, 1, EmsValue::BetriebsZeit, EmsValue::Kessel);
-    parseNumeric(19, 3, 1, EmsValue::HeizZeit, EmsValue::Kessel);
+    parseInteger(10, 3, EmsValue::Brennerstarts, EmsValue::Kessel);
+    parseInteger(13, 3, EmsValue::BetriebsZeit, EmsValue::Kessel);
+    parseInteger(19, 3, EmsValue::HeizZeit, EmsValue::Kessel);
 }
 
 void
@@ -361,8 +372,8 @@ EmsMessage::parseUBAMonitorWWMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::WW);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::WW);
-    parseNumeric(10, 3, 1, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
-    parseNumeric(13, 3, 1, EmsValue::WarmwasserBereitungen, EmsValue::None);
+    parseInteger(10, 3, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
+    parseInteger(13, 3, EmsValue::WarmwasserBereitungen, EmsValue::None);
 
     parseBool(5, 0, EmsValue::Tagbetrieb, EmsValue::WW);
     parseBool(5, 1, EmsValue::EinmalLadungAktiv, EmsValue::WW);
@@ -415,8 +426,8 @@ EmsMessage::parseUBAParametersMessage()
     parseNumeric(3, 1, 1, EmsValue::MinModulation, EmsValue::Brenner);
     parseNumeric(4, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
     parseNumeric(5, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
-    parseNumeric(6, 1, 1, EmsValue::AntipendelZeit, EmsValue::None);
-    parseNumeric(8, 1, 1, EmsValue::NachlaufZeit, EmsValue::KesselPumpe);
+    parseInteger(6, 1, EmsValue::AntipendelZeit, EmsValue::None);
+    parseInteger(8, 1, EmsValue::NachlaufZeit, EmsValue::KesselPumpe);
     parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::KesselPumpe);
     parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::KesselPumpe);
 }
@@ -442,7 +453,7 @@ EmsMessage::parseRCWWOpmodeMessage()
 
     parseBool(4, 1, EmsValue::Desinfektion, EmsValue::WW);
     parseEnum(5, EmsValue::DesinfektionTag, EmsValue::WW);
-    parseNumeric(6, 1, 1, EmsValue::DesinfektionStunde, EmsValue::WW);
+    parseInteger(6, 1, EmsValue::DesinfektionStunde, EmsValue::WW);
     parseNumeric(8, 1, 1, EmsValue::MaxTemp, EmsValue::WW);
     parseBool(9 ,1, EmsValue::EinmalLadungsLED, EmsValue::WW);
 }
@@ -484,8 +495,8 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     }
 
     parseNumeric(14, 1, 1, EmsValue::SollTemp, subtype);
-    parseNumeric(5, 1, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
-    parseNumeric(6, 1, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
+    parseInteger(5, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
+    parseInteger(6, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
     if (canAccess(15, 1) && (m_data[15 - m_offset] & 1) == 0) {
 	parseNumeric(10, 2, 100, EmsValue::TemperaturAenderung, EmsValue::Raum);

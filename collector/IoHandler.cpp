@@ -297,9 +297,14 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     stream << " = ";
 
     switch (value.getReadingType()) {
-	case EmsValue::Numeric: {
+	case EmsValue::Numeric:
+	case EmsValue::Integer: {
 	    auto unitIter = UNITMAPPING.find(value.getType());
-	    stream << value.getValue<float>();
+	    if (value.getReadingType() == EmsValue::Numeric) {
+		stream << value.getValue<float>();
+	    } else {
+		stream << value.getValue<unsigned int>();
+	    }
 	    if (unitIter != UNITMAPPING.end()) {
 		stream << " " << unitIter->second;
 	    }

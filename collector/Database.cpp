@@ -340,13 +340,20 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
+	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation },
+	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp }
+    };
+
+    static const struct {
+	EmsValue::Type type;
+	EmsValue::SubType subtype;
+	NumericSensors sensor;
+    } INTEGERMAPPING[] = {
 	{ EmsValue::BetriebsZeit, EmsValue::None, SensorBetriebszeit },
 	{ EmsValue::HeizZeit, EmsValue::None, SensorHeizZeit },
 	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
-	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
-	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation },
-	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
+	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen }
     };
 
     static const struct {
@@ -392,6 +399,12 @@ Database::handleValue(const EmsValue& value)
     for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
 	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
 	    addSensorValue(NUMERICMAPPING[i].sensor, value.getValue<float>());
+	    return;
+	}
+    }
+    for (size_t i = 0; i < sizeof(INTEGERMAPPING) / sizeof(INTEGERMAPPING[0]); i++) {
+	if (type == INTEGERMAPPING[i].type && subtype == INTEGERMAPPING[i].subtype) {
+	    addSensorValue(INTEGERMAPPING[i].sensor, value.getValue<unsigned int>());
 	    return;
 	}
     }

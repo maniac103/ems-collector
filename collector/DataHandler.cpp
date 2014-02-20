@@ -239,6 +239,9 @@ DataConnection::handleValue(const EmsValue& value)
 	case EmsValue::Numeric:
 	    stream << value.getValue<float>();
 	    break;
+	case EmsValue::Integer:
+	    stream << value.getValue<unsigned int>();
+	    break;
 	case EmsValue::Boolean:
 	    stream << (value.getValue<bool>() ? "on" : "off");
 	    break;
