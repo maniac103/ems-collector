@@ -18,6 +18,7 @@
  */
 
 #include <asm/byteorder.h>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
@@ -121,7 +122,6 @@ CommandHandler::doSendMessage(const EmsMessage& msg)
 CommandConnection::CommandConnection(CommandHandler& handler) :
     m_socket(handler.getHandler()),
     m_handler(handler),
-    m_waitingForResponse(false),
     m_responseTimeout(handler.getHandler()),
     m_responseCounter(0),
     m_parsePosition(0)
@@ -145,7 +145,7 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
 
     std::istream requestStream(&m_request);
 
-    if (m_waitingForResponse) {
+    if (m_activeRequest) {
 	respond("ERRBUSY");
     } else if (m_request.size() > 2) {
 	CommandResult result = handleCommand(requestStream);
@@ -802,7 +802,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 void
 CommandConnection::handlePcMessage(const EmsMessage& message)
 {
-    if (!m_waitingForResponse) {
+    if (!m_activeRequest) {
 	return;
     }
 
@@ -812,14 +812,14 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     uint8_t offset = message.getOffset();
 
     if (type == 0xff) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond(offset == 0x04 ? "FAIL" : "OK");
 	return;
     }
 
     m_responseTimeout.cancel();
     if (offset != (m_requestResponse.size() + m_requestOffset)) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond("ERRFAIL");
 	return;
     }
@@ -846,10 +846,9 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 
 	    for (index = 0; index < SOURCECOUNT; index++) {
 		if (source == SOURCES[index].source) {
-		    std::ostringstream os;
-		    os << SOURCES[index].name << " version: ";
-		    os << major << "." << std::setw(2) << std::setfill('0') << minor;
-		    respond(os.str());
+		    boost::format f("%s version: %d.%02d");
+		    f % SOURCES[index].name % major % minor;
+		    respond(f.str());
 		    break;
 		}
 	    }
@@ -944,7 +943,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     if (done) {
-	m_waitingForResponse = false;
+	m_activeRequest.reset();
 	respond("OK");
     }
 }
@@ -964,9 +963,9 @@ CommandConnection::loopOverResponse(const char *prefix)
 	    return true;
 	}
 
-	std::ostringstream os;
-	os << prefix << std::setw(2) << std::setfill('0') << m_responseCounter << " " << response;
-	respond(os.str());
+	boost::format f("%s%02d %s");
+	f % prefix % m_responseCounter % response;
+	respond(f.str());
     }
 
     return false;
@@ -975,8 +974,7 @@ CommandConnection::loopOverResponse(const char *prefix)
 void
 CommandConnection::scheduleResponseTimeout()
 {
-    m_waitingForResponse = true;
-    m_responseTimeout.expires_from_now(boost::posix_time::seconds(2));
+    m_responseTimeout.expires_from_now(boost::posix_time::milliseconds(RequestTimeout));
     m_responseTimeout.async_wait(boost::bind(&CommandConnection::responseTimeout,
 					     this, boost::asio::placeholders::error));
 }
@@ -984,9 +982,16 @@ CommandConnection::scheduleResponseTimeout()
 void
 CommandConnection::responseTimeout(const boost::system::error_code& error)
 {
-    if (m_waitingForResponse && error != boost::asio::error::operation_aborted) {
+    if (!m_activeRequest || error == boost::asio::error::operation_aborted) {
+	return;
+    }
+    m_retriesLeft--;
+    if (m_retriesLeft == 0) {
+	m_activeRequest.reset();
 	respond("ERRTIMEOUT");
-	m_waitingForResponse = false;
+    } else {
+	scheduleResponseTimeout();
+	m_handler.sendMessage(*m_activeRequest);
     }
 }
 
@@ -1000,22 +1005,19 @@ CommandConnection::buildRecordResponse(const EmsProto::ErrorRecord *record)
 
     std::ostringstream response;
 
-    if (record->hasDate) {
-	response << std::setw(4) << (unsigned int) (2000 + record->year) << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->month << "-";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->day << " ";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->hour << ":";
-	response << std::setw(2) << std::setfill('0') << (unsigned int) record->minute;
+    if (record->time.valid) {
+	response << boost::format("%04d-%02d-%02d %02d:%02d")
+		% (2000 + record->time.year) % (unsigned int) record->time.month
+		% (unsigned int) record->time.day % (unsigned int) record->time.hour
+		% (unsigned int) record->time.minute;
     } else {
 	response  << "xxxx-xx-xx xx:xx";
     }
 
     response << " ";
-    response << std::hex << (unsigned int) record->source << " ";
-
-    response << std::dec << record->errorAscii[0] << record->errorAscii[1] << " ";
-    response << __be16_to_cpu(record->code_be16) << " ";
-    response << __be16_to_cpu(record->durationMinutes_be16);
+    response << boost::format("%02x %c%c %d %d")
+	    % (unsigned int) record->source % record->errorAscii[0] % record->errorAscii[1]
+	    % __be16_to_cpu(record->code_be16) % __be16_to_cpu(record->durationMinutes_be16);
 
     return response.str();
 }
@@ -1028,14 +1030,11 @@ CommandConnection::buildRecordResponse(const EmsProto::ScheduleEntry *entry)
 	return "";
     }
 
-    std::ostringstream response;
     unsigned int minutes = entry->time * 10;
-    response << dayNames[entry->day / 2] << " ";
-    response << std::setw(2) << std::setfill('0') << (minutes / 60) << ":";
-    response << std::setw(2) << std::setfill('0') << (minutes % 60) << " ";
-    response << (entry->on ? "on" : "off");
+    boost::format f("%s %02d:%02d %s");
+    f % dayNames[entry->day / 2] % (minutes / 60) % (minutes % 60) % (entry->on ? "on" : "off");
 
-    return response.str();
+    return f.str();
 }
 
 bool
@@ -1102,14 +1101,10 @@ CommandConnection::parseScheduleEntry(std::istream& request, EmsProto::ScheduleE
 std::string
 CommandConnection::buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry)
 {
-    std::ostringstream response;
+    boost::format f("%s %04d-%02d-%02d");
+    f % type % (2000 + entry->year) % (unsigned int) entry->month % (unsigned int) entry->day;
 
-    response << type << " ";
-    response << std::setw(4) << (unsigned int) (2000 + entry->year) << "-";
-    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->month << "-";
-    response << std::setw(2) << std::setfill('0') << (unsigned int) entry->day;
-
-    return response.str();
+    return f.str();
 }
 
 bool
@@ -1184,10 +1179,12 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 {
     std::vector<uint8_t> sendData(data, data + count);
 
+    m_retriesLeft = MaxRequestRetries;
+    m_activeRequest.reset(new EmsMessage(dest, type, offset, sendData, expectResponse));
+
     scheduleResponseTimeout();
 
-    EmsMessage msg(dest, type, offset, sendData, expectResponse);
-    m_handler.sendMessage(msg);
+    m_handler.sendMessage(*m_activeRequest);
 }
 
 bool

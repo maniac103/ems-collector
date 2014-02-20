@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/format.hpp>
 #include "DataHandler.h"
 #include "CommandHandler.h"
 
@@ -164,6 +165,7 @@ DataConnection::handleValue(const EmsValue& value)
 
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
+	{ EmsValue::SystemZeit, "systemtime" },
 
 	{ EmsValue::ServiceCode, "servicecode" },
 	{ EmsValue::FehlerCode, "errorcode" }
@@ -235,14 +237,14 @@ DataConnection::handleValue(const EmsValue& value)
 
     switch (value.getReadingType()) {
 	case EmsValue::Numeric:
-	    stream << std::setprecision(10) << boost::get<double>(value.getValue());
+	    stream << value.getValue<double>();
 	    break;
 	case EmsValue::Boolean:
-	    stream << (boost::get<bool>(value.getValue()) ? "on" : "off");
+	    stream << (value.getValue<bool>() ? "on" : "off");
 	    break;
 	case EmsValue::Enumeration: {
 	    const std::map<uint8_t, const char *> *map = NULL;
-	    uint8_t enumValue = boost::get<uint8_t>(value.getValue());
+	    uint8_t enumValue = value.getValue<uint8_t>();
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
@@ -260,23 +262,33 @@ DataConnection::handleValue(const EmsValue& value)
 	    break;
 	}
 	case EmsValue::Kennlinie: {
-	    std::vector<uint8_t> kennlinie = boost::get<std::vector<uint8_t> >(value.getValue());
-	    stream << (unsigned int) kennlinie[0] << "/";
-	    stream << (unsigned int) kennlinie[1] << "/";
-	    stream << (unsigned int) kennlinie[2];
+	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
+	    stream << boost::format("%d/%d/%d")
+		    % (unsigned int) kennlinie[0] % (unsigned int) kennlinie[1]
+		    % (unsigned int) kennlinie[2];
 	    break;
 	}
 	case EmsValue::Error: {
-	    EmsValue::ErrorEntry entry = boost::get<EmsValue::ErrorEntry>(value.getValue());
+	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
 	    std::string formatted = CommandConnection::buildRecordResponse(&entry.record);
+	    if (formatted.empty()) {
+		formatted = "empty";
+	    }
 
-	    stream << ERRORTYPEMAPPING.at(entry.type);
-	    stream << std::setw(2) << std::setfill('0') << entry.index << " ";
-	    stream << (formatted.empty() ? "empty" : formatted);
+	    stream << boost::format("%s%02d %s")
+		    % ERRORTYPEMAPPING.at(entry.type) % entry.index % formatted;
+	    break;
+	}
+	case EmsValue::SystemTime: {
+	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
+	    stream << boost::format("%04d-%04d-%04d %02d:%02d:%02d")
+		    % (2000 + record.common.year) % (unsigned int) record.common.month
+		    % (unsigned int) record.common.day % (unsigned int) record.common.hour
+		    % (unsigned int)  record.common.minute % (unsigned int) record.second;
 	    break;
 	}
 	case EmsValue::Formatted:
-	    stream << boost::get<std::string>(value.getValue());
+	    stream << value.getValue<std::string>();
 	    break;
     }
 

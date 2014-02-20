@@ -22,21 +22,9 @@
 #include <iomanip>
 #include <cassert>
 #include <cmath>
+#include <boost/format.hpp>
 #include "EmsMessage.h"
 #include "Options.h"
-
-#define BYTEFORMAT_HEX \
-    "0x" << std::setbase(16) << std::setw(2) << std::setfill('0') << (unsigned int)
-#define BYTEFORMAT_DEC \
-    std::dec << (unsigned int)
-
-#define RETURN_ON_SIZE_MISMATCH(expected,text)                        \
-    if (m_data.size() < expected) {                                   \
-	std::cerr << text << " size mismatch (got ";                  \
-	std::cerr << std::dec << m_data.size() << ", expected min. "; \
-	std::cerr << expected << ")" << std::endl;                    \
-	return;                                                       \
-    }
 
 EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, int divider) :
     m_type(type),
@@ -87,6 +75,14 @@ EmsValue::EmsValue(Type type, SubType subType, const ErrorEntry& error) :
     m_subType(subType),
     m_readingType(Error),
     m_value(error)
+{
+}
+
+EmsValue::EmsValue(Type type, SubType subType, const EmsProto::SystemTimeRecord& record) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(SystemTime),
+    m_value(record)
 {
 }
 
@@ -153,22 +149,24 @@ EmsMessage::handle()
 	struct tm time;
 
 	localtime_r(&now, &time);
-	debug << std::dec << "MESSAGE[";
-	debug << std::setw(2) << std::setfill('0') << time.tm_mday;
-	debug << "." << std::setw(2) << std::setfill('0') << (time.tm_mon + 1);
-	debug << "." << (time.tm_year + 1900) << " ";
-	debug << std::setw(2) << std::setfill('0') << time.tm_hour;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_min;
-	debug << ":" << std::setw(2) << std::setfill('0') << time.tm_sec;
-	debug << "]: source " << BYTEFORMAT_HEX m_source;
-	debug << ", dest " << BYTEFORMAT_HEX m_dest;
-	debug << ", type " << BYTEFORMAT_HEX m_type;
-	debug << ", offset " << BYTEFORMAT_DEC m_offset;
-	debug << ", data ";
+	boost::format f("MESSAGE[%02d.%02d.%04d %02d:%02d:%02d]: "
+			"source 0x%02x, dest 0x%02x, type 0x%02x, offset %d");
+	f  % time.tm_mday % (time.tm_mon + 1) % (time.tm_year + 1900);
+	f % time.tm_hour % time.tm_min % time.tm_sec;
+	f % (unsigned int) m_source % (unsigned int) m_dest;
+	f % (unsigned int) m_type % (unsigned int) m_offset;
+
+	debug << f << ", data:";
 	for (size_t i = 0; i < m_data.size(); i++) {
-	    debug << " " << BYTEFORMAT_HEX m_data[i];
+	    debug << " 0x" << std::hex << std::setw(2)
+		  << std::setfill('0') << (unsigned int) m_data[i];
 	}
 	debug << std::endl;
+    }
+
+    if (!m_valueHandler) {
+	/* kind of pointless to parse in that case */
+	return;
     }
 
     if (!m_source && !m_dest && !m_type) {
@@ -220,39 +218,39 @@ EmsMessage::handle()
 		case 0x35: /* command for UBA3 */ handled = true; break;
 		case 0x37: parseRCWWOpmodeMessage(); handled = true; break;
 		case 0x3D:
-		    parseRCHKOpmodeMessage("HK1", EmsValue::HK1);
+		    parseRCHKOpmodeMessage(EmsValue::HK1);
 		    handled = true;
 		    break;
 		case 0x47:
-		    parseRCHKOpmodeMessage("HK2", EmsValue::HK2);
+		    parseRCHKOpmodeMessage(EmsValue::HK2);
 		    handled = true;
 		    break;
 		case 0x51:
-		    parseRCHKOpmodeMessage("HK3", EmsValue::HK3);
+		    parseRCHKOpmodeMessage(EmsValue::HK3);
 		    handled = true;
 		    break;
 		case 0x5B:
-		    parseRCHKOpmodeMessage("HK4", EmsValue::HK4);
+		    parseRCHKOpmodeMessage(EmsValue::HK4);
 		    handled = true;
 		    break;
 		case 0x3E:
-		    parseRCHKMonitorMessage("HK1", EmsValue::HK1);
+		    parseRCHKMonitorMessage(EmsValue::HK1);
 		    handled = true;
 		    break;
 		case 0x48:
-		    parseRCHKMonitorMessage("HK2", EmsValue::HK2);
+		    parseRCHKMonitorMessage(EmsValue::HK2);
 		    handled = true;
 		    break;
 		case 0x52:
-		    parseRCHKMonitorMessage("HK3", EmsValue::HK3);
+		    parseRCHKMonitorMessage(EmsValue::HK3);
 		    handled = true;
 		    break;
 		case 0x5C:
-		    parseRCHKMonitorMessage("HK4", EmsValue::HK4);
+		    parseRCHKMonitorMessage(EmsValue::HK4);
 		    handled = true;
 		    break;
 		case 0x3F:
-		    parseRCHKScheduleMessage("HK1", EmsValue::HK1);
+		    parseRCHKScheduleMessage(EmsValue::HK1);
 		    handled = true;
 		    break;
 		case 0x9D: /* command for WM10 */ handled = true; break;
@@ -280,8 +278,9 @@ EmsMessage::handle()
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
 	    dataDebug << "DATA: Unhandled message received";
-	    dataDebug << "(source " << BYTEFORMAT_HEX m_source << ", type ";
-	    dataDebug << BYTEFORMAT_HEX m_type << ")." << std::endl;
+	    dataDebug << boost::format("(source 0x%02x, type 0x%02x).")
+		    % (unsigned int) m_source % (unsigned int) m_type;
+	    dataDebug << std::endl;
 	}
     }
 }
@@ -300,7 +299,7 @@ void
 EmsMessage::parseNumeric(size_t offset, size_t size, int divider,
 			 EmsValue::Type type, EmsValue::SubType subtype)
 {
-    if (m_valueHandler && canAccess(offset, size)) {
+    if (canAccess(offset, size)) {
 	EmsValue value(type, subtype, &m_data.at(offset - m_offset), size, divider);
 	m_valueHandler(value);
     }
@@ -310,7 +309,7 @@ void
 EmsMessage::parseBool(size_t offset, uint8_t bit,
 		      EmsValue::Type type, EmsValue::SubType subtype)
 {
-    if (m_valueHandler && canAccess(offset, 1)) {
+    if (canAccess(offset, 1)) {
 	EmsValue value(type, subtype, m_data.at(offset - m_offset), bit);
 	m_valueHandler(value);
     }
@@ -319,8 +318,6 @@ EmsMessage::parseBool(size_t offset, uint8_t bit,
 void
 EmsMessage::parseUBAMonitorFastMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(25, "Monitor Fast");
-
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::Kessel);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
     parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
@@ -330,17 +327,15 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
     parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None);
 
-    if (m_valueHandler) {
-	if (canAccess(18, 2)) {
-	    std::ostringstream ss;
-	    ss << m_data[18] << m_data[19];
-	    m_valueHandler(EmsValue(EmsValue::ServiceCode, EmsValue::None, ss.str()));
-	}
-	if (canAccess(20, 2)) {
-	    std::ostringstream ss;
-	    ss << std::dec << (m_data[20] << 8 | m_data[21]);
-	    m_valueHandler(EmsValue(EmsValue::FehlerCode, EmsValue::None, ss.str()));
-	}
+    if (canAccess(18, 2)) {
+	std::ostringstream ss;
+	ss << m_data[18] << m_data[19];
+	m_valueHandler(EmsValue(EmsValue::ServiceCode, EmsValue::None, ss.str()));
+    }
+    if (canAccess(20, 2)) {
+	std::ostringstream ss;
+	ss << std::dec << (m_data[20] << 8 | m_data[21]);
+	m_valueHandler(EmsValue(EmsValue::FehlerCode, EmsValue::None, ss.str()));
     }
 
     parseBool(7, 0, EmsValue::FlammeAktiv, EmsValue::None);
@@ -354,16 +349,12 @@ EmsMessage::parseUBAMonitorFastMessage()
 void
 EmsMessage::parseUBATotalUptimeMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(3, "Totaluptime");
-
     parseNumeric(0, 3, 1, EmsValue::BetriebsZeit, EmsValue::None);
 }
 
 void
 EmsMessage::parseUBAMaintenanceSettingsMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(5, "Maintenance Settings");
-
     parseEnum(0,EmsValue::Wartungsmeldungen, EmsValue::Kessel);
     parseNumeric(1, 1, 1, EmsValue::HektoStundenVorWartung, EmsValue::Kessel);
     parseNumeric(2, 1, 1, EmsValue::WartungsterminTag, EmsValue::Kessel);
@@ -381,8 +372,6 @@ EmsMessage::parseUBAMaintenanceStatusMessage()
 void
 EmsMessage::parseUBAMonitorSlowMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(25, "Monitor Slow");
-
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
     parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
     parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
@@ -395,8 +384,6 @@ EmsMessage::parseUBAMonitorSlowMessage()
 void
 EmsMessage::parseUBAMonitorWWMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(16, "Monitor WW");
-
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::WW);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::WW);
     parseNumeric(10, 3, 1, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
@@ -417,8 +404,6 @@ EmsMessage::parseUBAMonitorWWMessage()
 void
 EmsMessage::parseUBAParameterWWMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(9, "UBA Parameter WW");
-
     parseBool(1, 0, EmsValue::KesselSchalter, EmsValue::WW);
     parseNumeric(2, 1, 1, EmsValue::SetTemp, EmsValue::WW);
     parseNumeric(8, 1, 1, EmsValue::DesinfektionsTemp, EmsValue::WW);
@@ -428,36 +413,27 @@ EmsMessage::parseUBAParameterWWMessage()
 void
 EmsMessage::parseUBAErrorMessage()
 {
-    if (m_data.size() % sizeof(EmsProto::ErrorRecord) != 0) {
-	std::cerr << "UBA error size mismatch (got " << m_data.size();
-	std::cerr << ", expected a multiple of " << sizeof(EmsProto::ErrorRecord) << ")" << std::endl;
-	return;
+    size_t start;
+
+    if (m_offset % sizeof(EmsProto::ErrorRecord)) {
+	start = ((m_offset / sizeof(EmsProto::ErrorRecord)) + 1) * sizeof(EmsProto::ErrorRecord);
+    } else {
+	start = m_offset;
     }
 
-    if (m_offset % sizeof(EmsProto::ErrorRecord) != 0) {
-	std::cerr << "Unexpected offset (got " << m_offset;
-	std::cerr << ", expected a multiple of " << sizeof(EmsProto::ErrorRecord);
-	std::cerr << ")" << std::endl;
-	return;
-    }
+    while (canAccess(start, sizeof(EmsProto::ErrorRecord))) {
+	EmsProto::ErrorRecord *record = (EmsProto::ErrorRecord *) &m_data.at(start - m_offset);
+	unsigned int index = start / sizeof(EmsProto::ErrorRecord);
+	EmsValue::ErrorEntry entry = { m_type, index, *record };
 
-    if (m_valueHandler) {
-	size_t count = m_data.size() / sizeof(EmsProto::ErrorRecord);
-	for (size_t i = 0; i < count; i++) {
-	    EmsProto::ErrorRecord *record = (EmsProto::ErrorRecord *) &m_data.at(i * sizeof(EmsProto::ErrorRecord));
-	    unsigned int index = (m_offset / sizeof(EmsProto::ErrorRecord)) + i;
-	    EmsValue::ErrorEntry entry = { m_type, index, *record };
-
-	    m_valueHandler(EmsValue(EmsValue::Fehler, EmsValue::None, entry));
-	}
+	m_valueHandler(EmsValue(EmsValue::Fehler, EmsValue::None, entry));
+	start += sizeof(EmsProto::ErrorRecord);
     }
 }
 
 void
 EmsMessage::parseUBAParametersMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(12, "UBA Parameters");
-
     parseBool(0, 1, EmsValue::KesselSchalter, EmsValue::Kessel);
     parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
     parseNumeric(2, 1, 1, EmsValue::MaxModulation, EmsValue::Brenner);
@@ -473,40 +449,10 @@ EmsMessage::parseUBAParametersMessage()
 void
 EmsMessage::parseRCTimeMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(8, "RC Time");
-
-    DebugStream& debug = Options::dataDebug();
-    if (debug) {
-	debug << "DATA: Datum = " << BYTEFORMAT_DEC m_data[3] << ".";
-	debug << BYTEFORMAT_DEC m_data[1] << ".";
-	debug << BYTEFORMAT_DEC (2000 + m_data[0]) << std::endl;
-	debug << "DATA: Zeit = " << BYTEFORMAT_DEC m_data[2] << ":";
-	debug << BYTEFORMAT_DEC m_data[4] << ":";
-	debug << BYTEFORMAT_DEC m_data[5] << std::endl;
-	debug << "DATA: Wochentag = ";
-	switch (m_data[6]) {
-	    case 0: debug << "Montag"; break;
-	    case 1: debug << "Dienstag"; break;
-	    case 2: debug << "Mittwoch"; break;
-	    case 3: debug << "Donnerstag"; break;
-	    case 4: debug << "Freitag"; break;
-	    case 5: debug << "Samstag"; break;
-	    case 6: debug << "Sonntag"; break;
-	    default: debug << "???" << BYTEFORMAT_DEC m_data[7];
-	}
-	debug << std::endl;
-
-	debug << "DATA: Konfiguration = ";
-	if (m_data[7] & (1 << 0)) {
-	    debug << "Sommerzeit ";
-	}
-	if (m_data[7] & (1 << 1)) {
-	    debug << "Funkuhr ";
-	}
-	if (m_data[7] & (1 << 4)) {
-	    debug << "Uhr läuft ";
-	}
-	debug << std::endl;
+    if (canAccess(0, sizeof(EmsProto::SystemTimeRecord))) {
+	EmsProto::SystemTimeRecord *record = (EmsProto::SystemTimeRecord *) &m_data.at(0);
+	EmsValue value(EmsValue::SystemZeit, EmsValue::None, *record);
+	m_valueHandler(value);
     }
 }
 
@@ -514,8 +460,6 @@ EmsMessage::parseRCTimeMessage()
 void
 EmsMessage::parseRCWWOpmodeMessage()
 { 
-    RETURN_ON_SIZE_MISMATCH(10, "WW Opmode");
-
     parseBool(0, 1, EmsValue::EigenesProgrammAktiv, EmsValue::WW);
     parseBool(1, 1, EmsValue::EigenesProgrammAktiv, EmsValue::Zirkulation);
 
@@ -537,29 +481,17 @@ EmsMessage::parseRCSystemParameterMessage()
 }
 
 void
-EmsMessage::parseRCHKOpmodeMessage(const char *name, EmsValue::SubType subtype)
+EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 {
-    std::string text;
 
-    text = "RC ";
-    text += name;
-    text += " OpMode";
-
-    // RETURN_ON_SIZE_MISMATCH(15, text);
     // ToDo: Implement
 
 }
 
 void
-EmsMessage::parseRCHKScheduleMessage(const char *name, EmsValue::SubType subtype)
+EmsMessage::parseRCHKScheduleMessage(EmsValue::SubType subtype)
 {
-    std::string text;
 
-    text = "RC ";
-    text += name;
-    text += " Schedule";
-
-    // RETURN_ON_SIZE_MISMATCH(15, text);
     // ToDo: Implement
 
 }
@@ -571,21 +503,14 @@ EmsMessage::parseRCOutdoorTempMessage()
 }
 
 void
-EmsMessage::parseRCHKMonitorMessage(const char *name, EmsValue::SubType subtype)
+EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
 {
-    std::string text;
-
-    text = "RC ";
-    text += name;
-    text += " Monitor";
-
-    RETURN_ON_SIZE_MISMATCH(15, text);
-
     parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
     parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
 
-    if (m_valueHandler && canAccess(7, 3)) {
-	EmsValue value(EmsValue::HKKennlinie, subtype, m_data[7], m_data[8], m_data[9]);
+    if (canAccess(7, 3)) {
+	EmsValue value(EmsValue::HKKennlinie, subtype, m_data[7 - m_offset],
+		m_data[8 - m_offset], m_data[9 - m_offset]);
 	m_valueHandler(value);
     }
 
@@ -593,7 +518,7 @@ EmsMessage::parseRCHKMonitorMessage(const char *name, EmsValue::SubType subtype)
     parseNumeric(5, 1, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
     parseNumeric(6, 1, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
-    if (canAccess(15, 1) && (m_data[15] & 1) == 0) {
+    if (canAccess(15, 1) && (m_data[15 - m_offset] & 1) == 0) {
 	parseNumeric(10, 2, 100, EmsValue::TemperaturAenderung, EmsValue::Raum);
     }
 
@@ -613,8 +538,6 @@ EmsMessage::parseRCHKMonitorMessage(const char *name, EmsValue::SubType subtype)
 void
 EmsMessage::parseWMTemp1Message()
 {
-    RETURN_ON_SIZE_MISMATCH(5, "WM1 Temp");
-
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
 
     /* Byte 2 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
@@ -624,26 +547,17 @@ EmsMessage::parseWMTemp1Message()
 void
 EmsMessage::parseWMTemp2Message()
 {
-    RETURN_ON_SIZE_MISMATCH(2, "WM2 Temp");
-
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
 }
 
 void
 EmsMessage::parseMMTempMessage()
 {
-    RETURN_ON_SIZE_MISMATCH(7, "MM Temp");
-
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::HK2);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::HK2);
     parseNumeric(3, 1, 1, EmsValue::Mischersteuerung, EmsValue::None);
 
     /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
     parseBool(3, 2, EmsValue::PumpeAktiv, EmsValue::HK2);
-
-    if (Options::dataDebug()) {
-	Options::dataDebug() << "DATA: MM10 Flags "
-			     << BYTEFORMAT_HEX m_data[6] << std::endl;
-    }
 }
 

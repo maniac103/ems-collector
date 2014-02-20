@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <asm/byteorder.h>
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -188,6 +189,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 
 	{ EmsValue::HKKennlinie, "Kennlinie" },
 	{ EmsValue::Fehler, "Fehler" },
+	{ EmsValue::SystemZeit, "Systemzeit" },
 
 	{ EmsValue::ServiceCode, "Servicecode" },
 	{ EmsValue::FehlerCode, "Fehlercode" }
@@ -271,12 +273,10 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
         { 0, "staendig aus" }, { 1, "staendig an" }, { 2, "Automatik" }
     };
 
-    static const std::map<uint8_t, const char *> DAYMAPPING = {
-        { 0, "Montag" }, { 1, "Dienstag" }, { 2, "Mittwoch"}, { 3, "Donnerstag" },
-        { 4, "Freitag" }, { 5, "Samstag" }, { 6, "Sonntag" }, { 7, "Taeglich" }
+    static const std::map<uint8_t, const char *> WEEKDAYMAPPING = {
+	{ 0, "Montag" }, { 1, "Dienstag" }, { 2, "Mittwoch" }, { 3, "Donnerstag" },
+	{ 4, "Freitag" }, { 5, "Samstag" }, { 6, "Sonntag" }
     };
-
-
 
     auto typeIter = TYPEMAPPING.find(value.getType());
     const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
@@ -299,25 +299,25 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     switch (value.getReadingType()) {
 	case EmsValue::Numeric: {
 	    auto unitIter = UNITMAPPING.find(value.getType());
-	    stream << std::setprecision(10) << boost::get<double>(value.getValue());
+	    stream << value.getValue<double>();
 	    if (unitIter != UNITMAPPING.end()) {
 		stream << " " << unitIter->second;
 	    }
 	    break;
 	}
 	case EmsValue::Boolean:
-	    stream << (boost::get<bool>(value.getValue()) ? "AN" : "AUS");
+	    stream << (value.getValue<bool>() ? "AN" : "AUS");
 	    break;
 	case EmsValue::Enumeration: {
 	    const std::map<uint8_t, const char *> *map = NULL;
-	    uint8_t enumValue = boost::get<uint8_t>(value.getValue());
+	    uint8_t enumValue = value.getValue<uint8_t>();
 	    switch (value.getType()) {
 		case EmsValue::WWSystemType: map = &WWSYSTEMMAPPING; break;
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
 		case EmsValue::Wartungsmeldungen: map = &MAINTENANCEMESSAGESMAPPING; break;
                 case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
                 case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
-                case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
+                case EmsValue::DesinfektionTag: map = &WEEKDAYMAPPING; break;
 		default: break;
 	    }
 	    if (map && map->find(enumValue) != map->end()) {
@@ -328,37 +328,74 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    break;
 	}
 	case EmsValue::Kennlinie: {
-	    std::vector<uint8_t> kennlinie = boost::get<std::vector<uint8_t> >(value.getValue());
-	    stream << "-10 °C: " << (unsigned int) kennlinie[0] << " °C / ";
-	    stream << "0 °C: " << (unsigned int) kennlinie[1] << " °C / ";
-	    stream << "10 °C: " << (unsigned int) kennlinie[2] << " °C";
+	    std::vector<uint8_t> kennlinie = value.getValue<std::vector<uint8_t> >();
+	    stream << boost::format("-10 °C: %d °C / 0 °C: %d °C / 10 °C: %d °C")
+		    % (unsigned int) kennlinie[0] % (unsigned int) kennlinie[1]
+		    % (unsigned int) kennlinie[2];
 	    break;
 	}
 	case EmsValue::Error: {
-	    EmsValue::ErrorEntry entry = boost::get<EmsValue::ErrorEntry>(value.getValue());
+	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
 	    EmsProto::ErrorRecord& record = entry.record;
 	    stream << ERRORTYPEMAPPING.at(entry.type) << " " << entry.index << ": ";
 	    if (record.errorAscii[0] == 0) {
-		stream << "Empty" << std::endl;
+		stream << "Leer" << std::endl;
 	    } else {
-		stream << "Source " << std::hex << (unsigned int) record.source << ", error ";
-		stream << std::dec << record.errorAscii[0] << record.errorAscii[1] << ", code ";
-		stream << __be16_to_cpu(record.code_be16) << ", duration ";
-		stream << __be16_to_cpu(record.durationMinutes_be16) << " minutes" << std::endl;
-		if (record.hasDate) {
-		    stream << "; error date " << (2000 + record.year) << "-";
-		    stream << record.month << "-" << record.day << "; time ";
-		    stream << record.hour << ":" << record.minute;
+		boost::format f("Quelle 0x%02x, Fehler %c%c, Code %d, Dauer %d Minuten");
+		f % (unsigned int) record.source % record.errorAscii[0] % record.errorAscii[1];
+		f % __be16_to_cpu(record.code_be16) % __be16_to_cpu(record.durationMinutes_be16);
+		stream << f;
+		if (record.time.valid) {
+		    boost::format ft("%d.%d.%d %d:%02d");
+		    ft % (unsigned int) record.time.day % (unsigned int) record.time.month;
+		    ft % (2000 + record.time.year);
+		    ft % (unsigned int) record.time.hour % (unsigned int) record.time.minute;
+		    stream << "; Zeitpunkt " << ft;
 		}
+		stream << std::endl;
+	    }
+	    break;
+	}
+	case EmsValue::SystemTime: {
+	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
+	    auto dayIter = WEEKDAYMAPPING.find(record.dayOfWeek);
+
+	    stream << boost::format("%d.%d.%d")
+		    % (2000 + record.common.year)
+		    % (unsigned int) record.common.month % (unsigned int) record.common.day;
+
+	    if (dayIter != WEEKDAYMAPPING.end()) {
+		stream << " (" << dayIter->second << ")";
+	    }
+	    stream << ", " << boost::format("%d:%02d:%02d")
+		    % (unsigned int) record.common.hour % (unsigned int) record.common.minute
+		    % (unsigned int) record.second;
+	    if (record.running || record.dcf || record.dst) {
+		bool hasOutput = false;
+		stream << " (";
+		if (record.running) {
+		    stream << "läuft";
+		    hasOutput = true;
+		}
+		if (record.dcf) {
+		    if (hasOutput) stream << ", ";
+		    stream << "DCF";
+		    hasOutput = true;
+		}
+		if (record.dst) {
+		    if (hasOutput) stream << ", ";
+		    stream << "Sommerzeit";
+		    hasOutput = true;
+		}
+		stream << ")";
 	    }
 	    break;
 	}
 	case EmsValue::Formatted:
-	    stream << boost::get<std::string>(value.getValue());
+	    stream << value.getValue<std::string>();
 	    break;
     }
 }
-
 
 void
 IoHandler::handleValue(const EmsValue& value)
