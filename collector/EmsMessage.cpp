@@ -38,6 +38,7 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 
     if (divider == 0) {
 	m_value = (unsigned int) value;
+	m_readingType = Integer;
     } else {
 	/* treat values with highest bit set as negative
 	 * e.g. size = 2, value = 0xfffe -> real value -2
