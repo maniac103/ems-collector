@@ -292,7 +292,7 @@ DataConnection::handleValue(const EmsValue& value)
 	}
 	case EmsValue::SystemTime: {
 	    EmsProto::SystemTimeRecord record = value.getValue<EmsProto::SystemTimeRecord>();
-	    stream << boost::format("%04d-%04d-%04d %02d:%02d:%02d")
+	    stream << boost::format("%04d-%02d-%02d %02d:%02d:%02d")
 		    % (2000 + record.common.year) % (unsigned int) record.common.month
 		    % (unsigned int) record.common.day % (unsigned int) record.common.hour
 		    % (unsigned int)  record.common.minute % (unsigned int) record.second;
