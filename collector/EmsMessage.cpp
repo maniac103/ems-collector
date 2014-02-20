@@ -43,7 +43,7 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	value = value - (1 << (len * 8));
     }
 
-    m_value = (float) value / (float) divider;
+    m_value = (double) value / (double) divider;
 }
 
 EmsValue::EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit) :
@@ -192,15 +192,12 @@ EmsMessage::handle()
 		    parseUBAErrorMessage();
 		    handled = true;
 		    break;
+		case 0x14: parseUBATotalUptimeMessage(); handled = true; break;
+		case 0x15: parseUBAMaintenanceSettingsMessage(); handled = true; break;
 		case 0x16: parseUBAParametersMessage(); handled = true; break;
 		case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
 		case 0x19: parseUBAMonitorSlowMessage(); handled = true; break;
-		case 0x1c:
-		    /* unknown message with varying length
-		     * 0x8 0x10 0x1c 0x0 0x8a 0x4 0x13 0x1c 0x1d 0x0 0x0 0x0
-		     * 0x8 0x10 0x1c 0x8
-		     */
-		    break;
+		case 0x1c: parseUBAMaintenanceStatusMessage(); handled = true; break;
 		case 0x33: parseUBAParameterWWMessage(); handled = true; break;
 		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
 	    }
@@ -219,6 +216,23 @@ EmsMessage::handle()
 		case 0x06: parseRCTimeMessage(); handled = true; break;
 		case 0x1A: /* command for UBA3 */ handled = true; break;
 		case 0x35: /* command for UBA3 */ handled = true; break;
+		case 0x37: parseRCWWOpmodeMessage(); handled = true; break;
+		case 0x3D:
+		    parseRCHKOpmodeMessage(EmsValue::HK1);
+		    handled = true;
+		    break;
+		case 0x47:
+		    parseRCHKOpmodeMessage(EmsValue::HK2);
+		    handled = true;
+		    break;
+		case 0x51:
+		    parseRCHKOpmodeMessage(EmsValue::HK3);
+		    handled = true;
+		    break;
+		case 0x5B:
+		    parseRCHKOpmodeMessage(EmsValue::HK4);
+		    handled = true;
+		    break;
 		case 0x3E:
 		    parseRCHKMonitorMessage(EmsValue::HK1);
 		    handled = true;
@@ -227,9 +241,22 @@ EmsMessage::handle()
 		    parseRCHKMonitorMessage(EmsValue::HK2);
 		    handled = true;
 		    break;
+		case 0x52:
+		    parseRCHKMonitorMessage(EmsValue::HK3);
+		    handled = true;
+		    break;
+		case 0x5C:
+		    parseRCHKMonitorMessage(EmsValue::HK4);
+		    handled = true;
+		    break;
+		case 0x3F:
+		    parseRCHKScheduleMessage(EmsValue::HK1);
+		    handled = true;
+		    break;
 		case 0x9D: /* command for WM10 */ handled = true; break;
 		case 0xA2: /* unknown, 11 zeros */ break;
 		case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
+		case 0xA5: parseRCSystemParameterMessage(); handled = true; break;
 		case 0xAC: /* command for MM10 */ handled = true; break;
 	    }
 	case EmsProto::addressWM10:
@@ -255,6 +282,16 @@ EmsMessage::handle()
 		    % (unsigned int) m_source % (unsigned int) m_type;
 	    dataDebug << std::endl;
 	}
+    }
+}
+
+void
+EmsMessage::parseEnum(size_t offset, 
+		      EmsValue::Type type, EmsValue::SubType subtype)
+{
+    if (m_valueHandler && canAccess(offset, 1)) {
+	EmsValue value(type, subtype, m_data[offset]);
+	m_valueHandler(value);
     }
 }
 
@@ -285,8 +322,8 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
     parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
     parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
-    parseNumeric(3, 1, 1, EmsValue::MaxLeistung, EmsValue::None);
-    parseNumeric(4, 1, 1, EmsValue::MomLeistung, EmsValue::None);
+    parseNumeric(3, 1, 1, EmsValue::SollModulation, EmsValue::Brenner);
+    parseNumeric(4, 1, 1, EmsValue::IstModulation, EmsValue::Brenner);
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
     parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None);
 
@@ -304,21 +341,44 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseBool(7, 0, EmsValue::FlammeAktiv, EmsValue::None);
     parseBool(7, 2, EmsValue::BrennerAktiv, EmsValue::None);
     parseBool(7, 3, EmsValue::ZuendungAktiv, EmsValue::None);
-    parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::Kessel);
+    parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::None);
     parseBool(7, 6, EmsValue::DreiWegeVentilAufWW, EmsValue::None);
     parseBool(7, 7, EmsValue::ZirkulationAktiv, EmsValue::None);
+}
+
+void
+EmsMessage::parseUBATotalUptimeMessage()
+{
+    parseNumeric(0, 3, 1, EmsValue::BetriebsZeit, EmsValue::None);
+}
+
+void
+EmsMessage::parseUBAMaintenanceSettingsMessage()
+{
+    parseEnum(0,EmsValue::Wartungsmeldungen, EmsValue::Kessel);
+    parseNumeric(1, 1, 1, EmsValue::HektoStundenVorWartung, EmsValue::Kessel);
+    parseNumeric(2, 1, 1, EmsValue::WartungsterminTag, EmsValue::Kessel);
+    parseNumeric(3, 1, 1, EmsValue::WartungsterminMonat, EmsValue::Kessel);
+    parseNumeric(4, 1, 1, EmsValue::WartungsterminJahr, EmsValue::Kessel);
+
+}
+
+void
+EmsMessage::parseUBAMaintenanceStatusMessage()
+{
+    parseEnum(5, EmsValue::WartungFaellig, EmsValue::Kessel);
 }
 
 void
 EmsMessage::parseUBAMonitorSlowMessage()
 {
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
-    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
+    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
     parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
-    parseNumeric(9, 1, 1, EmsValue::PumpenModulation, EmsValue::None);
-    parseNumeric(10, 3, 1, EmsValue::Brennerstarts, EmsValue::None);
-    parseNumeric(13, 3, 1, EmsValue::BetriebsZeit, EmsValue::None);
-    parseNumeric(19, 3, 1, EmsValue::HeizZeit, EmsValue::None);
+    parseNumeric(9, 1, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
+    parseNumeric(10, 3, 1, EmsValue::Brennerstarts, EmsValue::Kessel);
+    parseNumeric(13, 3, 1, EmsValue::BetriebsZeit, EmsValue::Kessel);
+    parseNumeric(19, 3, 1, EmsValue::HeizZeit, EmsValue::Kessel);
 }
 
 void
@@ -338,19 +398,16 @@ EmsMessage::parseUBAMonitorWWMessage()
     parseBool(7, 0, EmsValue::Tagbetrieb, EmsValue::Zirkulation);
     parseBool(7, 2, EmsValue::ZirkulationAktiv, EmsValue::None);
 
-    if (canAccess(8, 1)) {
-	EmsValue value(EmsValue::WWSystemType, EmsValue::None, m_data[8 - m_offset]);
-	m_valueHandler(value);
-    }
+    parseEnum(8, EmsValue::WWSystemType, EmsValue::None);
 }
 
 void
 EmsMessage::parseUBAParameterWWMessage()
 {
-    if (canAccess(7, 1)) {
-	EmsValue value(EmsValue::Schaltpunkte, EmsValue::Zirkulation, m_data[7 - m_offset]);
-	m_valueHandler(value);
-    }
+    parseBool(1, 0, EmsValue::KesselSchalter, EmsValue::WW);
+    parseNumeric(2, 1, 1, EmsValue::SetTemp, EmsValue::WW);
+    parseNumeric(8, 1, 1, EmsValue::DesinfektionsTemp, EmsValue::WW);
+    parseEnum(7,EmsValue::Schaltpunkte, EmsValue::Zirkulation);
 }
 
 void
@@ -377,13 +434,16 @@ EmsMessage::parseUBAErrorMessage()
 void
 EmsMessage::parseUBAParametersMessage()
 {
+    parseBool(0, 1, EmsValue::KesselSchalter, EmsValue::Kessel);
     parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
+    parseNumeric(2, 1, 1, EmsValue::MaxModulation, EmsValue::Brenner);
+    parseNumeric(3, 1, 1, EmsValue::MinModulation, EmsValue::Brenner);
     parseNumeric(4, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
     parseNumeric(5, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
-    parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::Kessel);
-    parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::Kessel);
     parseNumeric(6, 1, 1, EmsValue::AntipendelZeit, EmsValue::None);
-    parseNumeric(8, 1, 1, EmsValue::PumpenNachlaufZeit, EmsValue::Kessel);
+    parseNumeric(8, 1, 1, EmsValue::NachlaufZeit, EmsValue::KesselPumpe);
+    parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::KesselPumpe);
+    parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::KesselPumpe);
 }
 
 void
@@ -394,6 +454,46 @@ EmsMessage::parseRCTimeMessage()
 	EmsValue value(EmsValue::SystemZeit, EmsValue::None, *record);
 	m_valueHandler(value);
     }
+}
+
+
+void
+EmsMessage::parseRCWWOpmodeMessage()
+{ 
+    parseBool(0, 1, EmsValue::EigenesProgrammAktiv, EmsValue::WW);
+    parseBool(1, 1, EmsValue::EigenesProgrammAktiv, EmsValue::Zirkulation);
+
+    parseEnum(2, EmsValue::Betriebsart, EmsValue::Zirkulation);
+    parseEnum(3, EmsValue::Betriebsart, EmsValue::WW);
+
+    parseBool(4, 1, EmsValue::Desinfektion, EmsValue::WW);
+    parseEnum(5, EmsValue::DesinfektionTag, EmsValue::WW);
+    parseNumeric(6, 1, 1, EmsValue::DesinfektionStunde, EmsValue::WW);
+    parseNumeric(8, 1, 1, EmsValue::MaxTemp, EmsValue::WW);
+    parseBool(9 ,1, EmsValue::EinmalLadungsLED, EmsValue::WW);
+    
+}
+
+void
+EmsMessage::parseRCSystemParameterMessage()
+{
+  // ToDo: Implement
+}
+
+void
+EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
+{
+
+    // ToDo: Implement
+
+}
+
+void
+EmsMessage::parseRCHKScheduleMessage(EmsValue::SubType subtype)
+{
+
+    // ToDo: Implement
+
 }
 
 void

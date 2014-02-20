@@ -62,6 +62,8 @@ class Database {
 	    SensorBrennerstarts = 20,
 	    SensorWarmwasserbereitungsZeit = 21,
 	    SensorWarmwasserBereitungen = 22,
+            SensorPumpenModulation = 24,
+            SensorWaermetauscherTemp = 25
 	} NumericSensors;
 
 	typedef enum {
@@ -99,7 +101,7 @@ class Database {
 	    StateSensorLast = 202
 	} StateSensors;
 
-	void addSensorValue(NumericSensors sensor, float value);
+	void addSensorValue(NumericSensors sensor, double value);
 	void addSensorValue(BooleanSensors sensor, bool value);
 	void addSensorValue(StateSensors sensor, const std::string& value);
 
@@ -128,7 +130,7 @@ class Database {
 	static const unsigned int readingTypeCount = 6;
 
 	std::map<unsigned int, time_t> m_lastWrites;
-	std::map<unsigned int, float> m_numericCache;
+	std::map<unsigned int, double> m_numericCache;
 	std::map<unsigned int, bool> m_booleanCache;
 	std::map<unsigned int, std::string> m_stateCache;
 	std::map<unsigned int, mysqlpp::ulonglong> m_lastInsertIds;
