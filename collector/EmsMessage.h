@@ -46,6 +46,12 @@ class EmsProto {
 	} DateTimeRecord;
 
 	typedef struct {
+	    uint8_t day;
+	    uint8_t month;
+	    uint8_t year;
+	} DateRecord;
+
+	typedef struct {
 	    DateTimeRecord common;
 	    uint8_t second;
 	    uint8_t dayOfWeek;
@@ -116,9 +122,6 @@ class EmsValue {
 	    AusschaltoptimierungsZeit,
 	    AntipendelZeit,
 	    NachlaufZeit,
-	    WartungsterminTag,
-	    WartungsterminMonat,
-	    WartungsterminJahr,
 	    /* boolean */
 	    FlammeAktiv,
 	    BrennerAktiv,
@@ -159,6 +162,8 @@ class EmsValue {
 	    Fehler,
 	    /* systemtime */
 	    SystemZeit,
+	    /* date */
+	    Wartungstermin,
 	    /* state */
 	    ServiceCode,
 	    FehlerCode,
@@ -189,6 +194,7 @@ class EmsValue {
 	    Enumeration,
 	    Kennlinie,
 	    Error,
+	    Date,
 	    SystemTime,
 	    Formatted
 	};
@@ -206,6 +212,7 @@ class EmsValue {
 	    uint8_t, // enumeration
 	    std::vector<uint8_t>, // kennlinie
 	    ErrorEntry, // error
+	    EmsProto::DateRecord, // date
 	    EmsProto::SystemTimeRecord, // systemtime
 	    std::string // formatted
 	> Reading;
@@ -216,6 +223,7 @@ class EmsValue {
 	EmsValue(Type type, SubType subType, uint8_t value);
 	EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint8_t high);
 	EmsValue(Type type, SubType subType, const ErrorEntry& error);
+	EmsValue(Type type, SubType subType, const EmsProto::DateRecord& date);
 	EmsValue(Type type, SubType subType, const EmsProto::SystemTimeRecord& time);
 	EmsValue(Type type, SubType subType, const std::string& value);
 

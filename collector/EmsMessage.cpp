@@ -82,6 +82,14 @@ EmsValue::EmsValue(Type type, SubType subType, const ErrorEntry& error) :
 {
 }
 
+EmsValue::EmsValue(Type type, SubType subType, const EmsProto::DateRecord& record) :
+    m_type(type),
+    m_subType(subType),
+    m_readingType(SystemTime),
+    m_value(record)
+{
+}
+
 EmsValue::EmsValue(Type type, SubType subType, const EmsProto::SystemTimeRecord& record) :
     m_type(type),
     m_subType(subType),
@@ -343,10 +351,10 @@ EmsMessage::parseUBAMaintenanceSettingsMessage()
 {
     parseEnum(0,EmsValue::Wartungsmeldungen, EmsValue::Kessel);
     parseInteger(1, 1, EmsValue::HektoStundenVorWartung, EmsValue::Kessel);
-    parseInteger(2, 1, EmsValue::WartungsterminTag, EmsValue::Kessel);
-    parseInteger(3, 1, EmsValue::WartungsterminMonat, EmsValue::Kessel);
-    parseInteger(4, 1, EmsValue::WartungsterminJahr, EmsValue::Kessel);
-
+    if (canAccess(2, sizeof(EmsProto::DateRecord))) {
+	EmsProto::DateRecord *record = (EmsProto::DateRecord *) &m_data.at(2 - m_offset);
+	m_valueHandler(EmsValue(EmsValue::Wartungstermin, EmsValue::Kessel, *record));
+    }
 }
 
 void

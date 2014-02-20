@@ -190,6 +190,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::HKKennlinie, "Kennlinie" },
 	{ EmsValue::Fehler, "Fehler" },
 	{ EmsValue::SystemZeit, "Systemzeit" },
+	{ EmsValue::Wartungstermin, "Wartungstermin" },
 
 	{ EmsValue::ServiceCode, "Servicecode" },
 	{ EmsValue::FehlerCode, "Fehlercode" }
@@ -359,6 +360,14 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		}
 		stream << std::endl;
 	    }
+	    break;
+	}
+	case EmsValue::Date: {
+	    EmsProto::DateRecord record = value.getValue<EmsProto::DateRecord>();
+
+	    stream << boost::format("%d.%d.%d")
+		    % (2000 + record.year)
+		    % (unsigned int) record.month % (unsigned int) record.day;
 	    break;
 	}
 	case EmsValue::SystemTime: {

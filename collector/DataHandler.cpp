@@ -166,6 +166,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
 	{ EmsValue::SystemZeit, "systemtime" },
+	{ EmsValue::Wartungstermin, "maintenancedate" },
 
 	{ EmsValue::ServiceCode, "servicecode" },
 	{ EmsValue::FehlerCode, "errorcode" }
@@ -280,6 +281,13 @@ DataConnection::handleValue(const EmsValue& value)
 
 	    stream << boost::format("%s%02d %s")
 		    % ERRORTYPEMAPPING.at(entry.type) % entry.index % formatted;
+	    break;
+	}
+	case EmsValue::Date: {
+	    EmsProto::DateRecord record = value.getValue<EmsProto::DateRecord>();
+	    stream << boost::format("%04d-%02d-%02d")
+		    % (2000 + record.year) % (unsigned int) record.month
+		    % (unsigned int) record.day;
 	    break;
 	}
 	case EmsValue::SystemTime: {
