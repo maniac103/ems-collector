@@ -130,7 +130,8 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::AntipendelZeit, "antipendelminutes" },
 	{ EmsValue::NachlaufZeit, "followupminutes" },
 	{ EmsValue::DesinfektionStunde, "desinfectionhour" },
-
+        { EmsValue::HektoStundenVorWartung, "maintenanceintervalin100hours" },
+        
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
 	{ EmsValue::ZuendungAktiv, "ignitionactive" },

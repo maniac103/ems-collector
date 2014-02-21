@@ -152,6 +152,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AntipendelZeit, "Antipendelzeit" },
 	{ EmsValue::NachlaufZeit, "Nachlaufzeit" },
 	{ EmsValue::DesinfektionStunde, "Thermische Desinfektion Stunde" },
+	{ EmsValue::HektoStundenVorWartung, "Wartungsintervall in 100h" },
 
 	{ EmsValue::FlammeAktiv, "Flamme" },
 	{ EmsValue::BrennerAktiv, "Brenner" },
@@ -201,6 +202,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::HK3, "HK3" },
 	{ EmsValue::HK4, "HK4" },
 	{ EmsValue::Kessel, "Kessel" },
+	{ EmsValue::Brenner, "Brenner" },
 	{ EmsValue::KesselPumpe, "Kesselpumpe" },
 	{ EmsValue::Ruecklauf, "Rücklauf" },
 	{ EmsValue::Waermetauscher, "Waermetauscher" },
