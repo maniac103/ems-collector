@@ -129,6 +129,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::AusschaltHysterese, "offhysteresis" },
 	{ EmsValue::AntipendelZeit, "antipendelminutes" },
 	{ EmsValue::NachlaufZeit, "followupminutes" },
+	{ EmsValue::DesinfektionStunde, "desinfectionhour" },
 
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
@@ -137,7 +138,8 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::ZirkulationAktiv, "zirkpumpactive" },
 	{ EmsValue::DreiWegeVentilAufWW, "3wayonww" },
 	{ EmsValue::EinmalLadungAktiv, "onetimeload" },
-	{ EmsValue::DesinfektionAktiv, "desinfection" },
+	{ EmsValue::DesinfektionAktiv, "desinfectionactive" },
+	{ EmsValue::Desinfektion, "desinfection" },
 	{ EmsValue::NachladungAktiv, "boostcharge" },
 	{ EmsValue::WarmwasserBereitung, "warmwaterpreparationactive" },
 	{ EmsValue::WarmwasserTempOK, "warmwatertempok" },

@@ -580,7 +580,8 @@ CommandConnection::handleWwCommand(std::istream& request)
 		"zirkpump getcustomschedule\n"
 		"zirkpump customschedule <index> unset\n"
 		"zirkpump customschedule <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
-		"zirkpump selectschedule [custom|hk]\n");
+		"zirkpump selectschedule [custom|hk]\n"
+                "requestdata\n");
 	return Ok;
     } else if (cmd == "thermdesinfect") {
 	return handleThermDesinfectCommand(request);
@@ -661,6 +662,9 @@ CommandConnection::handleWwCommand(std::istream& request)
 	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, 0x37, 0, &data, 1);
+	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressUBA, 0x33, 0, 10);
 	return Ok;
     }
 
@@ -926,6 +930,18 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		done = !continueRequest();
 	    }
 	    break;
+        case 0x33: /* requestdata WW Part 1 */
+            startRequest(EmsProto::addressUBA, 0x34, 0, 12); // get part 2
+            break;
+
+        case 0x34: /* requestdata WW Part 2 */
+            startRequest(EmsProto::addressRC, 0x37, 0, 12); // get part 3
+            break;
+
+        case 0x37: /* requestdata WW Part 3 */
+            done = true; // finished requesting WW data
+            break;
+
 	case 0xa4: { /* get contact info */
 	    // RC30 doesn't support this and always returns empty responses
 	    done = !continueRequest() || data.empty();
