@@ -867,16 +867,17 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
 	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = type >= 0x12 ? "S" : type == 0x11 ? "L" : "B";
+	    const char *prefix = type >= 0x12 ? "S" : type == 0x10 ? "L" : "B";
 	    done = loopOverResponse<EmsProto::ErrorRecord>(prefix);
 	    if (!done) {
 		done = !continueRequest();
-		if (done && (type == 0x10 || type == 0x12)) {
-		    unsigned int count = type == 0x10 ? 5 : 4;
-		    startRequest(source, type + 1, 0, count * sizeof(EmsProto::ErrorRecord), false);
-		    done = false;
-		}
 	    }
+            if (done && (type == 0x10 || type == 0x12)) {
+                unsigned int count = type == 0x10 ? 5 : 4;
+                startRequest(source, type + 1, 0, count * sizeof(EmsProto::ErrorRecord), false);
+                done = false;
+            }
+
 	    break;
 	}
 	case 0x1c: /* check for maintenance */
