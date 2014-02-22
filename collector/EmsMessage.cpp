@@ -278,7 +278,7 @@ void
 EmsMessage::parseEnum(size_t offset, EmsValue::Type type, EmsValue::SubType subtype)
 {
     if (canAccess(offset, 1)) {
-	EmsValue value(type, subtype, m_data[offset]);
+	EmsValue value(type, subtype, m_data[offset - m_offset]);
 	m_valueHandler(value);
     }
 }
@@ -470,13 +470,36 @@ EmsMessage::parseRCWWOpmodeMessage()
 void
 EmsMessage::parseRCSystemParameterMessage()
 {
-    // ToDo: Implement
+    parseNumeric(5, 1, 1, EmsValue::MinTemp, EmsValue::Aussen);
+    parseEnum(6, EmsValue::GebaeudeArt, EmsValue::None);
+    parseBool(21 ,1, EmsValue::ATDaempfung, EmsValue::None);
+    
 }
 
 void
 EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 {
-    // ToDo: Implement
+    parseEnum(0, EmsValue::HeizArt, subtype);
+    parseNumeric(1, 1, 2, EmsValue::TagTemp, subtype);
+    parseNumeric(2, 1, 2, EmsValue::NachtTemp, subtype);
+    parseNumeric(3, 1, 2, EmsValue::UrlaubTemp, subtype);
+    parseNumeric(4, 1, 2, EmsValue::RaumEinfluss, subtype);
+    parseNumeric(6, 1, 2, EmsValue::RaumOffset, subtype);
+    parseEnum(7, EmsValue::Betriebsart, subtype);
+    parseNumeric(16, 1, 1, EmsValue::MinTemp, subtype);
+    parseNumeric(35, 1, 1, EmsValue::MaxTemp, subtype);
+    parseBool(19, 1, EmsValue::SchaltzeitOptimierung, subtype);
+    parseNumeric(22, 1, 1, EmsValue::SchwelleSommerWinter, subtype);
+    parseNumeric(23, 1, 1, EmsValue::FrostSchutzTemp, subtype);
+    parseEnum(25, EmsValue::RegelungsArt, subtype);
+    parseEnum(28, EmsValue::Frostschutz, subtype);
+    parseEnum(32, EmsValue::HeizSystem, subtype);
+    parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
+    parseNumeric(36, 1, 1, EmsValue::AuslegungsTemp, subtype);
+    parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
+    parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);
+    parseEnum(41, EmsValue::UrlaubAbsenkungsArt, subtype);
+    
 }
 
 void

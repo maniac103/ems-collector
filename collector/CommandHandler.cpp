@@ -388,8 +388,12 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"getcustomschedule [1|2]\n"
 		"customschedule [1|2] <index> unset\n"
 		"customschedule [1|2] <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
-		"scheduleoptimizer [on|off]\n");
+		"scheduleoptimizer [on|off]\n"
+		"requestdata\n");
 	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressRC, type, 0, 42);
+        return Ok;
     } else if (cmd == "mode") {
 	uint8_t data;
 	std::string mode;
@@ -822,11 +826,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     m_responseTimeout.cancel();
-    if (offset != (m_requestResponse.size() + m_requestOffset)) {
-	m_activeRequest.reset();
-	respond("ERRFAIL");
-	return;
-    }
 
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
@@ -888,6 +887,22 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    done = true;
 	    break;
+        case 0x3d: /*HK1-OperatingMode*/
+        case 0x47: /*HK2-OperatingMode*/
+        case 0x51: /*HK3-OperatingMode*/
+        case 0x5b: /*HK4-OperatingMode*/
+             done = !continueRequest();
+             if (done) {
+                startRequest(EmsProto::addressRC, type + 1, 0, 20, false);
+                done = false;
+            }
+ 	    break;
+        case 0x3e: /* HK1-Status 2 */
+        case 0x48: /* HK2-Status 2 */
+        case 0x52: /* HK3-Status 2 */
+        case 0x5c: /* HK4-Status 2 */
+            done = true;
+            break;
 	case 0x3f: /* get schedule HK1 */
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */

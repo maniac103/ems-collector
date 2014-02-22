@@ -107,7 +107,18 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::SollTemp, "targettemperature" },
 	{ EmsValue::IstTemp, "currenttemperature" },
 	{ EmsValue::SetTemp, "settemperature" },
+	{ EmsValue::MinTemp, "mintemperature" },
 	{ EmsValue::MaxTemp, "maxtemperature" },
+	{ EmsValue::TagTemp, "daytemperature" },
+	{ EmsValue::NachtTemp, "nighttemperature" },
+	{ EmsValue::UrlaubTemp, "vacationtemperature" },
+	{ EmsValue::RaumEinfluss, "maxroomeffect" },
+	{ EmsValue::RaumOffset, "roomoffset" },
+	{ EmsValue::SchwelleSommerWinter, "summerwintertreshold" },
+	{ EmsValue::FrostSchutzTemp, "frostsafetemperature" },
+	{ EmsValue::AuslegungsTemp, "designtemperature" },
+	{ EmsValue::RaumUebersteuerTemp, "temperatureoverride" },
+	{ EmsValue::AbsenkungsSchwellenTemp, "reducedmodetreshold" },
 	{ EmsValue::GedaempfteTemp, "dampedtemperature" },
 	{ EmsValue::DesinfektionsTemp, "desinfectiontemperature" },
 	{ EmsValue::TemperaturAenderung, "temperaturechange" },
@@ -158,6 +169,8 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::KesselSchalter, "masterswitch" },
 	{ EmsValue::EigenesProgrammAktiv, "ownschedule" },
 	{ EmsValue::EinmalLadungsLED, "onetimeloadindicator" },
+	{ EmsValue::ATDaempfung, "damping" },
+	{ EmsValue::SchaltzeitOptimierung, "scheduleoptimizer" },
 
 	{ EmsValue::WWSystemType, "warmwatersystemtype" },
 	{ EmsValue::Schaltpunkte, "switchpoints" },
@@ -165,6 +178,12 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::WartungFaellig, "maintenancedue" },
 	{ EmsValue::Betriebsart, "opmode" },
 	{ EmsValue::DesinfektionTag, "desinfectionday" },
+	{ EmsValue::GebaeudeArt, "buildingtype" },
+	{ EmsValue::HeizArt, "heatingtype" },
+	{ EmsValue::RegelungsArt, "controltype" },
+	{ EmsValue::HeizSystem, "heatsystem" },
+	{ EmsValue::FuehrungsGroesse, "relevantparameter" },
+	{ EmsValue::UrlaubAbsenkungsArt, "vacationreductionmode" },
 
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
@@ -224,6 +243,30 @@ DataConnection::handleValue(const EmsValue& value)
 	{ 4, "friday" }, { 5, "saturday" }, { 6, "sunday" }, { 7, "everyday" }
     };
 
+    static const std::map<uint8_t, const char *> BUILDINGTYPEMAPPING = {
+	{ 0, "light" }, { 1, "medium" }, { 2, "heavy" }
+    };
+
+    static const std::map<uint8_t, const char *> HEATINGTYPEMAPPING = {
+	{ 1, "heater" }, { 2, "convector" }, { 3, "floorheater" }, { 4, "roomvorlauf" }
+    };
+
+    static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
+	{ 0, "offmode" }, { 1, "reduced" }, { 2, "raumhalt" }, { 3, "aussenhalt" }
+    };
+
+    static const std::map<uint8_t, const char *> FROSTPROTECTMAPPING = {
+	{ 0, "off" }, { 1, "byoutdoortemp" }, { 2, "byindoortemp" }
+    };
+
+    static const std::map<uint8_t, const char *> RELEVANTVALUEMAPPING = {
+	{ 0, "outdoor" }, { 1, "indoor" }
+    };
+
+    static const std::map<uint8_t, const char *> VACATIONREDUCTIONMAPPING = {
+	{ 3, "outdoor" }, { 2, "indoor" }
+    };
+
     std::ostringstream stream;
     auto typeIter = TYPEMAPPING.find(value.getType());
     const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
@@ -259,6 +302,13 @@ DataConnection::handleValue(const EmsValue& value)
 		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
 		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
 		case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
+		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
+		case EmsValue::HeizArt: 
+		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
+		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
+		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
+		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
+		case EmsValue::UrlaubAbsenkungsArt: map = &VACATIONREDUCTIONMAPPING; break;
 		default: break;
 	    }
 	    if (map && map->find(enumValue) != map->end()) {

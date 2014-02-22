@@ -97,7 +97,13 @@ class EmsValue {
 	    SollTemp, /* HKx, Kessel */
 	    IstTemp, /* HKx, Kessel, Waermetauscher, Ruecklauf, WW, Raum, Aussen */
 	    SetTemp, /* Kessel */
-	    MaxTemp, /* WW */
+	    MinTemp, /* HKx, Aussentemp. der Region */
+	    MaxTemp, /* HKx, WW */
+	    TagTemp,
+	    NachtTemp,
+	    UrlaubTemp,
+	    RaumEinfluss,
+	    RaumOffset,
 	    GedaempfteTemp, /* Aussen */
 	    DesinfektionsTemp,
 	    TemperaturAenderung,
@@ -110,6 +116,11 @@ class EmsValue {
 	    SollModulation,
 	    EinschaltHysterese,
 	    AusschaltHysterese,
+	    SchwelleSommerWinter,
+	    FrostSchutzTemp,
+	    AuslegungsTemp,
+	    RaumUebersteuerTemp,
+	    AbsenkungsSchwellenTemp,
 	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,
@@ -149,6 +160,8 @@ class EmsValue {
 	    EigenesProgrammAktiv,
 	    Desinfektion,
 	    EinmalLadungsLED,
+	    ATDaempfung,
+	    SchaltzeitOptimierung,
 	    /* enum */
 	    WWSystemType,
 	    Schaltpunkte,
@@ -156,6 +169,12 @@ class EmsValue {
 	    WartungFaellig,
 	    Betriebsart,
 	    DesinfektionTag,
+	    GebaeudeArt,
+	    HeizArt,
+	    RegelungsArt,
+	    HeizSystem,
+	    FuehrungsGroesse,
+	    UrlaubAbsenkungsArt,
 	    /* kennlinie */
 	    HKKennlinie,
 	    /* error */
