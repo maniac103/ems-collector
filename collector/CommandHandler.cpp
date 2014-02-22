@@ -826,6 +826,11 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     m_responseTimeout.cancel();
+    if (offset != (m_requestResponse.size() + m_requestOffset)) {
+	m_activeRequest.reset();
+	respond("ERRFAIL");
+	return;
+    }
 
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
