@@ -121,6 +121,8 @@ class EmsValue {
 	    AuslegungsTemp,
 	    RaumUebersteuerTemp,
 	    AbsenkungsSchwellenTemp,
+            PartyZeit,
+            PausenZeit,
 	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,

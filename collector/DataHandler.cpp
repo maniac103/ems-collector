@@ -142,7 +142,9 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::NachlaufZeit, "followupminutes" },
 	{ EmsValue::DesinfektionStunde, "desinfectionhour" },
 	{ EmsValue::HektoStundenVorWartung, "maintenanceintervalin100hours" },
-
+        { EmsValue::PausenZeit, "pausehours" },
+        { EmsValue::PartyZeit, "partyhours" },
+        
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
 	{ EmsValue::ZuendungAktiv, "ignitionactive" },

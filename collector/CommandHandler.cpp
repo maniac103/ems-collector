@@ -903,7 +903,7 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x48: /* HK2 status 2 */
 	case 0x52: /* HK3 status 2 */
 	case 0x5c: /* HK4 status 2 */
-	    done = true;
+            startRequest(EmsProto::addressRC, type + 1, 85, 2, false); /* finally get Party/Pause info */
 	    break;
 	case 0x3f: /* get schedule HK1 */
 	case 0x49: /* get schedule HK2 */
@@ -920,6 +920,9 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		}
 		respond(name);
 		done = true;
+	    } else if (offset == 85) {
+	        /* get Party/Pause-Info request. Nothing to do here. */
+	        done = true;
 	    } else if (offset > 80) {
 		/* it's at the end -> holiday schedule */
 		const size_t msgSize = sizeof(EmsProto::HolidayEntry);

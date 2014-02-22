@@ -503,7 +503,8 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 void
 EmsMessage::parseRCHKScheduleMessage(EmsValue::SubType subtype)
 {
-    // ToDo: Implement
+    parseNumeric(85, 1, 1, EmsValue::PausenZeit, subtype);
+    parseNumeric(86, 1, 1, EmsValue::PartyZeit, subtype);
 }
 
 void

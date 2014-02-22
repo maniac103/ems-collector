@@ -164,7 +164,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::NachlaufZeit, "Nachlaufzeit" },
 	{ EmsValue::DesinfektionStunde, "Thermische Desinfektion Stunde" },
 	{ EmsValue::HektoStundenVorWartung, "Wartungsintervall in 100h" },
-
+	{ EmsValue::PausenZeit, "restl. Pausenzeit" },
+	{ EmsValue::PartyZeit, "restl. Partyzeit" },
+         
 	{ EmsValue::FlammeAktiv, "Flamme" },
 	{ EmsValue::BrennerAktiv, "Brenner" },
 	{ EmsValue::ZuendungAktiv, "Zündung" },
@@ -265,7 +267,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AusschaltoptimierungsZeit, "min" },
 	{ EmsValue::AntipendelZeit, "min" },
 	{ EmsValue::NachlaufZeit, "min" },
-	{ EmsValue::DesinfektionStunde, "h" }
+	{ EmsValue::DesinfektionStunde, "h" },
+	{ EmsValue::PausenZeit, "h" },
+	{ EmsValue::PartyZeit, "h" }
     };
 
     static const std::map<uint8_t, const char *> WWSYSTEMMAPPING = {

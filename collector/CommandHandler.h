@@ -102,7 +102,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 
     private:
 	static const unsigned int MaxRequestRetries = 5;
-	static const unsigned int RequestTimeout = 400; /* ms */
+	static const unsigned int RequestTimeout = 1000; /* ms */
 
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::streambuf m_request;
