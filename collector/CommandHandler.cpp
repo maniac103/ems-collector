@@ -388,8 +388,12 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"getcustomschedule [1|2]\n"
 		"customschedule [1|2] <index> unset\n"
 		"customschedule [1|2] <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
-		"scheduleoptimizer [on|off]\n");
+		"scheduleoptimizer [on|off]\n"
+		"requestdata\n");
 	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressRC, type, 0, 42);
+        return Ok;
     } else if (cmd == "mode") {
 	uint8_t data;
 	std::string mode;
@@ -580,7 +584,8 @@ CommandConnection::handleWwCommand(std::istream& request)
 		"zirkpump getcustomschedule\n"
 		"zirkpump customschedule <index> unset\n"
 		"zirkpump customschedule <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
-		"zirkpump selectschedule [custom|hk]\n");
+		"zirkpump selectschedule [custom|hk]\n"
+                "requestdata\n");
 	return Ok;
     } else if (cmd == "thermdesinfect") {
 	return handleThermDesinfectCommand(request);
@@ -661,6 +666,9 @@ CommandConnection::handleWwCommand(std::istream& request)
 	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, 0x37, 0, &data, 1);
+	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressUBA, 0x33, 0, 10);
 	return Ok;
     }
 
@@ -818,11 +826,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     }
 
     m_responseTimeout.cancel();
-    if (offset != (m_requestResponse.size() + m_requestOffset)) {
-	m_activeRequest.reset();
-	respond("ERRFAIL");
-	return;
-    }
 
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
@@ -863,16 +866,17 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
 	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = type >= 0x12 ? "S" : type == 0x11 ? "L" : "B";
+	    const char *prefix = type >= 0x12 ? "S" : type == 0x10 ? "L" : "B";
 	    done = loopOverResponse<EmsProto::ErrorRecord>(prefix);
 	    if (!done) {
 		done = !continueRequest();
-		if (done && (type == 0x10 || type == 0x12)) {
-		    unsigned int count = type == 0x10 ? 5 : 4;
-		    startRequest(source, type + 1, 0, count * sizeof(EmsProto::ErrorRecord), false);
-		    done = false;
-		}
 	    }
+            if (done && (type == 0x10 || type == 0x12)) {
+                unsigned int count = type == 0x10 ? 5 : 4;
+                startRequest(source, type + 1, 0, count * sizeof(EmsProto::ErrorRecord), false);
+                done = false;
+            }
+
 	    break;
 	}
 	case 0x1c: /* check for maintenance */
@@ -883,6 +887,22 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    done = true;
 	    break;
+        case 0x3d: /*HK1-OperatingMode*/
+        case 0x47: /*HK2-OperatingMode*/
+        case 0x51: /*HK3-OperatingMode*/
+        case 0x5b: /*HK4-OperatingMode*/
+             done = !continueRequest();
+             if (done) {
+                startRequest(EmsProto::addressRC, type + 1, 0, 20, false);
+                done = false;
+            }
+ 	    break;
+        case 0x3e: /* HK1-Status 2 */
+        case 0x48: /* HK2-Status 2 */
+        case 0x52: /* HK3-Status 2 */
+        case 0x5c: /* HK4-Status 2 */
+            done = true;
+            break;
 	case 0x3f: /* get schedule HK1 */
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
@@ -926,6 +946,18 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		done = !continueRequest();
 	    }
 	    break;
+        case 0x33: /* requestdata WW Part 1 */
+            startRequest(EmsProto::addressUBA, 0x34, 0, 12); // get part 2
+            break;
+
+        case 0x34: /* requestdata WW Part 2 */
+            startRequest(EmsProto::addressRC, 0x37, 0, 12); // get part 3
+            break;
+
+        case 0x37: /* requestdata WW Part 3 */
+            done = true; // finished requesting WW data
+            break;
+
 	case 0xa4: { /* get contact info */
 	    // RC30 doesn't support this and always returns empty responses
 	    done = !continueRequest() || data.empty();
