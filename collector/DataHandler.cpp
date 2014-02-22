@@ -114,11 +114,11 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::UrlaubTemp, "vacationtemperature" },
 	{ EmsValue::RaumEinfluss, "maxroomeffect" },
 	{ EmsValue::RaumOffset, "roomoffset" },
-	{ EmsValue::SchwelleSommerWinter, "summerwintertreshold" },
+	{ EmsValue::SchwelleSommerWinter, "summerwinterthreshold" },
 	{ EmsValue::FrostSchutzTemp, "frostsafetemperature" },
 	{ EmsValue::AuslegungsTemp, "designtemperature" },
 	{ EmsValue::RaumUebersteuerTemp, "temperatureoverride" },
-	{ EmsValue::AbsenkungsSchwellenTemp, "reducedmodetreshold" },
+	{ EmsValue::AbsenkungsSchwellenTemp, "reducedmodethreshold" },
 	{ EmsValue::GedaempfteTemp, "dampedtemperature" },
 	{ EmsValue::DesinfektionsTemp, "desinfectiontemperature" },
 	{ EmsValue::TemperaturAenderung, "temperaturechange" },
@@ -141,8 +141,8 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::AntipendelZeit, "antipendelminutes" },
 	{ EmsValue::NachlaufZeit, "followupminutes" },
 	{ EmsValue::DesinfektionStunde, "desinfectionhour" },
-        { EmsValue::HektoStundenVorWartung, "maintenanceintervalin100hours" },
-        
+	{ EmsValue::HektoStundenVorWartung, "maintenanceintervalin100hours" },
+
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
 	{ EmsValue::ZuendungAktiv, "ignitionactive" },
@@ -167,7 +167,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::Frostschutz, "frostsafemode" },
 	{ EmsValue::SchaltuhrEin, "switchpointactive" },
 	{ EmsValue::KesselSchalter, "masterswitch" },
-	{ EmsValue::EigenesProgrammAktiv, "ownschedule" },
+	{ EmsValue::EigenesProgrammAktiv, "customschedule" },
 	{ EmsValue::EinmalLadungsLED, "onetimeloadindicator" },
 	{ EmsValue::ATDaempfung, "damping" },
 	{ EmsValue::SchaltzeitOptimierung, "scheduleoptimizer" },
@@ -209,6 +209,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::Aussen, "outdoor" },
 	{ EmsValue::Abgas, "exhaust" },
     };
+
     static const std::map<uint8_t, const char *> WWSYSTEMMAPPING = {
 	{ EmsProto::WWSystemNone, "none" },
 	{ EmsProto::WWSystemDurchlauf, "tankless" },
@@ -303,7 +304,7 @@ DataConnection::handleValue(const EmsValue& value)
 		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
 		case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
 		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
-		case EmsValue::HeizArt: 
+		case EmsValue::HeizArt:
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
 		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;

@@ -129,18 +129,18 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::SollTemp, "Solltemperatur" },
 	{ EmsValue::IstTemp, "Isttemperatur" },
 	{ EmsValue::SetTemp, "Temperatureinstellung" },
-        { EmsValue::MinTemp, "Minimale Temperatur" },
-        { EmsValue::MaxTemp, "Maximale Temperatur" },
-        { EmsValue::TagTemp, "Tagtemperatur" },
-        { EmsValue::NachtTemp, "Nachttemperatur" },
-        { EmsValue::UrlaubTemp, "Urlaubstemperatur" },
-        { EmsValue::RaumEinfluss, "Max. Raumeinfluss" },
-        { EmsValue::RaumOffset, "Raumoffset" },
-        { EmsValue::SchwelleSommerWinter, "Schwelle Sommer/Winter" },
-        { EmsValue::FrostSchutzTemp, "Frostschutztemperatur" },
-        { EmsValue::AuslegungsTemp, "Auslegungstemperatur" },
-        { EmsValue::RaumUebersteuerTemp, "Temporäre Raumtemperaturuebersteuerung" },
-        { EmsValue::AbsenkungsSchwellenTemp, "Schwellentemperatur Außenhaltbetrieb" },
+	{ EmsValue::MinTemp, "Minimale Temperatur" },
+	{ EmsValue::MaxTemp, "Maximale Temperatur" },
+	{ EmsValue::TagTemp, "Tagtemperatur" },
+	{ EmsValue::NachtTemp, "Nachttemperatur" },
+	{ EmsValue::UrlaubTemp, "Urlaubstemperatur" },
+	{ EmsValue::RaumEinfluss, "Max. Raumeinfluss" },
+	{ EmsValue::RaumOffset, "Raumoffset" },
+	{ EmsValue::SchwelleSommerWinter, "Schwelle Sommer/Winter" },
+	{ EmsValue::FrostSchutzTemp, "Frostschutztemperatur" },
+	{ EmsValue::AuslegungsTemp, "Auslegungstemperatur" },
+	{ EmsValue::RaumUebersteuerTemp, "Temporäre Raumtemperaturübersteuerung" },
+	{ EmsValue::AbsenkungsSchwellenTemp, "Schwellentemperatur Außenhaltbetrieb" },
 	{ EmsValue::GedaempfteTemp, "Temperatur (gedämpft)" },
 	{ EmsValue::DesinfektionsTemp, "Desinfektionstemperatur" },
 	{ EmsValue::TemperaturAenderung, "Temperaturänderung" },
@@ -191,22 +191,22 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::EigenesProgrammAktiv, "Eigenes Programm aktiv" },
 	{ EmsValue::EinmalLadungsLED, "Einmalladungs-LED" },
 	{ EmsValue::Desinfektion, "Thermische Desinfektion" },
-        { EmsValue::ATDaempfung, "Dämpfung Außentemperatur" },
-        { EmsValue::SchaltzeitOptimierung, "Schaltzeitenoptimierung" },
-                
+	{ EmsValue::ATDaempfung, "Dämpfung Außentemperatur" },
+	{ EmsValue::SchaltzeitOptimierung, "Schaltzeitoptimierung" },
+
 	{ EmsValue::WWSystemType, "WW-System-Typ" },
 	{ EmsValue::Betriebsart, "Betriebsart" },
 	{ EmsValue::Wartungsmeldungen, "Wartungsmeldungen" },
 	{ EmsValue::WartungFaellig, "Wartung fällig?" },
 	{ EmsValue::DesinfektionTag, "Thermische Desinfektion Tag" },
 	{ EmsValue::Schaltpunkte, "Schaltpunkte" },
-        { EmsValue::GebaeudeArt, "Gebäudeart" },
-        { EmsValue::HeizArt, "Heizart" },
-        { EmsValue::RegelungsArt, "Regelungsart" },
-        { EmsValue::HeizSystem, "Heizsystem" },
-        { EmsValue::FuehrungsGroesse, "Führungsgröße" },
-        { EmsValue::UrlaubAbsenkungsArt, "Urlaubsabsenkungsart" },
-                                                
+	{ EmsValue::GebaeudeArt, "Gebäudeart" },
+	{ EmsValue::HeizArt, "Heizart" },
+	{ EmsValue::RegelungsArt, "Regelungsart" },
+	{ EmsValue::HeizSystem, "Heizsystem" },
+	{ EmsValue::FuehrungsGroesse, "Führungsgröße" },
+	{ EmsValue::UrlaubAbsenkungsArt, "Urlaubsabsenkungsart" },
+
 	{ EmsValue::HKKennlinie, "Kennlinie" },
 	{ EmsValue::Fehler, "Fehler" },
 	{ EmsValue::SystemZeit, "Systemzeit" },
@@ -308,35 +308,33 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     };
 
     static const std::map<uint8_t, const char *> OPMODEMAPPING = {
-        { 0, "ständig aus" }, { 1, "ständig an" }, { 2, "Automatik" }
+	{ 0, "ständig aus" }, { 1, "ständig an" }, { 2, "Automatik" }
     };
 
 
     static const std::map<uint8_t, const char *> BUILDINGTYPEMAPPING = {
-        { 0, "leicht" }, { 1, "mittel" }, { 2, "schwer" }
+	{ 0, "leicht" }, { 1, "mittel" }, { 2, "schwer" }
     };
 
     static const std::map<uint8_t, const char *> HEATINGTYPEMAPPING = {
-        { 1, "Heizkörper" }, { 2, "Konvektor" }, { 3, "Fussboden" }, { 4, "Raumvorlauf" }
+	{ 1, "Heizkörper" }, { 2, "Konvektor" }, { 3, "Fußboden" }, { 4, "Raumvorlauf" }
     };
 
     static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
-        { 0, "Abschalt" }, { 1, "Reduziert" }, { 2, "Raumhalt" }, { 3, "Aussenhalt" }
+	{ 0, "Abschalt" }, { 1, "Reduziert" }, { 2, "Raumhalt" }, { 3, "Außenhalt" }
     };
 
     static const std::map<uint8_t, const char *> FROSTPROTECTMAPPING = {
-        { 0, "kein" }, { 1, "Aussentemperatur" }, { 2, "Raumtemperatur5Grad" }
+	{ 0, "kein" }, { 1, "Außentemperatur" }, { 2, "Raumtemperatur 5 Grad" }
     };
 
     static const std::map<uint8_t, const char *> RELEVANTVALUEMAPPING = {
-        { 0, "Aussentemperaturgefuehrt" }, { 1, "Raumtemperaturgefuehrt" }
+	{ 0, "außentemperaturgeführt" }, { 1, "raumtemperaturgeführt" }
     };
 
     static const std::map<uint8_t, const char *> VACATIONREDUCTIONMAPPING = {
-        { 3, "Aussenhalt" }, { 2, "Raumhalt" }
+	{ 3, "Außenhalt" }, { 2, "Raumhalt" }
     };
-
-
 
     auto typeIter = TYPEMAPPING.find(value.getType());
     const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
@@ -383,13 +381,13 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
 		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
 		case EmsValue::DesinfektionTag: map = &WEEKDAYMAPPING; break;
-                case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
-                case EmsValue::HeizArt:
-                case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
-                case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
-                case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
-                case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
-                case EmsValue::UrlaubAbsenkungsArt: map = &VACATIONREDUCTIONMAPPING; break;
+		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
+		case EmsValue::HeizArt:
+		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
+		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
+		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
+		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
+		case EmsValue::UrlaubAbsenkungsArt: map = &VACATIONREDUCTIONMAPPING; break;
 		default: break;
 	    }
 	    if (map && map->find(enumValue) != map->end()) {

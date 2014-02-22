@@ -472,8 +472,7 @@ EmsMessage::parseRCSystemParameterMessage()
 {
     parseNumeric(5, 1, 1, EmsValue::MinTemp, EmsValue::Aussen);
     parseEnum(6, EmsValue::GebaeudeArt, EmsValue::None);
-    parseBool(21 ,1, EmsValue::ATDaempfung, EmsValue::None);
-    
+    parseBool(21, 1, EmsValue::ATDaempfung, EmsValue::None);
 }
 
 void
@@ -499,7 +498,6 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
     parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);
     parseEnum(41, EmsValue::UrlaubAbsenkungsArt, subtype);
-    
 }
 
 void
