@@ -23,7 +23,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
-
+#define FMT_HEX \
+     std::setw(2) << std::setfill('0') << std::hex << (unsigned int) 
+#define FMT_DEC \
+     std::dec << (unsigned int) 
+                                       
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_handler(handler),
@@ -124,7 +128,8 @@ CommandConnection::CommandConnection(CommandHandler& handler) :
     m_handler(handler),
     m_responseTimeout(handler.getHandler()),
     m_responseCounter(0),
-    m_parsePosition(0)
+    m_parsePosition(0),
+    m_outputRawData(false)
 {
 }
 
@@ -196,7 +201,7 @@ CommandConnection::handleCommand(std::istream& request)
     request >> category;
 
     if (category == "help") {
-	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nww\nuba\nrc\ngetversion\n");
+	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nww\nuba\nrc\nraw\ngetversion\n");
 	return Ok;
     } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
@@ -212,6 +217,8 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleRcCommand(request);
     } else if (category == "uba") {
 	return handleUbaCommand(request);
+    } else if (category == "raw") {
+	return handleRawCommand(request);
     } else if (category == "getversion") {
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
 	return Ok;
@@ -315,7 +322,7 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"geterrors\n"
 		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
 		"checkmaintenanceneeded\n"
-		"requestdata");
+		"requestdata\n");
 	return Ok;
     } else if (cmd == "requestdata") {
         startRequest(EmsProto::addressUBA, 0x15, 0, 5);
@@ -413,6 +420,57 @@ CommandConnection::handleUbaCommand(std::istream& request)
     } else if (cmd == "checkmaintenanceneeded") {
 	startRequest(EmsProto::addressUBA, 0x1c, 5, 3);
 	return Ok;
+    }
+
+    return InvalidCmd;
+}
+
+CommandConnection::CommandResult
+CommandConnection::handleRawCommand(std::istream& request)
+{
+    std::string cmd;
+    request >> cmd;
+
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"read 0x<target> 0x<type> <offset> <len>\n"
+		"write 0x<target> 0x<type> <offset> <data>\n");
+	return Ok;
+    } else if (cmd == "read") {
+        uint8_t target, type, offset, len;
+        if (!parseHexParameter(request, target, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseHexParameter(request, type, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, len, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        m_outputRawData = true;
+
+        startRequest(target, type, offset, len);
+        return Ok;
+    } else if (cmd == "write") {
+        uint8_t target, type, offset, value;
+        if (!parseHexParameter(request, target, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseHexParameter(request, type, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, value, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+
+        sendCommand(target, type, offset, &value, 1);
+        return Ok;
     }
 
     return InvalidCmd;
@@ -1150,6 +1208,19 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	}
     }
 
+    if (m_outputRawData){
+        std::stringstream tmp;
+        tmp << "source "   << FMT_HEX source ;
+        tmp << ", type "   << FMT_HEX type << ":  ";
+        for (size_t i = 0; i < data.size(); i++) {
+            tmp << "" << FMT_DEC (i + offset) << ":";
+            tmp << FMT_HEX data[i] << "(";
+            tmp << FMT_DEC data[i] << ") ";
+        }
+        respond(tmp.str());
+        m_outputRawData = false;
+    }
+
     if (done) {
 	m_activeRequest.reset();
 	respond("OK");
@@ -1401,6 +1472,20 @@ CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8
     unsigned int value;
 
     request >> value;
+    if (!request || value > max) {
+	return false;
+    }
+
+    data = value;
+    return true;
+}
+
+bool
+CommandConnection::parseHexParameter(std::istream& request, uint8_t& data, uint8_t max)
+{
+    unsigned int value;
+
+    request >> std::hex >> value;
     if (!request || value > max) {
 	return false;
     }
