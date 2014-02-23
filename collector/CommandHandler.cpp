@@ -514,12 +514,12 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	uint8_t data;
 
 	request >> ns;
-	data = 99;
-	if (ns == "offmode") data = 0;
-	if (ns == "reduced") data = 1;
-	if (ns == "raumhalt") data = 2;
-	if (ns == "aussenhalt") data = 3;
-	if (data == 99) return InvalidArgs;
+
+	if (ns == "offmode")         data = 0;
+	else if (ns == "reduced")    data = 1;
+	else if (ns == "raumhalt")   data = 2;
+	else if (ns == "aussenhalt") data = 3;
+	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, type , 25, &data, 1);
 	return Ok;
@@ -528,10 +528,10 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	uint8_t data;
 
 	request >> ns;
-	data = 99;
-	if (ns == "outdoor") data = 0;
-	if (ns == "indoor") data = 1;
-	if (data == 99) return InvalidArgs;
+
+	if (ns == "outdoor")     data = 0;
+	else if (ns == "indoor") data = 1;
+	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, type , 33, &data, 1);
 	return Ok;
@@ -540,10 +540,10 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	uint8_t data;
 
 	request >> ns;
-	data = 99;
-	if (ns == "outdoor") data = 3;
-	if (ns == "indoor") data = 2;
-	if (data == 99) return InvalidArgs;
+
+	if (ns == "outdoor")     data = 3;
+	else if (ns == "indoor") data = 2;
+	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, type , 41, &data, 1);
 	return Ok;
@@ -552,11 +552,11 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	uint8_t data;
 
 	request >> ns;
-	data = 99;
-	if (ns == "off") data = 0;
-	if (ns == "byoutdoortemp") data = 1;
-	if (ns == "byindoortemp") data = 2;
-	if (data == 99) return InvalidArgs;
+
+	if (ns == "off")                data = 0;
+	else if (ns == "byoutdoortemp") data = 1;
+	else if (ns == "byindoortemp")  data = 2;
+	else return InvalidArgs;
 
 	sendCommand(EmsProto::addressRC, type , 28, &data, 1);
 	return Ok;
