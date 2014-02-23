@@ -122,8 +122,6 @@ class EmsValue {
 	    RaumUebersteuerTemp,
 	    AbsenkungsSchwellenTemp,
 	    AbsenkungsAbbruchTemp,
-	    PartyZeit,
-	    PausenZeit,
 	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,
@@ -136,6 +134,8 @@ class EmsValue {
 	    AusschaltoptimierungsZeit,
 	    AntipendelZeit,
 	    NachlaufZeit,
+	    PartyZeit,
+	    PausenZeit,
 	    /* boolean */
 	    FlammeAktiv,
 	    BrennerAktiv,
