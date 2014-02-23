@@ -422,13 +422,35 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsProto::addressRC, type, 7, &data, 1);
 	return Ok;
     } else if (cmd == "daytemperature") {
-	return handleHkTemperatureCommand(request, type, 2);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 2, 2, 10, 30);
     } else if (cmd == "nighttemperature") {
-	return handleHkTemperatureCommand(request, type, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 1, 2, 10, 30);
     } else if (cmd == "temperatureoverride") {
-	return handleHkTemperatureCommand(request, type, 37);
+	uint8_t data;
+	std::string value;
+
+	request >> value;
+
+	if (value == "off") {
+	    data = 0;
+	} else {
+	    try {
+		float floatValue = boost::lexical_cast<float>(value);
+		if (floatValue < 10 || floatValue > 30) {
+		    return InvalidArgs;
+		}
+		data = 2 * boost::numeric_cast<uint8_t>(floatValue);
+	    } catch (boost::bad_lexical_cast& e) {
+		return InvalidArgs;
+	    } catch (boost::bad_numeric_cast& e) {
+		return InvalidArgs;
+	    }
+	}
+
+	sendCommand(EmsProto::addressRC, type, 37, &data, 1);
+	return Ok;
     } else if (cmd == "vacationtemperature") {
-	return handleHkTemperatureCommand(request, type, 3);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 3, 2, 10, 30);
     } else if (cmd == "holidaymode") {
 	return handleSetHolidayCommand(request, type + 2, 93);
     } else if (cmd == "vacationmode") {
@@ -561,37 +583,32 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsProto::addressRC, type , 28, &data, 1);
 	return Ok;
     } else if (cmd == "minheatflowtemperature") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 16, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 16, 1, 10, 90);
     } else if (cmd == "maxheatflowtemperature") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 35, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 10, 970);
     } else if (cmd == "maxroomeffect") {
-	return handleHkTemperatureCommand(request, type, 4);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 4, 2, 0, 10);
     } else if (cmd == "designtemperature") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 36, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 10, 90);
     } else if (cmd == "frostprotecttemperature") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 23, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 23, 1, -20, 5);
     } else if (cmd == "summerwinterthreshold") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 22, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 22, 1, 0, 30);
     } else if (cmd == "reducedmodethreshold") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 39, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 39, 1, -20, 20);
     } else if (cmd == "cancelreducedmodethreshold") {
-	return handleGenericWriteOneByteCommand(request, type, EmsProto::addressRC, 38, 1);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 38, 1, -20, 20);
     }
     return InvalidCmd;
 }
 
 CommandConnection::CommandResult
-CommandConnection::handleHkTemperatureCommand(std::istream& request, uint8_t type, uint8_t offset)
-{
-    return handleGenericWriteOneByteCommand(request, EmsProto::addressRC, type, offset, 2);
-}
-
-    CommandConnection::CommandResult
-CommandConnection::handleGenericWriteOneByteCommand(std::istream& request, uint8_t dest, uint8_t type, uint8_t offset, int multiplier)
+CommandConnection::handleSingleByteValue(std::istream& request, uint8_t dest, uint8_t type,
+					 uint8_t offset, int multiplier, int min, int max)
 {
     float value;
     int valueInt;
-    uint8_t valueByte;
+    int8_t valueByte;
 
     request >> value;
     if (!request) {
@@ -599,8 +616,8 @@ CommandConnection::handleGenericWriteOneByteCommand(std::istream& request, uint8
     }
 
     try {
-	valueInt = boost::numeric_cast<int>(multiplier * value); /* <int> because we need neg. values as well */
-	if ((valueInt < -127) || (valueInt > 255)){
+	valueInt = boost::numeric_cast<int>(multiplier * value);
+	if (valueInt < min || valueInt > max) {
 	    return InvalidArgs;
 	}
 	valueByte = valueInt;
@@ -608,7 +625,7 @@ CommandConnection::handleGenericWriteOneByteCommand(std::istream& request, uint8
 	return InvalidArgs;
     }
 
-    sendCommand(EmsProto::addressRC, type, offset, &valueByte, 1);
+    sendCommand(EmsProto::addressRC, type, offset, (uint8_t *) &valueByte, 1);
     return Ok;
 }
 

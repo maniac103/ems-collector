@@ -75,8 +75,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleRcCommand(std::istream& request);
 	CommandResult handleUbaCommand(std::istream& request);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
-	CommandResult handleHkTemperatureCommand(std::istream& request, uint8_t base, uint8_t offset);
-	CommandResult handleGenericWriteOneByteCommand(std::istream& request, uint8_t dest, uint8_t type, uint8_t offset, int multiplier);
+	CommandResult handleSingleByteValue(std::istream& request, uint8_t dest, uint8_t type,
+					    uint8_t offset, int multiplier, int min, int max);
 	CommandResult handleSetHolidayCommand(std::istream& request, uint8_t type, uint8_t offset);
 	CommandResult handleWwCommand(std::istream& request);
 	CommandResult handleThermDesinfectCommand(std::istream& request);
