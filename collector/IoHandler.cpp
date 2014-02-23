@@ -141,6 +141,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AuslegungsTemp, "Auslegungstemperatur" },
 	{ EmsValue::RaumUebersteuerTemp, "Temporäre Raumtemperaturübersteuerung" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "Schwellentemperatur Außenhaltbetrieb" },
+        { EmsValue::AbsenkungsAbbruchTemp, "Nachtabsenkung abbrechen unterhalb" },
 	{ EmsValue::GedaempfteTemp, "Temperatur (gedämpft)" },
 	{ EmsValue::DesinfektionsTemp, "Desinfektionstemperatur" },
 	{ EmsValue::TemperaturAenderung, "Temperaturänderung" },
@@ -164,7 +165,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::NachlaufZeit, "Nachlaufzeit" },
 	{ EmsValue::DesinfektionStunde, "Thermische Desinfektion Stunde" },
 	{ EmsValue::HektoStundenVorWartung, "Wartungsintervall in 100h" },
-
+	{ EmsValue::PausenZeit, "restl. Pausenzeit" },
+	{ EmsValue::PartyZeit, "restl. Partyzeit" },
+         
 	{ EmsValue::FlammeAktiv, "Flamme" },
 	{ EmsValue::BrennerAktiv, "Brenner" },
 	{ EmsValue::ZuendungAktiv, "Zündung" },
@@ -247,6 +250,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AuslegungsTemp, "°C" },
 	{ EmsValue::RaumUebersteuerTemp, "°C" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "°C" },
+	{ EmsValue::AbsenkungsAbbruchTemp, "°C" },
 	{ EmsValue::GedaempfteTemp, "°C" },
 	{ EmsValue::DesinfektionsTemp, "°C" },
 	{ EmsValue::TemperaturAenderung, "K/min" },
@@ -265,7 +269,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AusschaltoptimierungsZeit, "min" },
 	{ EmsValue::AntipendelZeit, "min" },
 	{ EmsValue::NachlaufZeit, "min" },
-	{ EmsValue::DesinfektionStunde, "h" }
+	{ EmsValue::DesinfektionStunde, "h" },
+	{ EmsValue::PausenZeit, "h" },
+	{ EmsValue::PartyZeit, "h" }
     };
 
     static const std::map<uint8_t, const char *> WWSYSTEMMAPPING = {

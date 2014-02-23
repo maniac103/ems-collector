@@ -119,6 +119,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::AuslegungsTemp, "designtemperature" },
 	{ EmsValue::RaumUebersteuerTemp, "temperatureoverride" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "reducedmodethreshold" },
+        { EmsValue::AbsenkungsAbbruchTemp, "cancelreducedmodethreshold" },
 	{ EmsValue::GedaempfteTemp, "dampedtemperature" },
 	{ EmsValue::DesinfektionsTemp, "desinfectiontemperature" },
 	{ EmsValue::TemperaturAenderung, "temperaturechange" },
@@ -142,7 +143,9 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::NachlaufZeit, "followupminutes" },
 	{ EmsValue::DesinfektionStunde, "desinfectionhour" },
 	{ EmsValue::HektoStundenVorWartung, "maintenanceintervalin100hours" },
-
+        { EmsValue::PausenZeit, "pausehours" },
+        { EmsValue::PartyZeit, "partyhours" },
+        
 	{ EmsValue::FlammeAktiv, "flameactive" },
 	{ EmsValue::BrennerAktiv, "heateractive" },
 	{ EmsValue::ZuendungAktiv, "ignitionactive" },
