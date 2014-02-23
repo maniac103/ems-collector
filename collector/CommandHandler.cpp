@@ -460,14 +460,14 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type, 86, &hours, 1);
+	sendCommand(EmsProto::addressRC, type + 2, 86, &hours, 1);
 	return Ok;
     } else if (cmd == "pausemode") {
 	uint8_t hours;
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type, 85, &hours, 1);
+	sendCommand(EmsProto::addressRC, type + 2, 85, &hours, 1);
 	return Ok;
     } else if (cmd == "customschedule") {
 	unsigned int schedule, index;
