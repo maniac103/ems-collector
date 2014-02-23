@@ -141,7 +141,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AuslegungsTemp, "Auslegungstemperatur" },
 	{ EmsValue::RaumUebersteuerTemp, "Temporäre Raumtemperaturübersteuerung" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "Schwellentemperatur Außenhaltbetrieb" },
-        { EmsValue::AbsenkungsAbbruchTemp, "Nachtabsenkung abbrechen unterhalb" },
+	{ EmsValue::AbsenkungsAbbruchTemp, "Nachtabsenkung abbrechen unterhalb" },
 	{ EmsValue::GedaempfteTemp, "Temperatur (gedämpft)" },
 	{ EmsValue::DesinfektionsTemp, "Desinfektionstemperatur" },
 	{ EmsValue::TemperaturAenderung, "Temperaturänderung" },
@@ -167,7 +167,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::HektoStundenVorWartung, "Wartungsintervall in 100h" },
 	{ EmsValue::PausenZeit, "restl. Pausenzeit" },
 	{ EmsValue::PartyZeit, "restl. Partyzeit" },
-         
+
 	{ EmsValue::FlammeAktiv, "Flamme" },
 	{ EmsValue::BrennerAktiv, "Brenner" },
 	{ EmsValue::ZuendungAktiv, "Zündung" },

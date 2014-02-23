@@ -121,9 +121,9 @@ class EmsValue {
 	    AuslegungsTemp,
 	    RaumUebersteuerTemp,
 	    AbsenkungsSchwellenTemp,
-            AbsenkungsAbbruchTemp,
-            PartyZeit,
-            PausenZeit,
+	    AbsenkungsAbbruchTemp,
+	    PartyZeit,
+	    PausenZeit,
 	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,
@@ -330,7 +330,7 @@ class EmsMessage
 			  EmsValue::Type type, EmsValue::SubType subtype);
 	void parseBool(size_t offset, uint8_t bit,
 		       EmsValue::Type type, EmsValue::SubType subtype);
-        void parseEnum(size_t offset,
+	void parseEnum(size_t offset,
 		       EmsValue::Type type, EmsValue::SubType subtype);
 
 	bool canAccess(size_t offset, size_t size) {
