@@ -86,7 +86,7 @@ EmsValue::EmsValue(Type type, SubType subType, const ErrorEntry& error) :
 EmsValue::EmsValue(Type type, SubType subType, const EmsProto::DateRecord& record) :
     m_type(type),
     m_subType(subType),
-    m_readingType(SystemTime),
+    m_readingType(Date),
     m_value(record)
 {
 }

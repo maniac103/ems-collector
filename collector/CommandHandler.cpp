@@ -309,12 +309,17 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	respond("Available subcommands:\n"
 		"antipendel <minutes>\n"
 		"hyst [on|off] <kelvin>\n"
+		"burnermodulation <minpercent> <maxpercent>\n"
 		"pumpmodulation <minpercent> <maxpercent>\n"
 		"pumpdelay <minutes>\n"
 		"geterrors\n"
 		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
-		"checkmaintenanceneeded\n");
+		"checkmaintenanceneeded\n"
+		"requestdata");
 	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressUBA, 0x15, 0, 5);
+        return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsProto::addressUBA, 0x10, 0, 8 * sizeof(EmsProto::ErrorRecord));
 	return Ok;
@@ -335,6 +340,20 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	}
 
 	sendCommand(EmsProto::addressUBA, 0x16, direction == "on" ? 5 : 4, &hyst, 1);
+	return Ok;
+    } else if (cmd == "burnermodulation") {
+	unsigned int min, max;
+	uint8_t data[2];
+
+	request >> min >> max;
+	if (!request || min > max || max > 100) {
+	    return InvalidArgs;
+	}
+
+	data[0] = max;
+	data[1] = min;
+
+	sendCommand(EmsProto::addressUBA, 0x16, 2, data, sizeof(data));
 	return Ok;
     } else if (cmd == "pumpmodulation") {
 	unsigned int min, max;
@@ -1025,6 +1044,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	}
+        case 0x15: /* get maintenance parameters */
+            startRequest(EmsProto::addressUBA, 0x16, 0, 20);  /* get uba parameters */
+            break;
+        case 0x16: /* get uba parameters */
+            done = true;
+            break;
 	case 0x1c: /* check for maintenance */
 	    switch (data[0]) {
 		case 0: respond("not due"); break;
