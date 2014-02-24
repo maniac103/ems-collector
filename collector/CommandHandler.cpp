@@ -245,9 +245,9 @@ CommandConnection::handleRcCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
-		"minoutdoortemperature\n"
+		"minoutdoortemperature <temp>\n"
 		"buildingtype [light|medium|heavy]\n"
-		"outdoortempdamping\n"
+		"outdoortempdamping [on|off]\n"
 		"requestdata\n"
 		"geterrors\n"
 		"getcontactinfo\n"
