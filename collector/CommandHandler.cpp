@@ -1120,8 +1120,10 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    done = true;
 	    break;
 	default:
-	    /* unhandled message, do successfully nothing */
-	    done = true;
+	    /* unhandled message */
+	    m_activeRequest.reset();
+	    respond("ERRFAIL");
+	    break;
 	}
     }
 
