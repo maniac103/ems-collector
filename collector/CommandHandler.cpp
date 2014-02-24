@@ -1089,12 +1089,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
     if (m_outputRawData) {
+        std::stringstream output;
+        for (size_t i = 0; i < data.size(); i++) {
+            output << boost::format("0x%02x ") % (unsigned int) data[i];
+        }
+        respond(output.str());
 	if (!continueRequest()) {
-	    std::stringstream output;
-	    for (size_t i = 0; i < data.size(); i++) {
-		output << boost::format("0x%02x ") % (unsigned int) data[i];
-	    }
-	    respond(output.str());
 	    m_activeRequest.reset();
 	}
 	return;
@@ -1457,6 +1457,7 @@ void
 CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
 			        size_t length, bool newRequest, bool raw)
 {
+    m_lastOffset = 255;   /* for sure not the first offset to get */
     m_requestOffset = offset;
     m_requestLength = length;
     m_requestDestination = dest;
@@ -1484,6 +1485,11 @@ CommandConnection::continueRequest()
     uint8_t offset = (uint8_t) (m_requestOffset + alreadyReceived);
     uint8_t remaining = (uint8_t) (m_requestLength - alreadyReceived);
 
+    if (offset == m_lastOffset){ /* we queried the same offset twice -> no more data */
+      return false;
+    }
+
+    m_lastOffset = offset;
     sendCommand(m_requestDestination, m_requestType, offset, &remaining, 1, true);
     return true;
 }
