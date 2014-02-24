@@ -228,44 +228,44 @@ CommandConnection::handleRcCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
-                "minoutdoortemperature\n"
-                "buildingtype [light|medium|heavy]\n"
-                "outdoortempdamping\n"
-                "requestdata\n"
+		"minoutdoortemperature\n"
+		"buildingtype [light|medium|heavy]\n"
+		"outdoortempdamping\n"
+		"requestdata\n"
 		"geterrors\n"
 		"getcontactinfo\n"
 		"setcontactinfo [1|2] <text>\n");
 	return Ok;
     } else if (cmd == "requestdata") {
-        startRequest(EmsProto::addressRC, 0xa5, 0, 25);
-        return Ok;
+	startRequest(EmsProto::addressRC, 0xa5, 0, 25);
+	return Ok;
     } else if (cmd == "minoutdoortemperature") {
-        return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 10);
     } else if (cmd == "buildingtype") {
-        std::string ns;
-        uint8_t data;
+	std::string ns;
+	uint8_t data;
 
-        request >> ns;
+	request >> ns;
 
-        if (ns == "light")         data = 0;
-        else if (ns == "medium")   data = 1;
-        else if (ns == "heavy")    data = 2;
-        else return InvalidArgs;
+	if (ns == "light")       data = 0;
+	else if (ns == "medium") data = 1;
+	else if (ns == "heavy")  data = 2;
+	else return InvalidArgs;
 
-        sendCommand(EmsProto::addressRC, 0xa5, 6, &data, 1);
-        return Ok;
+	sendCommand(EmsProto::addressRC, 0xa5, 6, &data, 1);
+	return Ok;
     } else if (cmd == "outdoortempdamping") {
-        uint8_t data;
-        std::string mode;
+	uint8_t data;
+	std::string mode;
 
-        request >> mode;
+	request >> mode;
 
-        if (mode == "on")       data = 0xff;
-        else if (mode == "off") data = 0x00;
-        else return InvalidArgs;
+	if (mode == "on")       data = 0xff;
+	else if (mode == "off") data = 0x00;
+	else return InvalidArgs;
 
-        sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
-        return Ok;
+	sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
+	return Ok;
     } else if (cmd == "getcontactinfo") {
 	startRequest(EmsProto::addressRC, 0xa4, 0, 42);
 	return Ok;
@@ -1116,12 +1116,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		}
 	    }
 	    break;
-        case 0xa5: /* get system parameters */
-            done = true;  
-            break;
-        default:
-           /* unhandled message, do successfully nothing */
-           done = true;
+	case 0xa5: /* get system parameters */
+	    done = true;
+	    break;
+	default:
+	    /* unhandled message, do successfully nothing */
+	    done = true;
 	}
     }
 
