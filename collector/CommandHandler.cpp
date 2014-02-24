@@ -284,7 +284,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
 	return Ok;
     } else if (cmd == "getcontactinfo") {
-	startRequest(EmsProto::addressRC, 0xa4, 0, 42);
+	startRequest(EmsProto::addressRC, 0xa4, 0, 21);
 	return Ok;
     } else if (cmd == "setcontactinfo") {
 	unsigned int line;
@@ -1089,12 +1089,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
     if (m_outputRawData) {
+        std::stringstream output;
+        for (size_t i = 0; i < data.size(); i++) {
+            output << boost::format("0x%02x ") % (unsigned int) data[i];
+        }
+        respond(output.str());
 	if (!continueRequest()) {
-	    std::stringstream output;
-	    for (size_t i = 0; i < data.size(); i++) {
-		output << boost::format("0x%02x ") % (unsigned int) data[i];
-	    }
-	    respond(output.str());
 	    m_activeRequest.reset();
 	}
 	return;
@@ -1234,18 +1234,19 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    done = true; // finished requesting WW data
 	    break;
 	case 0xa4: { /* get contact info */
-	    // RC30 doesn't support this and always returns empty responses
-	    done = !continueRequest() || data.empty();
-	    if (done) {
-		for (size_t i = 0; i < data.size(); i += 21) {
-		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
-		    char buffer[22];
-		    memcpy(buffer, &data.at(i), len);
-		    buffer[len] = 0;
-		    respond(buffer);
-		}
-	    }
+	    // RC30 doesn't support this and always returns empty responses -> data.size() == 0;
+            size_t len = std::min(data.size(), static_cast<size_t>(21));
+            char buffer[22];
+            memcpy(buffer, &data.at(0), len);
+            buffer[len] = 0;
+            respond(buffer);
+            if (offset == 0) {
+                startRequest(EmsProto::addressRC, 0xa4, 21, 21);  /* get second line */
+            } else {
+                done = true;
+            } 
 	    break;
+        }
 	case 0xa5: /* get system parameters */
 	    done = true;
 	    break;
@@ -1254,7 +1255,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    m_activeRequest.reset();
 	    respond("ERRFAIL");
 	    break;
-	}
     }
 
     if (done) {
@@ -1457,6 +1457,7 @@ void
 CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
 			        size_t length, bool newRequest, bool raw)
 {
+    m_lastOffset = 255;   /* for sure not the first offset to get */
     m_requestOffset = offset;
     m_requestLength = length;
     m_requestDestination = dest;
@@ -1484,6 +1485,11 @@ CommandConnection::continueRequest()
     uint8_t offset = (uint8_t) (m_requestOffset + alreadyReceived);
     uint8_t remaining = (uint8_t) (m_requestLength - alreadyReceived);
 
+    if (offset == m_lastOffset){ /* we queried the same offset twice -> no more data */
+      return false;
+    }
+
+    m_lastOffset = offset;
     sendCommand(m_requestDestination, m_requestType, offset, &remaining, 1, true);
     return true;
 }

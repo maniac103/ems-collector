@@ -118,6 +118,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	std::unique_ptr<EmsMessage> m_activeRequest;
 	std::vector<uint8_t> m_requestResponse;
 	size_t m_requestOffset;
+	size_t m_lastOffset;
 	size_t m_requestLength;
 	uint8_t m_requestDestination;
 	uint8_t m_requestType;
