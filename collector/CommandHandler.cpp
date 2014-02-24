@@ -1091,10 +1091,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     if (m_outputRawData) {
 	if (!continueRequest()) {
 	    std::stringstream output;
-	    output << boost::format("source 0x%02x type 0x%02x data")
-		    % (unsigned int) source % (unsigned int) type;
 	    for (size_t i = 0; i < data.size(); i++) {
-		output << boost::format(" 0x%02x") % (unsigned int) data[i];
+		output << boost::format("0x%02x ") % (unsigned int) data[i];
 	    }
 	    respond(output.str());
 	    m_activeRequest.reset();
