@@ -23,7 +23,12 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
-
+#include "Version.h"
+#define FMT_HEX \
+     std::setw(2) << std::setfill('0') << std::hex << (unsigned int) 
+#define FMT_DEC \
+     std::dec << (unsigned int) 
+                                       
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_handler(handler),
@@ -124,7 +129,8 @@ CommandConnection::CommandConnection(CommandHandler& handler) :
     m_handler(handler),
     m_responseTimeout(handler.getHandler()),
     m_responseCounter(0),
-    m_parsePosition(0)
+    m_parsePosition(0),
+    m_outputRawData(false)
 {
 }
 
@@ -196,7 +202,7 @@ CommandConnection::handleCommand(std::istream& request)
     request >> category;
 
     if (category == "help") {
-	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nuba\nrc\n");
+	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nww\nuba\nrc\nraw\ngetversion\n");
 	return Ok;
     } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
@@ -212,7 +218,10 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleRcCommand(request);
     } else if (category == "uba") {
 	return handleUbaCommand(request);
+    } else if (category == "raw") {
+	return handleRawCommand(request);
     } else if (category == "getversion") {
+        respond("collector version: " VERSION);
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
 	return Ok;
     }
@@ -228,10 +237,44 @@ CommandConnection::handleRcCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
+                "minoutdoortemperature\n"
+                "buildingtype [light|medium|heavy]\n"
+                "outdoortempdamping\n"
+                "requestdata\n"
 		"geterrors\n"
 		"getcontactinfo\n"
 		"setcontactinfo [1|2] <text>\n");
 	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressRC, 0xa5, 0, 25);
+        return Ok;
+    } else if (cmd == "minoutdoortemperature") {
+        return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 10);
+    } else if (cmd == "buildingtype") {
+        std::string ns;
+        uint8_t data;
+
+        request >> ns;
+
+        if (ns == "light")         data = 0;
+        else if (ns == "medium")   data = 1;
+        else if (ns == "heavy")    data = 2;
+        else return InvalidArgs;
+
+        sendCommand(EmsProto::addressRC, 0xa5, 6, &data, 1);
+        return Ok;
+    } else if (cmd == "outdoortempdamping") {
+        uint8_t data;
+        std::string mode;
+
+        request >> mode;
+
+        if (mode == "on")       data = 0xff;
+        else if (mode == "off") data = 0x00;
+        else return InvalidArgs;
+
+        sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
+        return Ok;
     } else if (cmd == "getcontactinfo") {
 	startRequest(EmsProto::addressRC, 0xa4, 0, 42);
 	return Ok;
@@ -275,12 +318,18 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	respond("Available subcommands:\n"
 		"antipendel <minutes>\n"
 		"hyst [on|off] <kelvin>\n"
+		"burnermodulation <minpercent> <maxpercent>\n"
 		"pumpmodulation <minpercent> <maxpercent>\n"
 		"pumpdelay <minutes>\n"
 		"geterrors\n"
 		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
-		"checkmaintenanceneeded\n");
+		"checkmaintenanceneeded\n"
+		"testmode [on|off] <burnerpercent> <pumppercent> <3wayonww:[0|1]> <zirkpump:[0|1]>\n"
+		"requestdata\n");
 	return Ok;
+    } else if (cmd == "requestdata") {
+        startRequest(EmsProto::addressUBA, 0x15, 0, 5);
+        return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsProto::addressUBA, 0x10, 0, 8 * sizeof(EmsProto::ErrorRecord));
 	return Ok;
@@ -301,6 +350,20 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	}
 
 	sendCommand(EmsProto::addressUBA, 0x16, direction == "on" ? 5 : 4, &hyst, 1);
+	return Ok;
+    } else if (cmd == "burnermodulation") {
+	unsigned int min, max;
+	uint8_t data[2];
+
+	request >> min >> max;
+	if (!request || min > max || max > 100) {
+	    return InvalidArgs;
+	}
+
+	data[0] = max;
+	data[1] = min;
+
+	sendCommand(EmsProto::addressUBA, 0x16, 2, data, sizeof(data));
 	return Ok;
     } else if (cmd == "pumpmodulation") {
 	unsigned int min, max;
@@ -360,6 +423,90 @@ CommandConnection::handleUbaCommand(std::istream& request)
     } else if (cmd == "checkmaintenanceneeded") {
 	startRequest(EmsProto::addressUBA, 0x1c, 5, 3);
 	return Ok;
+    } else if (cmd == "testmode") {
+        std::string mode;
+        unsigned int active;
+        unsigned int brennerperc;
+        unsigned int pumpeperc;
+        unsigned int dwventstat;
+        unsigned int zirkstat;
+        uint8_t data[11];
+
+        memset(&data,0x00,sizeof(data));
+        request >> mode;
+        if (mode == "on") {
+            request >> brennerperc;
+            if (!request || (brennerperc > 100)) return InvalidArgs;
+            request >> pumpeperc;
+            if (!request || (pumpeperc > 100)) return InvalidArgs;
+            request >> dwventstat;
+            if (!request || (dwventstat > 1)) return InvalidArgs;
+            dwventstat *= 255;
+            request >> zirkstat;
+            if (!request || (zirkstat > 1)) return InvalidArgs;
+            zirkstat *= 255;
+            active = 0x5a;
+
+            data[0] = active;
+            data[1] = brennerperc;
+            data[3] = pumpeperc;
+            data[4] = dwventstat;
+            data[5] = zirkstat;
+        } else if (mode != "off"){
+            return InvalidArgs;
+        }
+        sendCommand(EmsProto::addressUBA, 0x1d, 0, data, sizeof(data));
+        return Ok;
+    }
+    return InvalidCmd;
+}
+
+CommandConnection::CommandResult
+CommandConnection::handleRawCommand(std::istream& request)
+{
+    std::string cmd;
+    request >> cmd;
+
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"read 0x<target> 0x<type> <offset> <len>\n"
+		"write 0x<target> 0x<type> <offset> <data>\n");
+	return Ok;
+    } else if (cmd == "read") {
+        uint8_t target, type, offset, len;
+        if (!parseHexParameter(request, target, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseHexParameter(request, type, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, len, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        m_outputRawData = true;
+
+        startRequest(target, type, offset, len);
+        return Ok;
+    } else if (cmd == "write") {
+        uint8_t target, type, offset, value;
+        if (!parseHexParameter(request, target, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseHexParameter(request, type, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+        if (!parseIntParameter(request, value, UCHAR_MAX)) {
+            return InvalidArgs;
+        }
+
+        sendCommand(target, type, offset, &value, 1);
+        return Ok;
     }
 
     return InvalidCmd;
@@ -460,14 +607,14 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type, 86, &hours, 1);
+	sendCommand(EmsProto::addressRC, type + 2, 86, &hours, 1);
 	return Ok;
     } else if (cmd == "pausemode") {
 	uint8_t hours;
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type, 85, &hours, 1);
+	sendCommand(EmsProto::addressRC, type + 2, 85, &hours, 1);
 	return Ok;
     } else if (cmd == "customschedule") {
 	unsigned int schedule, index;
@@ -673,6 +820,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
+	        "mode [on|off|auto]\n"
 		"temperature <temp>\n"
 		"limittemperature <temp>\n"
 		"loadonce\n"
@@ -990,6 +1138,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	}
+        case 0x15: /* get maintenance parameters */
+            startRequest(EmsProto::addressUBA, 0x16, 0, 20);  /* get uba parameters */
+            break;
+        case 0x16: /* get uba parameters */
+            done = true;
+            break;
 	case 0x1c: /* check for maintenance */
 	    switch (data[0]) {
 		case 0: respond("not due"); break;
@@ -1081,7 +1235,26 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		}
 	    }
 	    break;
+        case 0xa5: /* get system parameters */
+            done = true;  
+            break;
+        default:
+           /* unhandled message, do successfully nothing */
+           done = true;
 	}
+    }
+
+    if (m_outputRawData){
+        std::stringstream tmp;
+        tmp << "source "   << FMT_HEX source ;
+        tmp << ", type "   << FMT_HEX type << ":  ";
+        for (size_t i = 0; i < data.size(); i++) {
+            tmp << "" << FMT_DEC (i + offset) << ":";
+            tmp << FMT_HEX data[i] << "(";
+            tmp << FMT_DEC data[i] << ") ";
+        }
+        respond(tmp.str());
+        m_outputRawData = false;
     }
 
     if (done) {
@@ -1335,6 +1508,20 @@ CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8
     unsigned int value;
 
     request >> value;
+    if (!request || value > max) {
+	return false;
+    }
+
+    data = value;
+    return true;
+}
+
+bool
+CommandConnection::parseHexParameter(std::istream& request, uint8_t& data, uint8_t max)
+{
+    unsigned int value;
+
+    request >> std::hex >> value;
     if (!request || value > max) {
 	return false;
     }
