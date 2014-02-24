@@ -23,7 +23,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
-#include "Version.h"
+
+/* version of our command API */
+#define API_VERSION "2014022401"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
@@ -214,7 +216,7 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "uba") {
 	return handleUbaCommand(request);
     } else if (category == "getversion") {
-        respond("collector version: " VERSION);
+	respond("collector version: " API_VERSION);
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
 	return Ok;
     }
