@@ -415,40 +415,42 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	startRequest(EmsProto::addressUBA, 0x1c, 5, 3);
 	return Ok;
     } else if (cmd == "testmode") {
-        std::string mode;
-        unsigned int active;
-        unsigned int brennerperc;
-        unsigned int pumpeperc;
-        unsigned int dwventstat;
-        unsigned int zirkstat;
-        uint8_t data[11];
+	std::string mode;
+	uint8_t data[11];
 
-        memset(&data,0x00,sizeof(data));
-        request >> mode;
-        if (mode == "on") {
-            request >> brennerperc;
-            if (!request || (brennerperc > 100)) return InvalidArgs;
-            request >> pumpeperc;
-            if (!request || (pumpeperc > 100)) return InvalidArgs;
-            request >> dwventstat;
-            if (!request || (dwventstat > 1)) return InvalidArgs;
-            dwventstat *= 255;
-            request >> zirkstat;
-            if (!request || (zirkstat > 1)) return InvalidArgs;
-            zirkstat *= 255;
-            active = 0x5a;
+	memset(&data, 0, sizeof(data));
+	request >> mode;
 
-            data[0] = active;
-            data[1] = brennerperc;
-            data[3] = pumpeperc;
-            data[4] = dwventstat;
-            data[5] = zirkstat;
-        } else if (mode != "off"){
-            return InvalidArgs;
-        }
-        sendCommand(EmsProto::addressUBA, 0x1d, 0, data, sizeof(data));
-        return Ok;
+	if (mode == "on") {
+	    unsigned int brennerPercent, pumpePercent;
+	    bool threeWayOn, zirkPumpOn;
+
+	    request >> brennerPercent;
+	    if (!request || brennerPercent > 100) {
+		return InvalidArgs;
+	    }
+	    request >> pumpePercent;
+	    if (!request || pumpePercent > 100) {
+		return InvalidArgs;
+	    }
+	    request >> threeWayOn >> zirkPumpOn;
+	    if (!request) {
+		return InvalidArgs;
+	    }
+
+	    data[0] = 0x5a;
+	    data[1] = brennerPercent;
+	    data[3] = pumpePercent;
+	    data[4] = threeWayOn ? 0xff : 0;
+	    data[5] = zirkPumpOn ? 0xff : 0;
+	} else if (mode != "off") {
+	    return InvalidArgs;
+	}
+
+	sendCommand(EmsProto::addressUBA, 0x1d, 0, data, sizeof(data));
+	return Ok;
     }
+
     return InvalidCmd;
 }
 
