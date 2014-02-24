@@ -27,11 +27,6 @@
 /* version of our command API */
 #define API_VERSION "2014022401"
 
-#define FMT_HEX \
-     std::setw(2) << std::setfill('0') << std::hex << (unsigned int) 
-#define FMT_DEC \
-     std::dec << (unsigned int) 
-                                       
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_handler(handler),
@@ -205,7 +200,15 @@ CommandConnection::handleCommand(std::istream& request)
     request >> category;
 
     if (category == "help") {
-	respond("Available commands (help with '<command> help'):\nhk[1|2|3|4]\nww\nuba\nrc\nraw\ngetversion\n");
+	respond("Available commands (help with '<command> help'):\n"
+		"hk[1|2|3|4]\n"
+		"ww\n"
+		"uba\n"
+		"rc\n"
+#if defined(HAVE_RAW_READWRITE_COMMAND)
+		"raw\n"
+#endif
+		"getversion\n");
 	return Ok;
     } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
@@ -221,8 +224,10 @@ CommandConnection::handleCommand(std::istream& request)
 	return handleRcCommand(request);
     } else if (category == "uba") {
 	return handleUbaCommand(request);
+#if defined (HAVE_RAW_READWRITE_COMMAND)
     } else if (category == "raw") {
 	return handleRawCommand(request);
+#endif
     } else if (category == "getversion") {
 	respond("collector version: " API_VERSION);
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
@@ -466,6 +471,7 @@ CommandConnection::handleUbaCommand(std::istream& request)
     return InvalidCmd;
 }
 
+#if defined(HAVE_RAW_READWRITE_COMMAND)
 CommandConnection::CommandResult
 CommandConnection::handleRawCommand(std::istream& request)
 {
@@ -474,48 +480,35 @@ CommandConnection::handleRawCommand(std::istream& request)
 
     if (cmd == "help") {
 	respond("Available subcommands:\n"
-		"read 0x<target> 0x<type> <offset> <len>\n"
-		"write 0x<target> 0x<type> <offset> <data>\n");
+		"read <target> <type> <offset> <len>\n"
+		"write <target> <type> <offset> <data>\n");
 	return Ok;
     } else if (cmd == "read") {
-        uint8_t target, type, offset, len;
-        if (!parseHexParameter(request, target, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseHexParameter(request, type, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseIntParameter(request, len, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        m_outputRawData = true;
-
-        startRequest(target, type, offset, len);
-        return Ok;
+	uint8_t target, type, offset, len;
+	if (!parseIntParameter(request, target, UCHAR_MAX)     ||
+		!parseIntParameter(request, type, UCHAR_MAX)   ||
+		!parseIntParameter(request, offset, UCHAR_MAX) ||
+		!parseIntParameter(request, len, UCHAR_MAX)) {
+	    return InvalidArgs;
+	}
+	startRequest(target, type, offset, len, true, true);
+	return Ok;
     } else if (cmd == "write") {
-        uint8_t target, type, offset, value;
-        if (!parseHexParameter(request, target, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseHexParameter(request, type, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseIntParameter(request, offset, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
-        if (!parseIntParameter(request, value, UCHAR_MAX)) {
-            return InvalidArgs;
-        }
+	uint8_t target, type, offset, value;
+	if (!parseIntParameter(request, target, UCHAR_MAX)     ||
+		!parseIntParameter(request, type, UCHAR_MAX)   ||
+		!parseIntParameter(request, offset, UCHAR_MAX) ||
+		!parseIntParameter(request, value, UCHAR_MAX)) {
+	    return InvalidArgs;
+	}
 
-        sendCommand(target, type, offset, &value, 1);
-        return Ok;
+	sendCommand(target, type, offset, &value, 1);
+	return Ok;
     }
 
     return InvalidCmd;
 }
+#endif
 
 CommandConnection::CommandResult
 CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
@@ -1095,6 +1088,20 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     m_responseTimeout.cancel();
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
+    if (m_outputRawData) {
+	if (!continueRequest()) {
+	    std::stringstream output;
+	    output << boost::format("source 0x%02x type 0x%02x data")
+		    % (unsigned int) source % (unsigned int) type;
+	    for (size_t i = 0; i < data.size(); i++) {
+		output << boost::format(" 0x%02x") % (unsigned int) data[i];
+	    }
+	    respond(output.str());
+	    m_activeRequest.reset();
+	}
+	return;
+    }
+
     bool done = false;
 
     switch (type) {
@@ -1250,19 +1257,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    respond("ERRFAIL");
 	    break;
 	}
-    }
-
-    if (m_outputRawData){
-        std::stringstream tmp;
-        tmp << "source "   << FMT_HEX source ;
-        tmp << ", type "   << FMT_HEX type << ":  ";
-        for (size_t i = 0; i < data.size(); i++) {
-            tmp << "" << FMT_DEC (i + offset) << ":";
-            tmp << FMT_HEX data[i] << "(";
-            tmp << FMT_DEC data[i] << ") ";
-        }
-        respond(tmp.str());
-        m_outputRawData = false;
     }
 
     if (done) {
@@ -1463,7 +1457,7 @@ CommandConnection::parseHolidayEntry(const std::string& string, EmsProto::Holida
 
 void
 CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
-			        size_t length, bool newRequest)
+			        size_t length, bool newRequest, bool raw)
 {
     m_requestOffset = offset;
     m_requestLength = length;
@@ -1472,6 +1466,7 @@ CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
     m_requestResponse.clear();
     m_requestResponse.reserve(length);
     m_parsePosition = 0;
+    m_outputRawData = raw;
     if (newRequest) {
 	m_responseCounter = 0;
     }
@@ -1515,21 +1510,9 @@ CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8
 {
     unsigned int value;
 
+    request.unsetf(std::ios_base::basefield);
     request >> value;
-    if (!request || value > max) {
-	return false;
-    }
 
-    data = value;
-    return true;
-}
-
-bool
-CommandConnection::parseHexParameter(std::istream& request, uint8_t& data, uint8_t max)
-{
-    unsigned int value;
-
-    request >> std::hex >> value;
     if (!request || value > max) {
 	return false;
     }

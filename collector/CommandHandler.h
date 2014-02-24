@@ -74,7 +74,9 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleCommand(std::istream& request);
 	CommandResult handleRcCommand(std::istream& request);
 	CommandResult handleUbaCommand(std::istream& request);
-        CommandResult handleRawCommand(std::istream& request);
+#if defined(HAVE_RAW_READWRITE_COMMAND)
+	CommandResult handleRawCommand(std::istream& request);
+#endif
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleSingleByteValue(std::istream& request, uint8_t dest, uint8_t type,
 					    uint8_t offset, int multiplier, int min, int max);
@@ -95,14 +97,13 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	}
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
-	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length, bool newRequest = true);
+	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length,
+			  bool newRequest = true, bool raw = false);
 	bool continueRequest();
 	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
 	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
-        bool parseHexParameter(std::istream& request, uint8_t& data, uint8_t max);
-
 
     private:
 	static const unsigned int MaxRequestRetries = 5;
@@ -121,8 +122,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	uint8_t m_requestDestination;
 	uint8_t m_requestType;
 	size_t m_parsePosition;
-        bool m_outputRawData;
-	        
+	bool m_outputRawData;
 };
 
 class CommandHandler : private boost::noncopyable

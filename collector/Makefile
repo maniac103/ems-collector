@@ -1,5 +1,6 @@
 CC = g++
 CFLAGS = -Wall -c -O2 -I/usr/include/mysql -std=c++0x
+#CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
 LIBS = -lpthread -lboost_system -lboost_thread-mt -lboost_program_options -lmysqlpp
 SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
        DataHandler.cpp EmsMessage.cpp Database.cpp Options.cpp PidFile.cpp
