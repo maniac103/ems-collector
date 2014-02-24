@@ -284,7 +284,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
 	return Ok;
     } else if (cmd == "getcontactinfo") {
-	startRequest(EmsProto::addressRC, 0xa4, 0, 42);
+	startRequest(EmsProto::addressRC, 0xa4, 0, 21);
 	return Ok;
     } else if (cmd == "setcontactinfo") {
 	unsigned int line;
@@ -1234,18 +1234,19 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    done = true; // finished requesting WW data
 	    break;
 	case 0xa4: { /* get contact info */
-	    // RC30 doesn't support this and always returns empty responses
-	    done = !continueRequest() || data.empty();
-	    if (done) {
-		for (size_t i = 0; i < data.size(); i += 21) {
-		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
-		    char buffer[22];
-		    memcpy(buffer, &data.at(i), len);
-		    buffer[len] = 0;
-		    respond(buffer);
-		}
-	    }
+	    // RC30 doesn't support this and always returns empty responses -> data.size() == 0;
+            size_t len = std::min(data.size(), static_cast<size_t>(21));
+            char buffer[22];
+            memcpy(buffer, &data.at(0), len);
+            buffer[len] = 0;
+            respond(buffer);
+            if (offset == 0) {
+                startRequest(EmsProto::addressRC, 0xa4, 21, 21);  /* get second line */
+            } else {
+                done = true;
+            } 
 	    break;
+        }
 	case 0xa5: /* get system parameters */
 	    done = true;
 	    break;
@@ -1254,7 +1255,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    m_activeRequest.reset();
 	    respond("ERRFAIL");
 	    break;
-	}
     }
 
     if (done) {
