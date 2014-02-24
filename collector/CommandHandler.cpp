@@ -1026,13 +1026,14 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	return;
     }
 
-    m_responseTimeout.cancel();
-    if (offset != (m_requestResponse.size() + m_requestOffset)) {
-	m_activeRequest.reset();
-	respond("ERRFAIL");
+    if (source != m_activeRequest->getDestination() ||
+	    type != m_activeRequest->getType()      ||
+	    offset != (m_requestResponse.size() + m_requestOffset)) {
+	/* likely a response to a request we already retried, ignore it */
 	return;
     }
 
+    m_responseTimeout.cancel();
     m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
 
     bool done = false;
