@@ -318,8 +318,8 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"requestdata");
 	return Ok;
     } else if (cmd == "requestdata") {
-        startRequest(EmsProto::addressUBA, 0x15, 0, 5);
-        return Ok;
+	startRequest(EmsProto::addressUBA, 0x15, 0, 5);
+	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsProto::addressUBA, 0x10, 0, 8 * sizeof(EmsProto::ErrorRecord));
 	return Ok;
@@ -1044,12 +1044,12 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    }
 	    break;
 	}
-        case 0x15: /* get maintenance parameters */
-            startRequest(EmsProto::addressUBA, 0x16, 0, 20);  /* get uba parameters */
-            break;
-        case 0x16: /* get uba parameters */
-            done = true;
-            break;
+	case 0x15: /* get maintenance parameters */
+	    startRequest(EmsProto::addressUBA, 0x16, 0, 20);  /* get uba parameters */
+	    break;
+	case 0x16: /* get uba parameters */
+	    done = true;
+	    break;
 	case 0x1c: /* check for maintenance */
 	    switch (data[0]) {
 		case 0: respond("not due"); break;
