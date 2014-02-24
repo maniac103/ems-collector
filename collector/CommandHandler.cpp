@@ -23,6 +23,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
+#include "Version.h"
 #define FMT_HEX \
      std::setw(2) << std::setfill('0') << std::hex << (unsigned int) 
 #define FMT_DEC \
@@ -220,6 +221,7 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "raw") {
 	return handleRawCommand(request);
     } else if (category == "getversion") {
+        respond("collector version: " VERSION);
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
 	return Ok;
     }
