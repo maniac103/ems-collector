@@ -322,6 +322,7 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"geterrors\n"
 		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
 		"checkmaintenanceneeded\n"
+		"testmode [on|off] <burnerpercent> <pumppercent> <3wayonww:[0|1]> <zirkpump:[0|1]>\n"
 		"requestdata\n");
 	return Ok;
     } else if (cmd == "requestdata") {
@@ -420,8 +421,41 @@ CommandConnection::handleUbaCommand(std::istream& request)
     } else if (cmd == "checkmaintenanceneeded") {
 	startRequest(EmsProto::addressUBA, 0x1c, 5, 3);
 	return Ok;
-    }
+    } else if (cmd == "testmode") {
+        std::string mode;
+        unsigned int active;
+        unsigned int brennerperc;
+        unsigned int pumpeperc;
+        unsigned int dwventstat;
+        unsigned int zirkstat;
+        uint8_t data[11];
 
+        memset(&data,0x00,sizeof(data));
+        request >> mode;
+        if (mode == "on") {
+            request >> brennerperc;
+            if (!request || (brennerperc > 100)) return InvalidArgs;
+            request >> pumpeperc;
+            if (!request || (pumpeperc > 100)) return InvalidArgs;
+            request >> dwventstat;
+            if (!request || (dwventstat > 1)) return InvalidArgs;
+            dwventstat *= 255;
+            request >> zirkstat;
+            if (!request || (zirkstat > 1)) return InvalidArgs;
+            zirkstat *= 255;
+            active = 0x5a;
+
+            data[0] = active;
+            data[1] = brennerperc;
+            data[3] = pumpeperc;
+            data[4] = dwventstat;
+            data[5] = zirkstat;
+        } else if (mode != "off"){
+            return InvalidArgs;
+        }
+        sendCommand(EmsProto::addressUBA, 0x1d, 0, data, sizeof(data));
+        return Ok;
+    }
     return InvalidCmd;
 }
 
