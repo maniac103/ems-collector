@@ -27,6 +27,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/logic/tribool.hpp>
 #include "EmsMessage.h"
 #include "TcpHandler.h"
 
@@ -85,7 +86,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandResult handleThermDesinfectCommand(std::istream& request);
 	CommandResult handleZirkPumpCommand(std::istream& request);
 
-	template<typename T> bool loopOverResponse(const char *prefix = "");
+	template<typename T> boost::tribool loopOverResponse(const char *prefix = "");
 
 	bool parseScheduleEntry(std::istream& request, EmsProto::ScheduleEntry *entry);
 	bool parseHolidayEntry(const std::string& string, EmsProto::HolidayEntry *entry);
@@ -95,6 +96,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 		boost::bind(&CommandConnection::handleWrite, shared_from_this(),
 			    boost::asio::placeholders::error));
 	}
+	boost::tribool handleResponse();
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
 	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length,

@@ -1078,15 +1078,22 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	return;
     }
 
-    if (source != m_activeRequest->getDestination() ||
-	    type != m_activeRequest->getType()      ||
+    if (source != m_requestDestination ||
+	    type != m_requestType      ||
 	    offset != (m_requestResponse.size() + m_requestOffset)) {
 	/* likely a response to a request we already retried, ignore it */
 	return;
     }
 
     m_responseTimeout.cancel();
-    m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
+    if (data.empty()) {
+	// no more data is available
+	m_requestLength = m_requestResponse.size();
+    } else {
+	m_requestResponse.insert(m_requestResponse.end(), data.begin(), data.end());
+    }
+
+    boost::tribool result;
 
     if (m_outputRawData) {
 	if (!continueRequest()) {
@@ -1095,14 +1102,24 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		output << boost::format("0x%02x ") % (unsigned int) m_requestResponse[i];
 	    }
 	    respond(output.str());
-	    m_activeRequest.reset();
+	    result = true;
+	} else {
+	    result = boost::indeterminate;
 	}
-	return;
+    } else {
+	result = handleResponse();
     }
 
-    bool done = false;
+    if (result) {
+	m_activeRequest.reset();
+	respond(result == true ? "OK" : "FAIL");
+    }
+}
 
-    switch (type) {
+boost::tribool
+CommandConnection::handleResponse()
+{
+    switch (m_requestType) {
 	case 0x02: /* get version */ {
 	    static const struct {
 		uint8_t source;
@@ -1114,38 +1131,36 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    };
 	    static const size_t SOURCECOUNT = sizeof(SOURCES) / sizeof(SOURCES[0]);
 
-	    unsigned int major = data[1];
-	    unsigned int minor = data[2];
+	    unsigned int major = m_requestResponse[1];
+	    unsigned int minor = m_requestResponse[2];
 	    size_t index;
 
 	    for (index = 0; index < SOURCECOUNT; index++) {
-		if (source == SOURCES[index].source) {
+		if (m_requestDestination == SOURCES[index].source) {
 		    boost::format f("%s version: %d.%02d");
 		    f % SOURCES[index].name % major % minor;
 		    respond(f.str());
 		    break;
 		}
 	    }
-	    if (index < (SOURCECOUNT - 1)) {
-		startRequest(SOURCES[index + 1].source, 0x02, 0, 3);
-	    } else {
-		done = true;
+	    if (index >= (SOURCECOUNT - 1)) {
+		return true;
 	    }
+	    startRequest(SOURCES[index + 1].source, 0x02, 0, 3);
 	    break;
 	}
 	case 0x10: /* get UBA errors */
 	case 0x11: /* get UBA errors 2 */
 	case 0x12: /* get RC errors */
 	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = type >= 0x12 ? "S" : type == 0x10 ? "L" : "B";
-	    done = loopOverResponse<EmsProto::ErrorRecord>(prefix);
-	    if (!done) {
-		done = !continueRequest();
-	    }
-	    if (done && (type == 0x10 || type == 0x12)) {
-		unsigned int count = type == 0x10 ? 5 : 4;
-		startRequest(source, type + 1, 0, count * sizeof(EmsProto::ErrorRecord), false);
-		done = false;
+	    const char *prefix = m_requestType >= 0x12 ? "S" : m_requestType == 0x10 ? "L" : "B";
+	    boost::tribool result = loopOverResponse<EmsProto::ErrorRecord>(prefix);
+	    if (result == true && (m_requestType == 0x10 || m_requestType == 0x12)) {
+		unsigned int count = m_requestType == 0x10 ? 5 : 4;
+		startRequest(m_requestDestination, m_requestType + 1, 0,
+			count * sizeof(EmsProto::ErrorRecord), false);
+	    } else {
+		return result;
 	    }
 	    break;
 	}
@@ -1153,22 +1168,20 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    startRequest(EmsProto::addressUBA, 0x16, 0, 20);  /* get uba parameters */
 	    break;
 	case 0x16: /* get uba parameters */
-	    done = true;
-	    break;
+	    return true;
 	case 0x1c: /* check for maintenance */
-	    switch (data[0]) {
+	    switch (m_requestResponse[0]) {
 		case 0: respond("not due"); break;
 		case 3: respond("due: hours"); break;
 		case 8: respond("due: date"); break;
 	    }
-	    done = true;
-	    break;
+	    return true;
 	case 0x3d: /* get opmode HK1 */
 	case 0x47: /* get opmode HK2 */
 	case 0x51: /* get opmode HK3 */
 	case 0x5b: /* get opmode HK4 */
 	    if (!continueRequest()) {
-		startRequest(EmsProto::addressRC, type + 1, 0, 20, false);
+		startRequest(EmsProto::addressRC, m_requestType + 1, 0, 20, false);
 	    }
 	    break;
 	case 0x3e: /* HK1 status 2 */
@@ -1176,54 +1189,47 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	case 0x52: /* HK3 status 2 */
 	case 0x5c: /* HK4 status 2 */
 	    /* finally get party/pause info */
-	    startRequest(EmsProto::addressRC, type + 1, 85, 2, false);
+	    startRequest(EmsProto::addressRC, m_requestType + 1, 85, 2, false);
 	    break;
 	case 0x3f: /* get schedule HK1 */
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
 	case 0x5d: /* get schedule HK4 */
-	    if (offset == 84) {
+	    if (m_requestOffset == 84) {
 		/* 'get active schedule' response */
 		const char *name = "unknown";
 		for (size_t i = 0; i < scheduleNameCount; i++) {
-		    if (data[0] == i) {
+		    if (m_requestResponse[0] == i) {
 			name = scheduleNames[i];
 			break;
 		    }
 		}
 		respond(name);
-		done = true;
-	    } else if (offset == 85) {
+		return true;
+	    } else if (m_requestOffset == 85) {
 		/* get party/pause info request */
-		done = true;
-	    } else if (offset > 80) {
+		return true;
+	    } else if (m_requestOffset > 80) {
 		/* it's at the end -> holiday schedule */
 		const size_t msgSize = sizeof(EmsProto::HolidayEntry);
 
-		if (m_requestResponse.size() >= 2 * msgSize) {
-		    EmsProto::HolidayEntry *begin = (EmsProto::HolidayEntry *) &m_requestResponse.at(0);
-		    EmsProto::HolidayEntry *end = (EmsProto::HolidayEntry *) &m_requestResponse.at(msgSize);
-		    respond(buildRecordResponse("begin", begin));
-		    respond(buildRecordResponse("end", end));
-		    done = true;
-		} else {
-		    respond("FAIL");
+		if (m_requestResponse.size() < 2 * msgSize) {
+		    return false;
 		}
+
+		EmsProto::HolidayEntry *begin = (EmsProto::HolidayEntry *) &m_requestResponse.at(0);
+		EmsProto::HolidayEntry *end = (EmsProto::HolidayEntry *) &m_requestResponse.at(msgSize);
+		respond(buildRecordResponse("begin", begin));
+		respond(buildRecordResponse("end", end));
+		return true;
 	    } else {
 		/* it's at the beginning -> heating schedule */
-		done = loopOverResponse<EmsProto::ScheduleEntry>();
-		if (!done) {
-		    done = !continueRequest();
-		}
+		return loopOverResponse<EmsProto::ScheduleEntry>();
 	    }
 	    break;
 	case 0x38: /* get WW schedule */
 	case 0x39: /* get WW ZP schedule */
-	    done = loopOverResponse<EmsProto::ScheduleEntry>();
-	    if (!done) {
-		done = !continueRequest();
-	    }
-	    break;
+	    return loopOverResponse<EmsProto::ScheduleEntry>();
 	case 0x33: /* requestdata WW part 1 */
 	    startRequest(EmsProto::addressUBA, 0x34, 0, 12); // get part 2
 	    break;
@@ -1231,12 +1237,10 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    startRequest(EmsProto::addressRC, 0x37, 0, 12); // get part 3
 	    break;
 	case 0x37: /* requestdata WW part 3 */
-	    done = true; // finished requesting WW data
+	    return true; // finished requesting WW data
 	    break;
 	case 0xa4: { /* get contact info */
-	    // RC30 doesn't support this and always returns empty responses
-	    done = !continueRequest() || data.empty();
-	    if (done) {
+	    if (!continueRequest()) {
 		for (size_t i = 0; i < m_requestResponse.size(); i += 21) {
 		    size_t len = std::min(m_requestResponse.size() - i, static_cast<size_t>(21));
 		    char buffer[22];
@@ -1244,26 +1248,21 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 		    buffer[len] = 0;
 		    respond(buffer);
 		}
+		return true;
 	    }
 	    break;
+	}
 	case 0xa5: /* get system parameters */
-	    done = true;
-	    break;
+	    return true;
 	default:
 	    /* unhandled message */
-	    m_activeRequest.reset();
-	    respond("ERRFAIL");
-	    break;
-	}
+	    return false;
     }
 
-    if (done) {
-	m_activeRequest.reset();
-	respond("OK");
-    }
+    return boost::indeterminate;
 }
 
-template<typename T> bool
+template<typename T> boost::tribool
 CommandConnection::loopOverResponse(const char *prefix)
 {
     const size_t msgSize = sizeof(T);
@@ -1283,7 +1282,11 @@ CommandConnection::loopOverResponse(const char *prefix)
 	respond(f.str());
     }
 
-    return false;
+    if (!continueRequest()) {
+	return true;
+    }
+
+    return boost::indeterminate;
 }
 
 void
