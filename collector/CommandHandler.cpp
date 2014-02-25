@@ -1091,8 +1091,8 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
     if (m_outputRawData) {
 	if (!continueRequest()) {
 	    std::stringstream output;
-	    for (size_t i = 0; i < data.size(); i++) {
-		output << boost::format("0x%02x ") % (unsigned int) data[i];
+	    for (size_t i = 0; i < m_requestResponse.size(); i++) {
+		output << boost::format("0x%02x ") % (unsigned int) m_requestResponse[i];
 	    }
 	    respond(output.str());
 	    m_activeRequest.reset();
@@ -1237,10 +1237,10 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	    // RC30 doesn't support this and always returns empty responses
 	    done = !continueRequest() || data.empty();
 	    if (done) {
-		for (size_t i = 0; i < data.size(); i += 21) {
-		    size_t len = std::min(data.size() - i, static_cast<size_t>(21));
+		for (size_t i = 0; i < m_requestResponse.size(); i += 21) {
+		    size_t len = std::min(m_requestResponse.size() - i, static_cast<size_t>(21));
 		    char buffer[22];
-		    memcpy(buffer, &data.at(i), len);
+		    memcpy(buffer, &m_requestResponse.at(i), len);
 		    buffer[len] = 0;
 		    respond(buffer);
 		}
