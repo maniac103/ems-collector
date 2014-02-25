@@ -398,7 +398,10 @@ Database::handleValue(const EmsValue& value)
 
     for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
 	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
-	    addSensorValue(NUMERICMAPPING[i].sensor, value.getValue<float>());
+	    float numValue = value.getValue<float>();
+	    if (!std::isnan(numValue)) {
+		addSensorValue(NUMERICMAPPING[i].sensor, numValue);
+	    }
 	    return;
 	}
     }

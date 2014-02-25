@@ -40,11 +40,17 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	m_value = (unsigned int) value;
 	m_readingType = Integer;
     } else {
-	/* treat values with highest bit set as negative
-	 * e.g. size = 2, value = 0xfffe -> real value -2
-	 */
-	if (data[0] & 0x80) {
-	    value = value - (1 << (len * 8));
+	int highestbit = 1 << (8 * len - 1);
+	if (value & highestbit) {
+	    value &= ~highestbit;
+	    if (value == 0) {
+		// only highest bit set -> value is unavailable
+		m_value = NAN;
+		return;
+	    }
+	    // remainder -> value is negative
+	    // e.g. value 0xffff -> actual value -1
+	    value = value - highestbit;
 	}
 
 	m_value = (float) value / (float) divider;

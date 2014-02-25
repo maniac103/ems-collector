@@ -366,7 +366,13 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	case EmsValue::Integer: {
 	    auto unitIter = UNITMAPPING.find(value.getType());
 	    if (value.getReadingType() == EmsValue::Numeric) {
-		stream << value.getValue<float>();
+		float numValue = value.getValue<float>();
+		if (std::isnan(numValue)) {
+		    stream << "nicht verfügbar";
+		    unitIter = UNITMAPPING.end();
+		} else {
+		    stream << numValue;
+		}
 	    } else {
 		stream << value.getValue<unsigned int>();
 	    }

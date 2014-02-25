@@ -288,9 +288,15 @@ DataConnection::handleValue(const EmsValue& value)
     stream << type << " ";
 
     switch (value.getReadingType()) {
-	case EmsValue::Numeric:
-	    stream << value.getValue<float>();
+	case EmsValue::Numeric: {
+	    float numValue = value.getValue<float>();
+	    if (std::isnan(numValue)) {
+		stream << "unavailable";
+	    } else {
+		stream << numValue;
+	    }
 	    break;
+	}
 	case EmsValue::Integer:
 	    stream << value.getValue<unsigned int>();
 	    break;
