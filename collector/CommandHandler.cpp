@@ -584,7 +584,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		if (floatValue < 10 || floatValue > 30) {
 		    return InvalidArgs;
 		}
-		data = 2 * boost::numeric_cast<uint8_t>(floatValue);
+		data = boost::numeric_cast<uint8_t>(2 * floatValue);
 	    } catch (boost::bad_lexical_cast& e) {
 		return InvalidArgs;
 	    } catch (boost::bad_numeric_cast& e) {
@@ -762,7 +762,7 @@ CommandConnection::handleSingleByteValue(std::istream& request, uint8_t dest, ui
 
     try {
 	valueInt = boost::numeric_cast<int>(multiplier * value);
-	if (valueInt < min || valueInt > max) {
+	if (valueInt < min * multiplier || valueInt > max * multiplier) {
 	    return InvalidArgs;
 	}
 	valueByte = valueInt;
