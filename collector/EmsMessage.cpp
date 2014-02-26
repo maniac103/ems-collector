@@ -439,8 +439,8 @@ EmsMessage::parseUBAParametersMessage()
     parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
     parseNumeric(2, 1, 1, EmsValue::MaxModulation, EmsValue::Brenner);
     parseNumeric(3, 1, 1, EmsValue::MinModulation, EmsValue::Brenner);
-    parseNumeric(4, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
-    parseNumeric(5, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
+    parseNumeric(4, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
+    parseNumeric(5, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
     parseInteger(6, 1, EmsValue::AntipendelZeit, EmsValue::None);
     parseInteger(8, 1, EmsValue::NachlaufZeit, EmsValue::KesselPumpe);
     parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::KesselPumpe);
