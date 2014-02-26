@@ -25,7 +25,7 @@
 #include "CommandHandler.h"
 
 /* version of our command API */
-#define API_VERSION "2014022401"
+#define API_VERSION "2014022601"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
@@ -714,7 +714,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 
 	sendCommand(EmsProto::addressRC, type , 41, &data, 1);
 	return Ok;
-    } else if (cmd == "frostprotectionmode") {
+    } else if (cmd == "frostprotectmode") {
 	std::string ns;
 	uint8_t data;
 

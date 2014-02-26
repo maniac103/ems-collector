@@ -463,8 +463,8 @@ EmsMessage::parseRCWWOpmodeMessage()
     parseBool(0, 1, EmsValue::EigenesProgrammAktiv, EmsValue::WW);
     parseBool(1, 1, EmsValue::EigenesProgrammAktiv, EmsValue::Zirkulation);
 
-    parseEnum(2, EmsValue::Betriebsart, EmsValue::Zirkulation);
-    parseEnum(3, EmsValue::Betriebsart, EmsValue::WW);
+    parseEnum(2, EmsValue::Betriebsart, EmsValue::WW);
+    parseEnum(3, EmsValue::Betriebsart, EmsValue::Zirkulation);
 
     parseBool(4, 1, EmsValue::Desinfektion, EmsValue::WW);
     parseEnum(5, EmsValue::DesinfektionTag, EmsValue::WW);
@@ -546,7 +546,7 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(0, 3, EmsValue::WWVorrang, subtype);
     parseBool(0, 4, EmsValue::Estrichtrocknung, subtype);
     parseBool(0, 5, EmsValue::Ferien, subtype);
-    parseBool(0, 6, EmsValue::Frostschutz, subtype);
+    parseBool(0, 6, EmsValue::Frostschutzbetrieb, subtype);
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
     parseBool(1, 7, EmsValue::Party, subtype);

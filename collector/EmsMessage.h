@@ -157,7 +157,7 @@ class EmsValue {
 	    WWVorrang,
 	    Ferien,
 	    Party,
-	    Frostschutz,
+	    Frostschutzbetrieb,
 	    SchaltuhrEin,
 	    KesselSchalter,
 	    EigenesProgrammAktiv,
@@ -178,6 +178,7 @@ class EmsValue {
 	    HeizSystem,
 	    FuehrungsGroesse,
 	    UrlaubAbsenkungsArt,
+	    Frostschutz,
 	    /* kennlinie */
 	    HKKennlinie,
 	    /* error */

@@ -168,7 +168,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::WWVorrang, "wwoverride" },
 	{ EmsValue::Ferien, "vacationmode" },
 	{ EmsValue::Party, "partymode" },
-	{ EmsValue::Frostschutz, "frostsafemode" },
+	{ EmsValue::Frostschutzbetrieb, "frostsafemodeactive" },
 	{ EmsValue::SchaltuhrEin, "switchpointactive" },
 	{ EmsValue::KesselSchalter, "masterswitch" },
 	{ EmsValue::EigenesProgrammAktiv, "customschedule" },
@@ -187,6 +187,7 @@ DataConnection::handleValue(const EmsValue& value)
 	{ EmsValue::RegelungsArt, "controltype" },
 	{ EmsValue::HeizSystem, "heatsystem" },
 	{ EmsValue::FuehrungsGroesse, "relevantparameter" },
+	{ EmsValue::Frostschutz, "frostsafemode" },
 	{ EmsValue::UrlaubAbsenkungsArt, "vacationreductionmode" },
 
 	{ EmsValue::HKKennlinie, "characteristic" },
