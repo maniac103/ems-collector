@@ -485,8 +485,8 @@ void
 EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 {
     parseEnum(0, EmsValue::HeizArt, subtype);
-    parseNumeric(1, 1, 2, EmsValue::TagTemp, subtype);
-    parseNumeric(2, 1, 2, EmsValue::NachtTemp, subtype);
+    parseNumeric(1, 1, 2, EmsValue::NachtTemp, subtype);
+    parseNumeric(2, 1, 2, EmsValue::TagTemp, subtype);
     parseNumeric(3, 1, 2, EmsValue::UrlaubTemp, subtype);
     parseNumeric(4, 1, 2, EmsValue::RaumEinfluss, subtype);
     parseNumeric(6, 1, 2, EmsValue::RaumOffset, subtype);
