@@ -735,6 +735,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 10, 970);
     } else if (cmd == "maxroomeffect") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 4, 2, 0, 10);
+    } else if (cmd == "temperatureoffset") {
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 6, 2, -10, 10);
     } else if (cmd == "designtemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 10, 90);
     } else if (cmd == "frostprotecttemperature") {
