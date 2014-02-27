@@ -295,7 +295,9 @@ CommandConnection::handleRcCommand(std::istream& request)
 	if (!request || line < 1 || line > 2) {
 	    return InvalidArgs;
 	}
-
+        
+        line = (line-1)*21;
+        
 	while (request) {
 	    std::string token;
 	    request >> token;
