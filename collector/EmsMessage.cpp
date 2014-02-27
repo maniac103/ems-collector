@@ -342,7 +342,7 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseBool(7, 0, EmsValue::FlammeAktiv, EmsValue::None);
     parseBool(7, 2, EmsValue::BrennerAktiv, EmsValue::None);
     parseBool(7, 3, EmsValue::ZuendungAktiv, EmsValue::None);
-    parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::None);
+    parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::Kessel);
     parseBool(7, 6, EmsValue::DreiWegeVentilAufWW, EmsValue::None);
     parseBool(7, 7, EmsValue::ZirkulationAktiv, EmsValue::None);
 }
