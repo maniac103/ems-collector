@@ -189,7 +189,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::WWVorrang, "WW-Vorrang" },
 	{ EmsValue::Ferien, "Ferienbetrieb" },
 	{ EmsValue::Party, "Partybetrieb" },
-	{ EmsValue::Frostschutz, "Frostschutz" },
+	{ EmsValue::Frostschutzbetrieb, "Frostschutzbetrieb" },
 	{ EmsValue::SchaltuhrEin, "Schaltuhr aktiv" },
 	{ EmsValue::KesselSchalter, "per Kesselschalter freigegeben" },
 	{ EmsValue::EigenesProgrammAktiv, "Eigenes Programm aktiv" },
@@ -209,6 +209,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::RegelungsArt, "Regelungsart" },
 	{ EmsValue::HeizSystem, "Heizsystem" },
 	{ EmsValue::FuehrungsGroesse, "Führungsgröße" },
+	{ EmsValue::Frostschutz, "Frostschutz" },
 	{ EmsValue::UrlaubAbsenkungsArt, "Urlaubsabsenkungsart" },
 
 	{ EmsValue::HKKennlinie, "Kennlinie" },

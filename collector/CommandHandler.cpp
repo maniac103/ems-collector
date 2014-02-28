@@ -25,7 +25,7 @@
 #include "CommandHandler.h"
 
 /* version of our command API */
-#define API_VERSION "2014022401"
+#define API_VERSION "2014022701"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
@@ -295,7 +295,9 @@ CommandConnection::handleRcCommand(std::istream& request)
 	if (!request || line < 1 || line > 2) {
 	    return InvalidArgs;
 	}
-
+        
+        line = (line-1)*21;
+        
 	while (request) {
 	    std::string token;
 	    request >> token;
@@ -623,8 +625,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!request || schedule < 1 || schedule > 2 || index > 42 || !parseScheduleEntry(request, &entry)) {
 	    return InvalidArgs;
 	}
-
-	sendCommand(EmsProto::addressRC, type + schedule + 1,
+        schedule = (schedule - 1) * 3 + 2;
+        
+	sendCommand(EmsProto::addressRC, type + schedule,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -636,7 +639,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-	startRequest(EmsProto::addressRC, type + schedule + 1, 0, 42 * sizeof(EmsProto::ScheduleEntry));
+        schedule = (schedule - 1) * 3 + 2;
+	startRequest(EmsProto::addressRC, type + schedule, 0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "getactiveschedule") {
 	startRequest(EmsProto::addressRC, type + 2, 84, 1);
@@ -714,7 +718,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 
 	sendCommand(EmsProto::addressRC, type , 41, &data, 1);
 	return Ok;
-    } else if (cmd == "frostprotectionmode") {
+    } else if (cmd == "frostprotectmode") {
 	std::string ns;
 	uint8_t data;
 
@@ -733,6 +737,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 10, 970);
     } else if (cmd == "maxroomeffect") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 4, 2, 0, 10);
+    } else if (cmd == "temperatureoffset") {
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 6, 2, -10, 10);
     } else if (cmd == "designtemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 10, 90);
     } else if (cmd == "frostprotecttemperature") {
@@ -1195,6 +1201,10 @@ CommandConnection::handleResponse()
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
 	case 0x5d: /* get schedule HK4 */
+	case 0x42: /* get schedule HK1 */
+	case 0x4c: /* get schedule HK2 */
+	case 0x56: /* get schedule HK3 */
+	case 0x60: /* get schedule HK4 */
 	    if (m_requestOffset == 84) {
 		/* 'get active schedule' response */
 		const char *name = "unknown";
