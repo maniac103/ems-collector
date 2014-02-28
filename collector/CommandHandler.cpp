@@ -295,9 +295,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	if (!request || line < 1 || line > 2) {
 	    return InvalidArgs;
 	}
-        
-        line = (line-1)*21;
-        
+
 	while (request) {
 	    std::string token;
 	    request >> token;
@@ -308,7 +306,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	buffer << "                     ";
 
 	text = buffer.str().substr(0, 21);
-	sendCommand(EmsProto::addressRC, 0xa4, line, (uint8_t *) text.c_str(), 21);
+	sendCommand(EmsProto::addressRC, 0xa4, (line - 1) * 21, (uint8_t *) text.c_str(), 21);
 	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsProto::addressRC, 0x12, 0, 4 * sizeof(EmsProto::ErrorRecord));
@@ -625,9 +623,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!request || schedule < 1 || schedule > 2 || index > 42 || !parseScheduleEntry(request, &entry)) {
 	    return InvalidArgs;
 	}
-        schedule = (schedule - 1) * 3 + 2;
-        
-	sendCommand(EmsProto::addressRC, type + schedule,
+
+	sendCommand(EmsProto::addressRC, type + (schedule - 1) * 3 + 2,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -639,8 +636,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-        schedule = (schedule - 1) * 3 + 2;
-	startRequest(EmsProto::addressRC, type + schedule, 0, 42 * sizeof(EmsProto::ScheduleEntry));
+	startRequest(EmsProto::addressRC, type + (schedule - 1) * 3 + 2,
+		0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "getactiveschedule") {
 	startRequest(EmsProto::addressRC, type + 2, 84, 1);
@@ -1197,14 +1194,14 @@ CommandConnection::handleResponse()
 	    /* finally get party/pause info */
 	    startRequest(EmsProto::addressRC, m_requestType + 1, 85, 2, false);
 	    break;
-	case 0x3f: /* get schedule HK1 */
-	case 0x49: /* get schedule HK2 */
-	case 0x53: /* get schedule HK3 */
-	case 0x5d: /* get schedule HK4 */
-	case 0x42: /* get schedule HK1 */
-	case 0x4c: /* get schedule HK2 */
-	case 0x56: /* get schedule HK3 */
-	case 0x60: /* get schedule HK4 */
+	case 0x3f: /* get schedule 1 HK1 */
+	case 0x42: /* get schedule 2 HK1 */
+	case 0x49: /* get schedule 1 HK2 */
+	case 0x4c: /* get schedule 2 HK2 */
+	case 0x53: /* get schedule 1 HK3 */
+	case 0x56: /* get schedule 2 HK3 */
+	case 0x5d: /* get schedule 1 HK4 */
+	case 0x60: /* get schedule 2 HK4 */
 	    if (m_requestOffset == 84) {
 		/* 'get active schedule' response */
 		const char *name = "unknown";
