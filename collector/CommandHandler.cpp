@@ -625,8 +625,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!request || schedule < 1 || schedule > 2 || index > 42 || !parseScheduleEntry(request, &entry)) {
 	    return InvalidArgs;
 	}
-
-	sendCommand(EmsProto::addressRC, type + schedule + 1,
+        schedule = (schedule - 1) * 3 + 2;
+        
+	sendCommand(EmsProto::addressRC, type + schedule,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -638,7 +639,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-	startRequest(EmsProto::addressRC, type + schedule + 1, 0, 42 * sizeof(EmsProto::ScheduleEntry));
+        schedule = (schedule - 1) * 3 + 2;
+	startRequest(EmsProto::addressRC, type + schedule, 0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "getactiveschedule") {
 	startRequest(EmsProto::addressRC, type + 2, 84, 1);
@@ -1199,6 +1201,10 @@ CommandConnection::handleResponse()
 	case 0x49: /* get schedule HK2 */
 	case 0x53: /* get schedule HK3 */
 	case 0x5d: /* get schedule HK4 */
+	case 0x42: /* get schedule HK1 */
+	case 0x4c: /* get schedule HK2 */
+	case 0x56: /* get schedule HK3 */
+	case 0x60: /* get schedule HK4 */
 	    if (m_requestOffset == 84) {
 		/* 'get active schedule' response */
 		const char *name = "unknown";
