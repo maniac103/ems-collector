@@ -542,7 +542,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"maxroomeffect <temp>\n"
 		"designtemperature <temp>\n"
 		"temperatureoffset <temp>\n"
-		"frostprotectmode [off|byoutdoor|byindoor]\n"
+		"frostprotectmode [off|byoutdoortemp|byindoortemp]\n"
 		"frostprotecttemperature <temp>\n"
 		"summerwinterthreshold <temp>\n"
 		"reducedmodethreshold <temp>\n"
