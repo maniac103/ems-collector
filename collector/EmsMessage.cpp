@@ -504,6 +504,7 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
     parseNumeric(38, 1, 1, EmsValue::AbsenkungsAbbruchTemp, subtype);
     parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);
+    parseNumeric(40, 1, 1, EmsValue::UrlaubAbsenkungsSchwellenTemp, subtype);
     parseEnum(41, EmsValue::UrlaubAbsenkungsArt, subtype);
 }
 

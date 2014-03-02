@@ -546,6 +546,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"frostprotecttemperature <temp>\n"
 		"summerwinterthreshold <temp>\n"
 		"reducedmodethreshold <temp>\n"
+		"vacationreducedmodethreshold <temp>\n"
 		"cancelreducedmodethreshold <temp>\n"
 		"requestdata\n");
 	return Ok;
@@ -743,6 +744,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 22, 1, 0, 30);
     } else if (cmd == "reducedmodethreshold") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 39, 1, -20, 10);
+    } else if (cmd == "vacationreducedmodethreshold") {
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 40, 1, -20, 10);
     } else if (cmd == "cancelreducedmodethreshold") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 38, 1, -31, 10);
     }
