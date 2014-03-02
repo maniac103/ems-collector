@@ -257,7 +257,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	startRequest(EmsProto::addressRC, 0xa5, 0, 25);
 	return Ok;
     } else if (cmd == "minoutdoortemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 0);
     } else if (cmd == "buildingtype") {
 	std::string ns;
 	uint8_t data;
@@ -350,15 +350,14 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	return Ok;
     } else if (cmd == "hyst") {
 	std::string direction;
-	uint8_t hyst;
 
 	request >> direction;
-	if (!request || (direction != "on" && direction != "off") || !parseIntParameter(request, hyst, 20)) {
+	if (!request || (direction != "on" && direction != "off")) {
 	    return InvalidArgs;
 	}
-
-	sendCommand(EmsProto::addressUBA, 0x16, direction == "on" ? 5 : 4, &hyst, 1);
-	return Ok;
+	return handleSingleByteValue(request, EmsProto::addressUBA, 0x16, direction == "on" ? 5 : 4, 1,
+                                                                          direction == "on" ? -20 : 1,
+                                                                          direction == "on" ?  -1 : 20 );
     } else if (cmd == "burnermodulation") {
 	unsigned int min, max;
 	uint8_t data[2];
@@ -567,9 +566,9 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsProto::addressRC, type, 7, &data, 1);
 	return Ok;
     } else if (cmd == "daytemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 2, 2, 10, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 2, 2, 5, 30);
     } else if (cmd == "nighttemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 1, 2, 10, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 1, 2, 5, 30);
     } else if (cmd == "temperatureoverride") {
 	uint8_t data;
 	std::string value;
@@ -581,7 +580,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	} else {
 	    try {
 		float floatValue = boost::lexical_cast<float>(value);
-		if (floatValue < 10 || floatValue > 30) {
+		if (floatValue < 5 || floatValue > 30) {
 		    return InvalidArgs;
 		}
 		data = boost::numeric_cast<uint8_t>(2 * floatValue);
@@ -595,7 +594,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsProto::addressRC, type, 37, &data, 1);
 	return Ok;
     } else if (cmd == "vacationtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 3, 2, 10, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 3, 2, 5, 30);
     } else if (cmd == "holidaymode") {
 	return handleSetHolidayCommand(request, type + 2, 93);
     } else if (cmd == "vacationmode") {
@@ -729,23 +728,23 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	sendCommand(EmsProto::addressRC, type , 28, &data, 1);
 	return Ok;
     } else if (cmd == "minheatflowtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 16, 1, 10, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 16, 1, 5, 70);
     } else if (cmd == "maxheatflowtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 10, 970);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 30, 90);
     } else if (cmd == "maxroomeffect") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 4, 2, 0, 10);
     } else if (cmd == "temperatureoffset") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 6, 2, -10, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 6, 2, -5, 5);
     } else if (cmd == "designtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 10, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 30, 90);
     } else if (cmd == "frostprotecttemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 23, 1, -20, 5);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 23, 1, -20, 10);
     } else if (cmd == "summerwinterthreshold") {
 	return handleSingleByteValue(request, EmsProto::addressRC, type, 22, 1, 0, 30);
     } else if (cmd == "reducedmodethreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 39, 1, -20, 20);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 39, 1, -20, 10);
     } else if (cmd == "cancelreducedmodethreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 38, 1, -20, 20);
+	return handleSingleByteValue(request, EmsProto::addressRC, type, 38, 1, -31, 10);
     }
     return InvalidCmd;
 }
@@ -773,7 +772,7 @@ CommandConnection::handleSingleByteValue(std::istream& request, uint8_t dest, ui
 	return InvalidArgs;
     }
 
-    sendCommand(EmsProto::addressRC, type, offset, (uint8_t *) &valueByte, 1);
+    sendCommand(dest, type, offset, (uint8_t *) &valueByte, 1);
     return Ok;
 }
 
