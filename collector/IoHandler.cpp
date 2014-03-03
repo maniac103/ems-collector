@@ -253,6 +253,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::AuslegungsTemp, "°C" },
 	{ EmsValue::RaumUebersteuerTemp, "°C" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "°C" },
+	{ EmsValue::UrlaubAbsenkungsSchwellenTemp, "°C" },
 	{ EmsValue::AbsenkungsAbbruchTemp, "°C" },
 	{ EmsValue::GedaempfteTemp, "°C" },
 	{ EmsValue::DesinfektionsTemp, "°C" },
