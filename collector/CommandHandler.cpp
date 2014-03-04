@@ -208,7 +208,8 @@ CommandConnection::handleCommand(std::istream& request)
 #if defined(HAVE_RAW_READWRITE_COMMAND)
 		"raw\n"
 #endif
-		"getversion\n");
+		"getversion\n"
+		"OK");
 	return Ok;
     } else if (category == "hk1") {
 	return handleHkCommand(request, 61);
@@ -251,7 +252,8 @@ CommandConnection::handleRcCommand(std::istream& request)
 		"requestdata\n"
 		"geterrors\n"
 		"getcontactinfo\n"
-		"setcontactinfo [1|2] <text>\n");
+		"setcontactinfo [1|2] <text>\n"
+		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
 	startRequest(EmsProto::addressRC, 0xa5, 0, 25);
@@ -333,7 +335,8 @@ CommandConnection::handleUbaCommand(std::istream& request)
 		"schedulemaintenance [off | byhour <hours / 100> | bydate YYYY-MM-DD]\n"
 		"checkmaintenanceneeded\n"
 		"testmode [on|off] <burnerpercent> <pumppercent> <3wayonww:[0|1]> <zirkpump:[0|1]>\n"
-		"requestdata\n");
+		"requestdata\n"
+		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
 	startRequest(EmsProto::addressUBA, 0x15, 0, 5);
@@ -480,7 +483,8 @@ CommandConnection::handleRawCommand(std::istream& request)
     if (cmd == "help") {
 	respond("Available subcommands:\n"
 		"read <target> <type> <offset> <len>\n"
-		"write <target> <type> <offset> <data>\n");
+		"write <target> <type> <offset> <data>\n"
+		"OK");
 	return Ok;
     } else if (cmd == "read") {
 	uint8_t target, type, offset, len;
@@ -548,7 +552,8 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"reducedmodethreshold <temp>\n"
 		"vacationreducedmodethreshold <temp>\n"
 		"cancelreducedmodethreshold <temp>\n"
-		"requestdata\n");
+		"requestdata\n"
+		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
 	startRequest(EmsProto::addressRC, type, 0, 42);
@@ -843,7 +848,8 @@ CommandConnection::handleWwCommand(std::istream& request)
 		"zirkpump customschedule <index> unset\n"
 		"zirkpump customschedule <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
 		"zirkpump selectschedule [custom|hk]\n"
-		"requestdata\n");
+		"requestdata\n"
+		"OK");
 	return Ok;
     } else if (cmd == "thermdesinfect") {
 	return handleThermDesinfectCommand(request);
