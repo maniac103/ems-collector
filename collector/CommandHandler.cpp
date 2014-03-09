@@ -355,12 +355,14 @@ CommandConnection::handleUbaCommand(std::istream& request)
 	std::string direction;
 
 	request >> direction;
-	if (!request || (direction != "on" && direction != "off")) {
-	    return InvalidArgs;
+
+	if (direction == "on") {
+	    return handleSingleByteValue(request, EmsProto::addressUBA, 0x16, 5, 1, -20, -1);
+	} else if (direction == "off") {
+	    return handleSingleByteValue(request, EmsProto::addressUBA, 0x16, 4, 1, 1, 20);
 	}
-	return handleSingleByteValue(request, EmsProto::addressUBA, 0x16, direction == "on" ? 5 : 4, 1,
-                                                                          direction == "on" ? -20 : 1,
-                                                                          direction == "on" ?  -1 : 20 );
+
+	return InvalidArgs;
     } else if (cmd == "burnermodulation") {
 	unsigned int min, max;
 	uint8_t data[2];
