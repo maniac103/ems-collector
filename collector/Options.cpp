@@ -171,7 +171,7 @@ Options::parse(int argc, char *argv[])
 		size_t start = item.find('=');
 		unsigned int module;
 
-		if (item.compare(0, 6, "io") == 0) {
+		if (item.compare(0, 2, "io") == 0) {
 		    module = DebugIo;
 		} else if (item.compare(0, 7, "message") == 0) {
 		    module = DebugMessages;
