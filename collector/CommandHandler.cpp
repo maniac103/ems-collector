@@ -25,7 +25,7 @@
 #include "CommandHandler.h"
 
 /* version of our command API */
-#define API_VERSION "2014031001"
+#define API_VERSION "2014031201"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
