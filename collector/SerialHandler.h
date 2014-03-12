@@ -26,7 +26,7 @@
 class SerialHandler : public IoHandler
 {
     public:
-	SerialHandler(const std::string& device, Database& db);
+	SerialHandler(const std::string& device, Database& db, ValueCache& cache);
 	~SerialHandler();
 
     protected:

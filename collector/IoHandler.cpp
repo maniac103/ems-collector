@@ -25,10 +25,11 @@
 #include "IoHandler.h"
 #include "Options.h"
 
-IoHandler::IoHandler(Database& db) :
+IoHandler::IoHandler(Database& db, ValueCache& cache) :
     boost::asio::io_service(),
     m_active(true),
     m_db(db),
+    m_cache(cache),
     m_state(Syncing),
     m_pos(0)
 {
@@ -503,4 +504,5 @@ IoHandler::handleValue(const EmsValue& value)
 	m_valueCallback(value);
     }
     m_db.handleValue(value);
+    m_cache.handleValue(value);
 }

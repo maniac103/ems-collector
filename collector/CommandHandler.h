@@ -78,6 +78,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 #if defined(HAVE_RAW_READWRITE_COMMAND)
 	CommandResult handleRawCommand(std::istream& request);
 #endif
+	CommandResult handleCacheCommand(std::istream& request);
 	CommandResult handleHkCommand(std::istream& request, uint8_t base);
 	CommandResult handleSingleByteValue(std::istream& request, uint8_t dest, uint8_t type,
 					    uint8_t offset, int multiplier, int min, int max);

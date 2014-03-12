@@ -26,11 +26,12 @@
 #include <fstream>
 #include "Database.h"
 #include "EmsMessage.h"
+#include "ValueCache.h"
 
 class IoHandler : public boost::asio::io_service
 {
     public:
-	IoHandler(Database& db);
+	IoHandler(Database& db, ValueCache& cache);
 	~IoHandler();
 
 	void close() {
@@ -40,6 +41,9 @@ class IoHandler : public boost::asio::io_service
 
 	bool active() {
 	    return m_active;
+	}
+	ValueCache& getCache() {
+	    return m_cache;
 	}
 
     protected:
@@ -67,6 +71,7 @@ class IoHandler : public boost::asio::io_service
 	} State;
 
 	Database& m_db;
+	ValueCache& m_cache;
 
 	State m_state;
 	size_t m_pos, m_length;

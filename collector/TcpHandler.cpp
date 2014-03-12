@@ -26,8 +26,9 @@
 
 TcpHandler::TcpHandler(const std::string& host,
 		       const std::string& port,
-		       Database& db) :
-    IoHandler(db),
+		       Database& db,
+		       ValueCache& cache) :
+    IoHandler(db, cache),
     m_socket(*this),
     m_watchdog(*this)
 {

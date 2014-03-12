@@ -29,7 +29,7 @@ class DataHandler;
 class TcpHandler : public IoHandler
 {
     public:
-	TcpHandler(const std::string& host, const std::string& port, Database& db);
+	TcpHandler(const std::string& host, const std::string& port, Database& db, ValueCache& cache);
 	~TcpHandler();
 	void sendMessage(const EmsMessage& msg);
 

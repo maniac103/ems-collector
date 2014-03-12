@@ -27,12 +27,13 @@
 #include "Database.h"
 #include "Options.h"
 #include "PidFile.h"
+#include "ValueCache.h"
 
 static IoHandler *
-getHandler(const std::string& target, Database& db)
+getHandler(const std::string& target, Database& db, ValueCache& cache)
 {
     if (target.compare(0, 7, "serial:") == 0) {
-	return new SerialHandler(target.substr(7), db);
+	return new SerialHandler(target.substr(7), db, cache);
     }
 
     if (target.compare(0, 4, "tcp:") == 0) {
@@ -40,7 +41,7 @@ getHandler(const std::string& target, Database& db)
 	if (pos != std::string::npos) {
 	    std::string host = target.substr(4, pos - 4);
 	    std::string port = target.substr(pos + 1);
-	    return new TcpHandler(host, port, db);
+	    return new TcpHandler(host, port, db, cache);
 	}
     }
 
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
 	const std::string& dbPath = Options::databasePath();
 	PidFile pid(Options::pidFilePath());
 	Database db;
+	ValueCache cache;
 	bool running = true;
 
 	if (Options::daemonize()) {
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
 	pollTimeout.tv_nsec = 0;
 
 	while (running) {
-	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), db));
+	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), db, cache));
 	    if (!handler) {
 		std::ostringstream msg;
 		msg << "Target " << Options::target() << " is invalid.";

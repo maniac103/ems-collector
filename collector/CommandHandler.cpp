@@ -208,6 +208,7 @@ CommandConnection::handleCommand(std::istream& request)
 #if defined(HAVE_RAW_READWRITE_COMMAND)
 		"raw\n"
 #endif
+		"cache\n"
 		"getversion\n"
 		"OK");
 	return Ok;
@@ -229,6 +230,8 @@ CommandConnection::handleCommand(std::istream& request)
     } else if (category == "raw") {
 	return handleRawCommand(request);
 #endif
+    } else if (category == "cache") {
+	return handleCacheCommand(request);
     } else if (category == "getversion") {
 	respond("collector version: " API_VERSION);
 	startRequest(EmsProto::addressUBA, 0x02, 0, 3);
@@ -514,6 +517,39 @@ CommandConnection::handleRawCommand(std::istream& request)
     return InvalidCmd;
 }
 #endif
+
+CommandConnection::CommandResult
+CommandConnection::handleCacheCommand(std::istream& request)
+{
+    std::string cmd;
+    request >> cmd;
+
+    if (cmd == "help") {
+	respond("Available subcommands:\n"
+		"fetch <key>\n"
+		"OK");
+	return Ok;
+    } else if (cmd == "fetch") {
+	ValueCache& cache = m_handler.getHandler().getCache();
+	std::ostringstream stream;
+	std::vector<std::string> selector;
+
+	while (request) {
+	    std::string token;
+	    request >> token;
+	    if (!token.empty()) {
+		selector.push_back(token);
+	    }
+	}
+
+	cache.outputValues(selector, stream);
+	respond(stream.str());
+	respond("OK");
+	return Ok;
+    }
+
+    return InvalidCmd;
+}
 
 CommandConnection::CommandResult
 CommandConnection::handleHkCommand(std::istream& request, uint8_t type)

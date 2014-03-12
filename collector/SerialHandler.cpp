@@ -23,8 +23,9 @@
 #include "Options.h"
 
 SerialHandler::SerialHandler(const std::string& device,
-			     Database& db) :
-    IoHandler(db),
+			     Database& db,
+			     ValueCache& cache) :
+    IoHandler(db, cache),
     m_serialPort(*this, device)
 {
     if (!m_serialPort.is_open()) {
