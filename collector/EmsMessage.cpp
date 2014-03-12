@@ -546,11 +546,13 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(0, 1, EmsValue::Einschaltoptimierung, subtype);
     parseBool(0, 3, EmsValue::WWVorrang, subtype);
     parseBool(0, 4, EmsValue::Estrichtrocknung, subtype);
-    parseBool(0, 5, EmsValue::Ferien, subtype);
     parseBool(0, 6, EmsValue::Frostschutzbetrieb, subtype);
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
-    parseBool(1, 7, EmsValue::Party, subtype);
+    parseBool(13, 2, EmsValue::Party, subtype);
+    parseBool(13, 3, EmsValue::Pause, subtype);
+    parseBool(13, 6, EmsValue::Urlaub, subtype);
+    parseBool(13, 7, EmsValue::Ferien, subtype);
     parseBool(13, 4, EmsValue::SchaltuhrEin, subtype);
 }
 
