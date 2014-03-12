@@ -49,7 +49,7 @@ ValueCache::outputValues(const std::vector<std::string>& selector, std::ostream&
 	if (!subtype.empty()) {
 	    stream << subtype << " ";
 	}
-	stream << type << " " << ValueApi::formatValue(entry.second.value);
+	stream << type << " = " << ValueApi::formatValue(entry.second.value);
 	stream << " | " << entry.second.timestamp << '\n';
     }
 }
