@@ -312,7 +312,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 0x10, "Verriegelnder Fehler" },
 	{ 0x11, "Blockierender Fehler" },
 	{ 0x12, "Anlagenfehler" },
-	{ 0x13, "Anlagenfehler" }
+	{ 0x13, "Zurückgesetzter Anlagenfehler" }
     };
 
     static const std::map<uint8_t, const char *> WEEKDAYMAPPING = {

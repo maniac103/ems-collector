@@ -1198,11 +1198,24 @@ CommandConnection::handleResponse()
 	    startRequest(SOURCES[index + 1].source, 0x02, 0, 3);
 	    break;
 	}
-	case 0x10: /* get UBA errors */
-	case 0x11: /* get UBA errors 2 */
-	case 0x12: /* get RC errors */
-	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = m_requestType >= 0x12 ? "S" : m_requestType == 0x10 ? "L" : "B";
+	case 0x10: /* get locking UBA errors */
+	case 0x11: /* get blocking UBA errors */
+	case 0x12: /* get active RC errors */
+	case 0x13: /* get deleted RC errors */ {
+	    switch (m_requestType){
+	      case 0x10:
+	        const char *prefix = "L"; 
+	        break;
+              case 0x11:
+                const char *prefix = "B"; 
+                break;
+              case 0x12:
+                const char *prefix = "S";
+                break;
+              case 0x13:
+                const char *prefix = "D";
+                break;
+	    }
 	    boost::tribool result = loopOverResponse<EmsProto::ErrorRecord>(prefix);
 	    if (result == true && (m_requestType == 0x10 || m_requestType == 0x12)) {
 		unsigned int count = m_requestType == 0x10 ? 5 : 4;
