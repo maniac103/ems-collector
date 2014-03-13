@@ -186,7 +186,7 @@ ValueApi::formatValue(const EmsValue& value)
     };
 
     static const std::map<uint8_t, const char *> ERRORTYPEMAPPING = {
-	{ 0x10, "L" }, { 0x11, "B" }, { 0x12, "S" }, { 0x13, "S" }
+	{ 0x10, "L" }, { 0x11, "B" }, { 0x12, "S" }, { 0x13, "D" }
     };
 
     static const std::map<uint8_t, const char *> OPMODEMAPPING = {

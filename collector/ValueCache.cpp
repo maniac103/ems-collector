@@ -13,6 +13,7 @@ void
 ValueCache::handleValue(const EmsValue& value)
 {
     CacheKey key(value.getType(), value.getSubType());
+    m_cache.erase(key);
     m_cache.insert(std::make_pair(key, CacheEntry(value)));
 }
 

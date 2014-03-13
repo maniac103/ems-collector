@@ -25,7 +25,7 @@
 #include "CommandHandler.h"
 
 /* version of our command API */
-#define API_VERSION "2014031001"
+#define API_VERSION "2014031201"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
@@ -190,6 +190,10 @@ static const size_t scheduleNameCount = sizeof(scheduleNames) / sizeof(scheduleN
 static const char * dayNames[] = {
     "monday", "tuesday", "wednesday", "thursday",
     "friday", "saturday", "sunday"
+};
+
+static const char * errorTypes[] = {
+    "L", "B", "S", "D",
 };
 static const size_t dayNameCount = sizeof(dayNames) / sizeof(dayNames[0]);
 
@@ -1198,11 +1202,12 @@ CommandConnection::handleResponse()
 	    startRequest(SOURCES[index + 1].source, 0x02, 0, 3);
 	    break;
 	}
-	case 0x10: /* get UBA errors */
-	case 0x11: /* get UBA errors 2 */
-	case 0x12: /* get RC errors */
-	case 0x13: /* get RC errors 2 */ {
-	    const char *prefix = m_requestType >= 0x12 ? "S" : m_requestType == 0x10 ? "L" : "B";
+	case 0x10: /* get locking UBA errors */
+	case 0x11: /* get blocking UBA errors */
+	case 0x12: /* get active RC errors */
+	case 0x13: /* get deleted RC errors */ {
+
+            const char *prefix = errorTypes[m_requestType - 0x10];
 	    boost::tribool result = loopOverResponse<EmsProto::ErrorRecord>(prefix);
 	    if (result == true && (m_requestType == 0x10 || m_requestType == 0x12)) {
 		unsigned int count = m_requestType == 0x10 ? 5 : 4;
