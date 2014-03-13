@@ -191,10 +191,6 @@ static const char * dayNames[] = {
     "monday", "tuesday", "wednesday", "thursday",
     "friday", "saturday", "sunday"
 };
-
-static const char * errorTypes[] = {
-    "L", "B", "S", "D",
-};
 static const size_t dayNameCount = sizeof(dayNames) / sizeof(dayNames[0]);
 
 CommandConnection::CommandResult
@@ -1206,8 +1202,10 @@ CommandConnection::handleResponse()
 	case 0x11: /* get blocking UBA errors */
 	case 0x12: /* get active RC errors */
 	case 0x13: /* get deleted RC errors */ {
-
-            const char *prefix = errorTypes[m_requestType - 0x10];
+	    static const char * errorTypes[] = {
+		"L", "B", "S", "D",
+	    };
+	    const char *prefix = errorTypes[m_requestType - 0x10];
 	    boost::tribool result = loopOverResponse<EmsProto::ErrorRecord>(prefix);
 	    if (result == true && (m_requestType == 0x10 || m_requestType == 0x12)) {
 		unsigned int count = m_requestType == 0x10 ? 5 : 4;
