@@ -21,7 +21,7 @@ $(DEPFILE): $(SRCS)
 -include $(DEPFILE)
 
 collectord: $(OBJS) $(DEPFILE) Makefile
-	$(CC) $(LIBS) -o collectord $(OBJS)
+	$(CC) -o collectord $(OBJS) $(LIBS)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $<
