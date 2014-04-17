@@ -449,8 +449,8 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    EmsProto::DateRecord record = value.getValue<EmsProto::DateRecord>();
 
 	    stream << boost::format("%d.%d.%d")
-		    % (2000 + record.year)
-		    % (unsigned int) record.month % (unsigned int) record.day;
+		    % (unsigned int) record.day % (unsigned int) record.month
+		    % (2000 + record.year);
 	    break;
 	}
 	case EmsValue::SystemTime: {
@@ -458,8 +458,8 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    auto dayIter = WEEKDAYMAPPING.find(record.dayOfWeek);
 
 	    stream << boost::format("%d.%d.%d")
-		    % (2000 + record.common.year)
-		    % (unsigned int) record.common.month % (unsigned int) record.common.day;
+		    % (unsigned int) record.common.day % (unsigned int) record.common.month
+		    % (2000 + record.common.year);
 
 	    if (dayIter != WEEKDAYMAPPING.end()) {
 		stream << " (" << dayIter->second << ")";
