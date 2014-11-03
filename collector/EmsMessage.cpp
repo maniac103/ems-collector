@@ -323,8 +323,8 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
     parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
     parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
-    parseNumeric(3, 1, 1, EmsValue::SollModulation, EmsValue::Brenner);
-    parseNumeric(4, 1, 1, EmsValue::IstModulation, EmsValue::Brenner);
+    parseInteger(3, 1, EmsValue::SollModulation, EmsValue::Brenner);
+    parseInteger(4, 1, EmsValue::IstModulation, EmsValue::Brenner);
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
     parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None);
 
@@ -376,7 +376,7 @@ EmsMessage::parseUBAMonitorSlowMessage()
     parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
     parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
     parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
-    parseNumeric(9, 1, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
+    parseInteger(9, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
     parseInteger(10, 3, EmsValue::Brennerstarts, EmsValue::Kessel);
     parseInteger(13, 3, EmsValue::BetriebsZeit, EmsValue::Kessel);
     parseInteger(19, 3, EmsValue::HeizZeit, EmsValue::Kessel);
@@ -408,7 +408,7 @@ EmsMessage::parseUBAParameterWWMessage()
     parseBool(1, 0, EmsValue::KesselSchalter, EmsValue::WW);
     parseNumeric(2, 1, 1, EmsValue::SetTemp, EmsValue::WW);
     parseNumeric(8, 1, 1, EmsValue::DesinfektionsTemp, EmsValue::WW);
-    parseEnum(7,EmsValue::Schaltpunkte, EmsValue::Zirkulation);
+    parseEnum(7, EmsValue::Schaltpunkte, EmsValue::Zirkulation);
 }
 
 void
@@ -437,14 +437,14 @@ EmsMessage::parseUBAParametersMessage()
 {
     parseBool(0, 1, EmsValue::KesselSchalter, EmsValue::Kessel);
     parseNumeric(1, 1, 1, EmsValue::SetTemp, EmsValue::Kessel);
-    parseNumeric(2, 1, 1, EmsValue::MaxModulation, EmsValue::Brenner);
-    parseNumeric(3, 1, 1, EmsValue::MinModulation, EmsValue::Brenner);
+    parseInteger(2, 1, EmsValue::MaxModulation, EmsValue::Brenner);
+    parseInteger(3, 1, EmsValue::MinModulation, EmsValue::Brenner);
     parseNumeric(4, 1, 1, EmsValue::AusschaltHysterese, EmsValue::Kessel);
     parseNumeric(5, 1, 1, EmsValue::EinschaltHysterese, EmsValue::Kessel);
     parseInteger(6, 1, EmsValue::AntipendelZeit, EmsValue::None);
     parseInteger(8, 1, EmsValue::NachlaufZeit, EmsValue::KesselPumpe);
-    parseNumeric(9, 1, 1, EmsValue::MaxModulation, EmsValue::KesselPumpe);
-    parseNumeric(10, 1, 1, EmsValue::MinModulation, EmsValue::KesselPumpe);
+    parseInteger(9, 1, EmsValue::MaxModulation, EmsValue::KesselPumpe);
+    parseInteger(10, 1, EmsValue::MinModulation, EmsValue::KesselPumpe);
 }
 
 void
@@ -576,7 +576,7 @@ EmsMessage::parseMMTempMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::HK2);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::HK2);
-    parseNumeric(3, 1, 1, EmsValue::Mischersteuerung, EmsValue::None);
+    parseInteger(3, 1, EmsValue::Mischersteuerung, EmsValue::None);
 
     /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
     parseBool(3, 2, EmsValue::PumpeAktiv, EmsValue::HK2);
