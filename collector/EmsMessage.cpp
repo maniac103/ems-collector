@@ -37,7 +37,12 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
     }
 
     if (divider == 0) {
-	m_value = (unsigned int) value;
+	int maxValue = (1 << 8 * len) - 1;
+	if (value == maxValue) {
+	    m_value = NAN;
+	} else {
+	    m_value = (unsigned int) value;
+	}
 	m_readingType = Integer;
     } else {
 	int highestbit = 1 << (8 * len - 1);
