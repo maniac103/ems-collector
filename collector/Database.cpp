@@ -330,17 +330,13 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::IstTemp, EmsValue::HK1, SensorVorlaufHK1IstTemp },
 	{ EmsValue::SollTemp, EmsValue::HK2, SensorVorlaufHK2SollTemp },
 	{ EmsValue::IstTemp, EmsValue::HK2, SensorVorlaufHK2IstTemp },
-	{ EmsValue::Mischersteuerung, EmsValue::None, SensorMischersteuerung },
 	{ EmsValue::IstTemp, EmsValue::Ruecklauf, SensorRuecklaufTemp },
 	{ EmsValue::IstTemp, EmsValue::Aussen, SensorAussenTemp },
 	{ EmsValue::GedaempfteTemp, EmsValue::Aussen, SensorGedaempfteAussenTemp },
 	{ EmsValue::SollTemp, EmsValue::Raum, SensorRaumSollTemp },
 	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
-	{ EmsValue::IstModulation, EmsValue::Brenner, SensorMomLeistung },
-	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
-	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp }
     };
 
@@ -353,7 +349,11 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::HeizZeit, EmsValue::None, SensorHeizZeit },
 	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
-	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen }
+	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
+	{ EmsValue::Mischersteuerung, EmsValue::None, SensorMischersteuerung },
+	{ EmsValue::IstModulation, EmsValue::Brenner, SensorMomLeistung },
+	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
+	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation }
     };
 
     static const struct {
