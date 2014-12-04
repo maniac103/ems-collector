@@ -262,6 +262,9 @@ class EmsValue {
 	ReadingType getReadingType() const {
 	    return m_readingType;
 	}
+	bool isValid() const {
+	    return m_isValid;
+	}
 	template<typename T> const T& getValue() const {
 	    return boost::get<T>(m_value);
 	}
@@ -271,6 +274,7 @@ class EmsValue {
 	SubType m_subType;
 	ReadingType m_readingType;
 	Reading m_value;
+	bool m_isValid;
 };
 
 class EmsMessage

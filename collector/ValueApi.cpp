@@ -225,17 +225,19 @@ ValueApi::formatValue(const EmsValue& value)
     std::ostringstream stream;
 
     switch (value.getReadingType()) {
-	case EmsValue::Numeric: {
-	    float numValue = value.getValue<float>();
-	    if (std::isnan(numValue)) {
+	case EmsValue::Numeric:
+	    if (!value.isValid()) {
 		stream << "unavailable";
 	    } else {
-		stream << numValue;
+		stream << value.getValue<float>();
 	    }
 	    break;
-	}
 	case EmsValue::Integer:
-	    stream << value.getValue<unsigned int>();
+	    if (!value.isValid()) {
+		stream << "unavailable";
+	    } else {
+		stream << value.getValue<unsigned int>();
+	    }
 	    break;
 	case EmsValue::Boolean:
 	    stream << (value.getValue<bool>() ? "on" : "off");

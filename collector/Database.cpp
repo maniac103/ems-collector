@@ -393,15 +393,16 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::ServiceCode, SensorServiceCode }
     };
 
+    if (!value.isValid()) {
+	return;
+    }
+
     EmsValue::Type type = value.getType();
     EmsValue::SubType subtype = value.getSubType();
 
     for (size_t i = 0; i < sizeof(NUMERICMAPPING) / sizeof(NUMERICMAPPING[0]); i++) {
 	if (type == NUMERICMAPPING[i].type && subtype == NUMERICMAPPING[i].subtype) {
-	    float numValue = value.getValue<float>();
-	    if (!std::isnan(numValue)) {
-		addSensorValue(NUMERICMAPPING[i].sensor, numValue);
-	    }
+	    addSensorValue(NUMERICMAPPING[i].sensor, value.getValue<float>());
 	    return;
 	}
     }
@@ -422,6 +423,7 @@ Database::handleValue(const EmsValue& value)
     for (size_t i = 0; i < sizeof(STATEMAPPING) / sizeof(STATEMAPPING[0]); i++) {
 	if (type == STATEMAPPING[i].type) {
 	    addSensorValue(STATEMAPPING[i].sensor, value.getValue<std::string>());
+	    return;
 	}
     }
 }

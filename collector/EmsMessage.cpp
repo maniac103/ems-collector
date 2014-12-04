@@ -29,7 +29,8 @@
 EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, int divider) :
     m_type(type),
     m_subType(subType),
-    m_readingType(Numeric)
+    m_readingType(Numeric),
+    m_isValid(true)
 {
     int value = 0;
     for (size_t i = 0; i < len; i++) {
@@ -38,11 +39,8 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 
     if (divider == 0) {
 	int maxValue = (1 << 8 * len) - 1;
-	if (value == maxValue) {
-	    m_value = NAN;
-	} else {
-	    m_value = (unsigned int) value;
-	}
+	m_isValid = value != maxValue;
+	m_value = (unsigned int) value;
 	m_readingType = Integer;
     } else {
 	int highestbit = 1 << (8 * len - 1);
@@ -50,8 +48,7 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	    value &= ~highestbit;
 	    if (value == 0) {
 		// only highest bit set -> value is unavailable
-		m_value = NAN;
-		return;
+		m_isValid = false;
 	    }
 	    // remainder -> value is negative
 	    // e.g. value 0xffff -> actual value -1
@@ -66,7 +63,8 @@ EmsValue::EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit) :
     m_type(type),
     m_subType(subType),
     m_readingType(Boolean),
-    m_value((value & (1 << bit)) != 0)
+    m_value((value & (1 << bit)) != 0),
+    m_isValid(true)
 {
 }
 
@@ -74,7 +72,8 @@ EmsValue::EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint
     m_type(type),
     m_subType(subType),
     m_readingType(Kennlinie),
-    m_value(std::vector<uint8_t>({ low, medium, high }))
+    m_value(std::vector<uint8_t>({ low, medium, high })),
+    m_isValid(true)
 {
 }
 
@@ -82,7 +81,8 @@ EmsValue::EmsValue(Type type, SubType subType, uint8_t value) :
     m_type(type),
     m_subType(subType),
     m_readingType(Enumeration),
-    m_value(value)
+    m_value(value),
+    m_isValid(true)
 {
 }
 
@@ -90,7 +90,8 @@ EmsValue::EmsValue(Type type, SubType subType, const ErrorEntry& error) :
     m_type(type),
     m_subType(subType),
     m_readingType(Error),
-    m_value(error)
+    m_value(error),
+    m_isValid(true)
 {
 }
 
@@ -98,7 +99,8 @@ EmsValue::EmsValue(Type type, SubType subType, const EmsProto::DateRecord& recor
     m_type(type),
     m_subType(subType),
     m_readingType(Date),
-    m_value(record)
+    m_value(record),
+    m_isValid(true)
 {
 }
 
@@ -106,7 +108,8 @@ EmsValue::EmsValue(Type type, SubType subType, const EmsProto::SystemTimeRecord&
     m_type(type),
     m_subType(subType),
     m_readingType(SystemTime),
-    m_value(record)
+    m_value(record),
+    m_isValid(true)
 {
 }
 
@@ -114,7 +117,8 @@ EmsValue::EmsValue(Type type, SubType subType, const std::string& value) :
     m_type(type),
     m_subType(subType),
     m_readingType(Formatted),
-    m_value(value)
+    m_value(value),
+    m_isValid(true)
 {
 }
 

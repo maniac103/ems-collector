@@ -370,20 +370,18 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     switch (value.getReadingType()) {
 	case EmsValue::Numeric:
 	case EmsValue::Integer: {
-	    auto unitIter = UNITMAPPING.find(value.getType());
-	    if (value.getReadingType() == EmsValue::Numeric) {
-		float numValue = value.getValue<float>();
-		if (std::isnan(numValue)) {
-		    stream << "nicht verfügbar";
-		    unitIter = UNITMAPPING.end();
+	    if (value.isValid()) {
+		if (value.getReadingType() == EmsValue::Numeric) {
+		    stream << value.getValue<float>();
 		} else {
-		    stream << numValue;
+		    stream << value.getValue<unsigned int>();
+		}
+		auto unitIter = UNITMAPPING.find(value.getType());
+		if (unitIter != UNITMAPPING.end()) {
+		    stream << " " << unitIter->second;
 		}
 	    } else {
-		stream << value.getValue<unsigned int>();
-	    }
-	    if (unitIter != UNITMAPPING.end()) {
-		stream << " " << unitIter->second;
+		stream << "nicht verfügbar";
 	    }
 	    break;
 	}
