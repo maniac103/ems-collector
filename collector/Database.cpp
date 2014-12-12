@@ -345,9 +345,9 @@ Database::handleValue(const EmsValue& value)
 	EmsValue::SubType subtype;
 	NumericSensors sensor;
     } INTEGERMAPPING[] = {
-	{ EmsValue::BetriebsZeit, EmsValue::None, SensorBetriebszeit },
-	{ EmsValue::HeizZeit, EmsValue::None, SensorHeizZeit },
-	{ EmsValue::Brennerstarts, EmsValue::None, SensorBrennerstarts },
+	{ EmsValue::BetriebsZeit, EmsValue::Kessel, SensorBetriebszeit },
+	{ EmsValue::HeizZeit, EmsValue::Kessel, SensorHeizZeit },
+	{ EmsValue::Brennerstarts, EmsValue::Kessel, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
 	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
 	{ EmsValue::Mischersteuerung, EmsValue::None, SensorMischersteuerung },
