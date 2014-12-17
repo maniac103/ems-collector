@@ -396,6 +396,7 @@ EmsMessage::parseUBAMonitorWWMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::WW);
     parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::WW);
+    parseNumeric(9, 1, 10, EmsValue::DurchflussMenge, EmsValue::WW);
     parseInteger(10, 3, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
     parseInteger(13, 3, EmsValue::WarmwasserBereitungen, EmsValue::None);
 

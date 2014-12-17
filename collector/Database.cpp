@@ -245,7 +245,8 @@ Database::createSensorRows()
 		  "Kesselpumpenmodulation", readingTypePercent, "%", 0);
     query.execute(SensorWaermetauscherTemp, sensorTypeNumeric,
 		  "Temperatur Ausgang Waermetauscher", readingTypeTemperature, "°C", 1);
-
+    query.execute(SensorWarmwasserDurchfluss, sensorTypeNumeric,
+		  "Warmwasserdurchfluss", readingTypeFlowRate, "l/min", 1);
 
     /* Boolean sensors */
     query.execute(SensorFlamme, sensorTypeBoolean, "Flamme");
@@ -337,7 +338,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
-	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp }
+	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
+	{ EmsValue::DurchflussMenge, EmsValue::WW, SensorWarmwasserDurchfluss }
     };
 
     static const struct {

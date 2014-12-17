@@ -157,6 +157,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::MaxModulation, "Max. Modulation" },
 	{ EmsValue::EinschaltHysterese, "Einschalthysterese" },
 	{ EmsValue::AusschaltHysterese, "Abschalthysterese" },
+	{ EmsValue::DurchflussMenge, "Durchflussmenge" },
 
 	{ EmsValue::HeizZeit, "Heizzeit" },
 	{ EmsValue::WarmwasserbereitungsZeit, "WW-Bereitungszeit" },
@@ -263,6 +264,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::TemperaturAenderung, "K/min" },
 	{ EmsValue::EinschaltHysterese, "K" },
 	{ EmsValue::AusschaltHysterese, "K" },
+	{ EmsValue::DurchflussMenge, "l/min" },
 	{ EmsValue::IstModulation, "%" },
 	{ EmsValue::SollModulation, "%" },
 	{ EmsValue::MinModulation, "%" },

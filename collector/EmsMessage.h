@@ -123,6 +123,7 @@ class EmsValue {
 	    AbsenkungsSchwellenTemp,
 	    UrlaubAbsenkungsSchwellenTemp,
 	    AbsenkungsAbbruchTemp,
+	    DurchflussMenge,
 	    /* integer */
 	    BetriebsZeit,
 	    HeizZeit,

@@ -57,6 +57,7 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::IstModulation, "currentmodulation" },
 	{ EmsValue::EinschaltHysterese, "onhysteresis" },
 	{ EmsValue::AusschaltHysterese, "offhysteresis" },
+	{ EmsValue::DurchflussMenge, "flowrate" },
 
 	{ EmsValue::HeizZeit, "heatingminutes" },
 	{ EmsValue::WarmwasserbereitungsZeit, "warmwaterminutes" },
