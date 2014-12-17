@@ -158,6 +158,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::EinschaltHysterese, "Einschalthysterese" },
 	{ EmsValue::AusschaltHysterese, "Abschalthysterese" },
 	{ EmsValue::DurchflussMenge, "Durchflussmenge" },
+	{ EmsValue::SollLeistung, "Angeforderte Leistung" },
 
 	{ EmsValue::HeizZeit, "Heizzeit" },
 	{ EmsValue::WarmwasserbereitungsZeit, "WW-Bereitungszeit" },
@@ -202,6 +203,12 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::Desinfektion, "Thermische Desinfektion" },
 	{ EmsValue::ATDaempfung, "Dämpfung Außentemperatur" },
 	{ EmsValue::SchaltzeitOptimierung, "Schaltzeitoptimierung" },
+	{ EmsValue::Fuehler1Defekt, "Fühler 1 defekt" },
+	{ EmsValue::Fuehler2Defekt, "Fühler 2 defekt" },
+	{ EmsValue::Manuellbetrieb, "Manueller Betrieb" },
+	{ EmsValue::Stoerung, "Störung" },
+	{ EmsValue::StoerungDesinfektion, "Störung Desinfektion" },
+	{ EmsValue::Ladevorgang, "Ladevorgang" },
 
 	{ EmsValue::WWSystemType, "WW-System-Typ" },
 	{ EmsValue::Betriebsart, "Betriebsart" },

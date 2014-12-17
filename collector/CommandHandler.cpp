@@ -259,10 +259,10 @@ CommandConnection::handleRcCommand(std::istream& request)
 		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
-	startRequest(EmsProto::addressRC, 0xa5, 0, 25);
+	startRequest(EmsProto::addressRC3x, 0xa5, 0, 25);
 	return Ok;
     } else if (cmd == "minoutdoortemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, 0xa5, 5, 1, -30, 0);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, 0xa5, 5, 1, -30, 0);
     } else if (cmd == "buildingtype") {
 	std::string ns;
 	uint8_t data;
@@ -274,7 +274,7 @@ CommandConnection::handleRcCommand(std::istream& request)
 	else if (ns == "heavy")  data = 2;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0xa5, 6, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0xa5, 6, &data, 1);
 	return Ok;
     } else if (cmd == "outdoortempdamping") {
 	uint8_t data;
@@ -286,10 +286,10 @@ CommandConnection::handleRcCommand(std::istream& request)
 	else if (mode == "off") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0xa5, 21, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0xa5, 21, &data, 1);
 	return Ok;
     } else if (cmd == "getcontactinfo") {
-	startRequest(EmsProto::addressRC, 0xa4, 0, 42);
+	startRequest(EmsProto::addressRC3x, 0xa4, 0, 42);
 	return Ok;
     } else if (cmd == "setcontactinfo") {
 	unsigned int line;
@@ -311,10 +311,10 @@ CommandConnection::handleRcCommand(std::istream& request)
 	buffer << "                     ";
 
 	text = buffer.str().substr(0, 21);
-	sendCommand(EmsProto::addressRC, 0xa4, (line - 1) * 21, (uint8_t *) text.c_str(), 21);
+	sendCommand(EmsProto::addressRC3x, 0xa4, (line - 1) * 21, (uint8_t *) text.c_str(), 21);
 	return Ok;
     } else if (cmd == "geterrors") {
-	startRequest(EmsProto::addressRC, 0x12, 0, 4 * sizeof(EmsProto::ErrorRecord));
+	startRequest(EmsProto::addressRC3x, 0x12, 0, 4 * sizeof(EmsProto::ErrorRecord));
 	return Ok;
     }
 
@@ -594,7 +594,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
-	startRequest(EmsProto::addressRC, type, 0, 42);
+	startRequest(EmsProto::addressRC3x, type, 0, 42);
 	return Ok;
     } else if (cmd == "mode") {
 	uint8_t data;
@@ -607,12 +607,12 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (mode == "auto")  data = 0x02;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type, 7, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 7, &data, 1);
 	return Ok;
     } else if (cmd == "daytemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 2, 2, 5, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 2, 2, 5, 30);
     } else if (cmd == "nighttemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 1, 2, 5, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 1, 2, 5, 30);
     } else if (cmd == "temperatureoverride") {
 	uint8_t data;
 	std::string value;
@@ -635,10 +635,10 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    }
 	}
 
-	sendCommand(EmsProto::addressRC, type, 37, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 37, &data, 1);
 	return Ok;
     } else if (cmd == "vacationtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 3, 2, 5, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 3, 2, 5, 30);
     } else if (cmd == "holidaymode") {
 	return handleSetHolidayCommand(request, type + 2, 93);
     } else if (cmd == "vacationmode") {
@@ -648,14 +648,14 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type + 2, 86, &hours, 1);
+	sendCommand(EmsProto::addressRC3x, type + 2, 86, &hours, 1);
 	return Ok;
     } else if (cmd == "pausemode") {
 	uint8_t hours;
 	if (!parseIntParameter(request, hours, 99)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, type + 2, 85, &hours, 1);
+	sendCommand(EmsProto::addressRC3x, type + 2, 85, &hours, 1);
 	return Ok;
     } else if (cmd == "customschedule") {
 	unsigned int schedule, index;
@@ -667,7 +667,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-	sendCommand(EmsProto::addressRC, type + (schedule - 1) * 3 + 2,
+	sendCommand(EmsProto::addressRC3x, type + (schedule - 1) * 3 + 2,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -679,11 +679,11 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-	startRequest(EmsProto::addressRC, type + (schedule - 1) * 3 + 2,
+	startRequest(EmsProto::addressRC3x, type + (schedule - 1) * 3 + 2,
 		0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "getactiveschedule") {
-	startRequest(EmsProto::addressRC, type + 2, 84, 1);
+	startRequest(EmsProto::addressRC3x, type + 2, 84, 1);
 	return Ok;
     } else if (cmd == "selectschedule") {
 	std::string schedule;
@@ -700,13 +700,13 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	    return InvalidArgs;
 	}
 
-	sendCommand(EmsProto::addressRC, type + 2, 84, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type + 2, 84, &data, 1);
 	return Ok;
     } else if (cmd == "getvacation") {
-	startRequest(EmsProto::addressRC, type + 2, 87, 2 * sizeof(EmsProto::HolidayEntry));
+	startRequest(EmsProto::addressRC3x, type + 2, 87, 2 * sizeof(EmsProto::HolidayEntry));
 	return Ok;
     } else if (cmd == "getholiday") {
-	startRequest(EmsProto::addressRC, type + 2, 93, 2 * sizeof(EmsProto::HolidayEntry));
+	startRequest(EmsProto::addressRC3x, type + 2, 93, 2 * sizeof(EmsProto::HolidayEntry));
 	return Ok;
     } else if (cmd == "scheduleoptimizer") {
 	std::string value;
@@ -718,7 +718,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (value == "off") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type, 19, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 19, &data, 1);
 	return Ok;
     } else if (cmd == "reductionmode") {
 	std::string ns;
@@ -732,7 +732,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (ns == "aussenhalt") data = 3;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type , 25, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 25, &data, 1);
 	return Ok;
     } else if (cmd == "relevantparameter") {
 	std::string ns;
@@ -744,7 +744,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (ns == "indoor") data = 1;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type , 33, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 33, &data, 1);
 	return Ok;
     } else if (cmd == "vacationreductionmode") {
 	std::string ns;
@@ -756,7 +756,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (ns == "indoor") data = 2;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type , 41, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 41, &data, 1);
 	return Ok;
     } else if (cmd == "frostprotectmode") {
 	std::string ns;
@@ -769,28 +769,28 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 	else if (ns == "byindoortemp")  data = 2;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, type , 28, &data, 1);
+	sendCommand(EmsProto::addressRC3x, type, 28, &data, 1);
 	return Ok;
     } else if (cmd == "minheatflowtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 16, 1, 5, 70);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 16, 1, 5, 70);
     } else if (cmd == "maxheatflowtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 35, 1, 30, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 35, 1, 30, 90);
     } else if (cmd == "maxroomeffect") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 4, 2, 0, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 4, 2, 0, 10);
     } else if (cmd == "temperatureoffset") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 6, 2, -5, 5);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 6, 2, -5, 5);
     } else if (cmd == "designtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 36, 1, 30, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 36, 1, 30, 90);
     } else if (cmd == "frostprotecttemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 23, 1, -20, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 23, 1, -20, 10);
     } else if (cmd == "summerwinterthreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 22, 1, 0, 30);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 22, 1, 0, 30);
     } else if (cmd == "reducedmodethreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 39, 1, -20, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 39, 1, -20, 10);
     } else if (cmd == "vacationreducedmodethreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 40, 1, -20, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 40, 1, -20, 10);
     } else if (cmd == "cancelreducedmodethreshold") {
-	return handleSingleByteValue(request, EmsProto::addressRC, type, 38, 1, -31, 10);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 38, 1, -31, 10);
     }
     return InvalidCmd;
 }
@@ -854,7 +854,7 @@ CommandConnection::handleSetHolidayCommand(std::istream& request, uint8_t type, 
 	}
     }
 
-    sendCommand(EmsProto::addressRC, type, offset, (uint8_t *) entries, sizeof(entries));
+    sendCommand(EmsProto::addressRC3x, type, offset, (uint8_t *) entries, sizeof(entries));
     return Ok;
 }
 
@@ -904,7 +904,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	else if (mode == "auto") data = 0x02;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 2, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 2, &data, 1);
 	return Ok;
     } else if (cmd == "temperature") {
 	uint8_t temperature;
@@ -918,7 +918,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	if (!parseIntParameter(request, temperature, 80) || temperature < 30) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, 0x37, 8, &temperature, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 8, &temperature, 1);
 	return Ok;
     } else if (cmd == "loadonce") {
 	uint8_t data = 35;
@@ -938,10 +938,10 @@ CommandConnection::handleWwCommand(std::istream& request)
 	else if (mode == "off") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 9, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 9, &data, 1);
 	return Ok;
     } else if (cmd == "getcustomschedule") {
-	startRequest(EmsProto::addressRC, 0x38, 0, 42 * sizeof(EmsProto::ScheduleEntry));
+	startRequest(EmsProto::addressRC3x, 0x38, 0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "customschedule") {
 	unsigned int index;
@@ -953,7 +953,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	    return InvalidArgs;
 	}
 
-	sendCommand(EmsProto::addressRC, 0x38,
+	sendCommand(EmsProto::addressRC3x, 0x38,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -967,7 +967,7 @@ CommandConnection::handleWwCommand(std::istream& request)
 	else if (schedule == "hk") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 0, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 0, &data, 1);
 	return Ok;
     } else if (cmd == "requestdata") {
 	startRequest(EmsProto::addressUBA, 0x33, 0, 10);
@@ -993,7 +993,7 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	else if (mode == "off") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 4, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 4, &data, 1);
 	return Ok;
     } else if (cmd == "day") {
 
@@ -1015,14 +1015,14 @@ CommandConnection::handleThermDesinfectCommand(std::istream& request)
 	    }
 	}
 
-	sendCommand(EmsProto::addressRC, 0x37, 5, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 5, &data, 1);
 	return Ok;
     } else if (cmd == "hour") {
 	uint8_t hour;
 	if (!parseIntParameter(request, hour, 23)) {
 	    return InvalidArgs;
 	}
-	sendCommand(EmsProto::addressRC, 0x37, 6, &hour, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 6, &hour, 1);
 	return Ok;
     } else if (cmd == "temperature") {
 	uint8_t temperature;
@@ -1053,7 +1053,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	else if (mode == "auto") data = 0x02;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 3, &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 3, &data, 1);
 	return Ok;
     } else if (cmd == "count") {
 	uint8_t count;
@@ -1076,7 +1076,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	sendCommand(EmsProto::addressUBA, 0x33, 7, &count, 1);
 	return Ok;
     } else if (cmd == "getcustomschedule") {
-	startRequest(EmsProto::addressRC, 0x39, 0, 42 * sizeof(EmsProto::ScheduleEntry));
+	startRequest(EmsProto::addressRC3x, 0x39, 0, 42 * sizeof(EmsProto::ScheduleEntry));
 	return Ok;
     } else if (cmd == "customschedule") {
 	unsigned int index;
@@ -1088,7 +1088,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	    return InvalidArgs;
 	}
 
-	sendCommand(EmsProto::addressRC, 0x39,
+	sendCommand(EmsProto::addressRC3x, 0x39,
 		(index - 1) * sizeof(EmsProto::ScheduleEntry),
 		(uint8_t *) &entry, sizeof(entry));
 	return Ok;
@@ -1102,7 +1102,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 	else if (schedule == "hk") data = 0x00;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC, 0x37, 1,  &data, 1);
+	sendCommand(EmsProto::addressRC3x, 0x37, 1,  &data, 1);
 	return Ok;
     }
 
@@ -1176,7 +1176,7 @@ CommandConnection::handleResponse()
 	    } SOURCES[] = {
 		{ EmsProto::addressUBA, "UBA" },
 		{ EmsProto::addressBC10, "BC10" },
-		{ EmsProto::addressRC, "RC" }
+		{ EmsProto::addressRC3x, "RC3x" }
 	    };
 	    static const size_t SOURCECOUNT = sizeof(SOURCES) / sizeof(SOURCES[0]);
 
@@ -1233,7 +1233,7 @@ CommandConnection::handleResponse()
 	case 0x51: /* get opmode HK3 */
 	case 0x5b: /* get opmode HK4 */
 	    if (!continueRequest()) {
-		startRequest(EmsProto::addressRC, m_requestType + 1, 0, 20, false);
+		startRequest(EmsProto::addressRC3x, m_requestType + 1, 0, 20, false);
 	    }
 	    break;
 	case 0x3e: /* HK1 status 2 */
@@ -1241,7 +1241,7 @@ CommandConnection::handleResponse()
 	case 0x52: /* HK3 status 2 */
 	case 0x5c: /* HK4 status 2 */
 	    /* finally get party/pause info */
-	    startRequest(EmsProto::addressRC, m_requestType + 1, 85, 2, false);
+	    startRequest(EmsProto::addressRC3x, m_requestType + 1, 85, 2, false);
 	    break;
 	case 0x3f: /* get schedule 1 HK1 */
 	case 0x42: /* get schedule 2 HK1 */
@@ -1290,7 +1290,7 @@ CommandConnection::handleResponse()
 	    startRequest(EmsProto::addressUBA, 0x34, 0, 12); // get part 2
 	    break;
 	case 0x34: /* requestdata WW part 2 */
-	    startRequest(EmsProto::addressRC, 0x37, 0, 12); // get part 3
+	    startRequest(EmsProto::addressRC3x, 0x37, 0, 12); // get part 3
 	    break;
 	case 0x37: /* requestdata WW part 3 */
 	    return true; // finished requesting WW data

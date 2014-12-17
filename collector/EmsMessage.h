@@ -30,8 +30,9 @@ class EmsProto {
 	static const uint8_t addressUBA  = 0x08;
 	static const uint8_t addressBC10 = 0x09;
 	static const uint8_t addressPC   = 0x0b;
-	static const uint8_t addressRC   = 0x10;
+	static const uint8_t addressRC3x = 0x10;
 	static const uint8_t addressWM10 = 0x11;
+	static const uint8_t addressRC20 = 0x17;
 	static const uint8_t addressMM10 = 0x21;
 
     public:
@@ -114,6 +115,7 @@ class EmsValue {
 	    MinModulation,
 	    MaxModulation,
 	    SollModulation,
+	    SollLeistung,
 	    EinschaltHysterese,
 	    AusschaltHysterese,
 	    SchwelleSommerWinter,
@@ -169,6 +171,12 @@ class EmsValue {
 	    EinmalLadungsLED,
 	    ATDaempfung,
 	    SchaltzeitOptimierung,
+	    Fuehler1Defekt,
+	    Fuehler2Defekt,
+	    Manuellbetrieb,
+	    Stoerung,
+	    StoerungDesinfektion,
+	    Ladevorgang,
 	    /* enum */
 	    WWSystemType,
 	    Schaltpunkte,
@@ -326,6 +334,7 @@ class EmsMessage
 	void parseRCHKMonitorMessage(EmsValue::SubType subType);
 	void parseRCHKOpmodeMessage(EmsValue::SubType subType);
 	void parseRCHKScheduleMessage(EmsValue::SubType subType);
+	void parseRC20StatusMessage();
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();
