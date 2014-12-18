@@ -232,83 +232,52 @@ EmsMessage::handle()
 	return;
     }
 
-    switch (m_source) {
-	case EmsProto::addressUBA:
-	    /* UBA message */
-	    switch (m_type) {
-		case 0x07:
-		    /* yet unknown contents:
-		     * 0x8 0x0 0x7 0x0 0x3 0x3 0x0 0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 */
-		    break;
-		case 0x10:
-		case 0x11:
-		    parseUBAErrorMessage();
-		    handled = true;
-		    break;
-		case 0x14: parseUBATotalUptimeMessage(); handled = true; break;
-		case 0x15: parseUBAMaintenanceSettingsMessage(); handled = true; break;
-		case 0x16: parseUBAParametersMessage(); handled = true; break;
-		case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
-		case 0x19: parseUBAMonitorSlowMessage(); handled = true; break;
-		case 0x1C: parseUBAMaintenanceStatusMessage(); handled = true; break;
-		case 0x33: parseUBAParameterWWMessage(); handled = true; break;
-		case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
-	    }
+    switch (getType()) {
+	case 0x06: parseRCTimeMessage(); handled = true; break;
+	case 0x07:
+	    /* sent by UBA; yet unknown contents:
+	     * 0x8 0x0 0x7 0x0 0x3 0x3 0x0 0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 */
 	    break;
-	case EmsProto::addressBC10:
-	    /* BC10 message */
-	    switch (m_type) {
-		case 0x29:
-		    /* yet unknown: 0x9 0x10 0x29 0x0 0x6b */
-		    break;
-	    }
+	case 0x10:
+	case 0x11:
+	    parseUBAErrorMessage();
+	    handled = true;
 	    break;
-	case EmsProto::addressRC3x:
-	    /* RC30/35 message */
-	    switch (m_type) {
-		case 0x06: parseRCTimeMessage(); handled = true; break;
-		case 0x1A: /* command for UBA3 */ handled = true; break;
-		case 0x35: /* command for UBA3 */ handled = true; break;
-		case 0x37: parseRCWWOpmodeMessage(); handled = true; break;
-		case 0x3D: parseRCHKOpmodeMessage(EmsValue::HK1); handled = true; break;
-		case 0x3E: parseRCHKMonitorMessage(EmsValue::HK1); handled = true; break;
-		case 0x3F: parseRCHKScheduleMessage(EmsValue::HK1); handled = true; break;
-		case 0x47: parseRCHKOpmodeMessage(EmsValue::HK2); handled = true; break;
-		case 0x48: parseRCHKMonitorMessage(EmsValue::HK2); handled = true; break;
-		case 0x49: parseRCHKScheduleMessage(EmsValue::HK2); handled = true; break;
-		case 0x51: parseRCHKOpmodeMessage(EmsValue::HK3); handled = true; break;
-		case 0x52: parseRCHKMonitorMessage(EmsValue::HK3); handled = true; break;
-		case 0x53: parseRCHKScheduleMessage(EmsValue::HK3); handled = true; break;
-		case 0x5B: parseRCHKOpmodeMessage(EmsValue::HK4); handled = true; break;
-		case 0x5C: parseRCHKMonitorMessage(EmsValue::HK4); handled = true; break;
-		case 0x5D: parseRCHKScheduleMessage(EmsValue::HK4); handled = true; break;
-		case 0x9D: /* command for WM10 */ handled = true; break;
-		case 0xA2: /* unknown, 11 zeros */ break;
-		case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
-		case 0xA5: parseRCSystemParameterMessage(); handled = true; break;
-		case 0xAC: /* command for MM10 */ handled = true; break;
-	    }
+	case 0x14: parseUBATotalUptimeMessage(); handled = true; break;
+	case 0x15: parseUBAMaintenanceSettingsMessage(); handled = true; break;
+	case 0x16: parseUBAParametersMessage(); handled = true; break;
+	case 0x18: parseUBAMonitorFastMessage(); handled = true; break;
+	case 0x19: parseUBAMonitorSlowMessage(); handled = true; break;
+	case 0x1A: /* command RC -> UBA3 */ handled = true; break;
+	case 0x1C: parseUBAMaintenanceStatusMessage(); handled = true; break;
+	case 0x1E: parseWMTemp2Message(); handled = true; break;
+	case 0x29:
+	    /* sent by BC10; yet unknown: 0x9 0x10 0x29 0x0 0x6b */
 	    break;
-	case EmsProto::addressRC20:
-	    /* RC20 message */
-	    switch (m_type) {
-		case 0x1A: /* command for UBA3 */ handled = true; break;
-		case 0xAE: parseRC20StatusMessage(); handled = true; break;
-	    }
-	    break;
-	case EmsProto::addressWM10:
-	    /* WM10 message */
-	    switch (m_type) {
-		case 0x9C: parseWMTemp1Message(); handled = true; break;
-		case 0x1E: parseWMTemp2Message(); handled = true; break;
-	    }
-	    break;
-	case EmsProto::addressMM10:
-	    /* MM10 message */
-	    switch (m_type) {
-		case 0xAB: parseMMTempMessage(); handled = true; break;
-	    }
-	    break;
+	case 0x33: parseUBAParameterWWMessage(); handled = true; break;
+	case 0x34: parseUBAMonitorWWMessage(); handled = true; break;
+	case 0x35: /* command RC -> UBA3 */ handled = true; break;
+	case 0x37: parseRCWWOpmodeMessage(); handled = true; break;
+	case 0x3D: parseRCHKOpmodeMessage(EmsValue::HK1); handled = true; break;
+	case 0x3E: parseRCHKMonitorMessage(EmsValue::HK1); handled = true; break;
+	case 0x3F: parseRCHKScheduleMessage(EmsValue::HK1); handled = true; break;
+	case 0x47: parseRCHKOpmodeMessage(EmsValue::HK2); handled = true; break;
+	case 0x48: parseRCHKMonitorMessage(EmsValue::HK2); handled = true; break;
+	case 0x49: parseRCHKScheduleMessage(EmsValue::HK2); handled = true; break;
+	case 0x51: parseRCHKOpmodeMessage(EmsValue::HK3); handled = true; break;
+	case 0x52: parseRCHKMonitorMessage(EmsValue::HK3); handled = true; break;
+	case 0x53: parseRCHKScheduleMessage(EmsValue::HK3); handled = true; break;
+	case 0x5B: parseRCHKOpmodeMessage(EmsValue::HK4); handled = true; break;
+	case 0x5C: parseRCHKMonitorMessage(EmsValue::HK4); handled = true; break;
+	case 0x5D: parseRCHKScheduleMessage(EmsValue::HK4); handled = true; break;
+	case 0x9C: parseWMTemp1Message(); handled = true; break;
+	case 0x9D: /* command RC -> WM10 */ handled = true; break;
+	case 0xA2: /* sent by RC; unknown, 11 zeros */ break;
+	case 0xA3: parseRCOutdoorTempMessage(); handled = true; break;
+	case 0xA5: parseRCSystemParameterMessage(); handled = true; break;
+	case 0xAB: parseMMTempMessage(); handled = true; break;
+	case 0xAC: /* command RC -> MM10 */ handled = true; break;
+	case 0xAE: parseRC20StatusMessage(); handled = true; break;
     }
 
     if (!handled) {
