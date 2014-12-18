@@ -492,9 +492,10 @@ CommandConnection::handleRawCommand(std::istream& request)
 		"OK");
 	return Ok;
     } else if (cmd == "read") {
-	uint8_t target, type, offset, len;
+	uint8_t target, offset, len;
+	uint16_t type;
 	if (!parseIntParameter(request, target, UCHAR_MAX)     ||
-		!parseIntParameter(request, type, UCHAR_MAX)   ||
+		!parseIntParameter(request, type, USHRT_MAX)   ||
 		!parseIntParameter(request, offset, UCHAR_MAX) ||
 		!parseIntParameter(request, len, UCHAR_MAX)) {
 	    return InvalidArgs;
@@ -502,9 +503,10 @@ CommandConnection::handleRawCommand(std::istream& request)
 	startRequest(target, type, offset, len, true, true);
 	return Ok;
     } else if (cmd == "write") {
-	uint8_t target, type, offset, value;
+	uint8_t target, offset, value;
+	uint16_t type;
 	if (!parseIntParameter(request, target, UCHAR_MAX)     ||
-		!parseIntParameter(request, type, UCHAR_MAX)   ||
+		!parseIntParameter(request, type, USHRT_MAX)   ||
 		!parseIntParameter(request, offset, UCHAR_MAX) ||
 		!parseIntParameter(request, value, UCHAR_MAX)) {
 	    return InvalidArgs;
@@ -1118,9 +1120,11 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 
     const std::vector<uint8_t>& data = message.getData();
     uint8_t source = message.getSource();
-    uint8_t type = message.getType();
+    uint16_t type = message.getType();
     uint8_t offset = message.getOffset();
 
+    // FIXME: this clashes with the EMS plus marker, so better
+    // redefine to something unused
     if (type == 0xff) {
 	m_activeRequest.reset();
 	respond(offset == 0x04 ? "FAIL" : "OK");
@@ -1513,7 +1517,7 @@ CommandConnection::parseHolidayEntry(const std::string& string, EmsProto::Holida
 }
 
 void
-CommandConnection::startRequest(uint8_t dest, uint8_t type, size_t offset,
+CommandConnection::startRequest(uint8_t dest, uint16_t type, size_t offset,
 			        size_t length, bool newRequest, bool raw)
 {
     m_requestOffset = offset;
@@ -1548,7 +1552,7 @@ CommandConnection::continueRequest()
 }
 
 void
-CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
+CommandConnection::sendCommand(uint8_t dest, uint16_t type, uint8_t offset,
 			       const uint8_t *data, size_t count,
 			       bool expectResponse)
 {
@@ -1562,8 +1566,8 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
     m_handler.sendMessage(*m_activeRequest);
 }
 
-bool
-CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8_t max)
+template<typename T> bool
+CommandConnection::parseIntParameter(std::istream& request, T& data, unsigned int max)
 {
     unsigned int value;
 

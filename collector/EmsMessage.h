@@ -292,7 +292,7 @@ class EmsMessage
 	typedef boost::function<void (const EmsValue& value)> ValueHandler;
 
 	EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data);
-	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
+	EmsMessage(uint8_t dest, uint16_t type, uint8_t offset,
 		   const std::vector<uint8_t>& data, bool expectResponse);
 
 	void handle();
@@ -304,8 +304,8 @@ class EmsMessage
 	uint8_t getDestination() const {
 	    return m_dest & 0x7f;
 	}
-	uint8_t getType() const {
-	    return m_type;
+	uint16_t getType() const {
+	    return m_extType != 0 ? m_extType : m_type;
 	}
 	uint8_t getOffset() const {
 	    return m_offset;
@@ -361,6 +361,7 @@ class EmsMessage
 	uint8_t m_source;
 	uint8_t m_dest;
 	uint8_t m_type;
+	uint16_t m_extType;
 	uint8_t m_offset;
 };
 

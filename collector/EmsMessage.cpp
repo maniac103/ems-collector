@@ -128,30 +128,42 @@ EmsValue::EmsValue(Type type, SubType subType, const std::string& value) :
 
 EmsMessage::EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data) :
     m_valueHandler(valueHandler),
-    m_data(data)
+    m_data(data),
+    m_source(0),
+    m_dest(0),
+    m_type(0),
+    m_extType(0),
+    m_offset(0)
 {
-    if (m_data.size() >= 4) {
-	m_source = m_data[0];
-	m_dest = m_data[1];
-	m_type = m_data[2];
-	m_offset = m_data[3];
-	m_data.erase(m_data.begin(), m_data.begin() + 4);
-    } else {
-	m_source = 0;
-	m_dest = 0;
-	m_type = 0;
-	m_offset = 0;
+    if (m_data.size() < 4) {
+	return;
+    }
+
+    bool isRead = m_data[1] & 0x80;
+    bool isPlus = m_data[2] >= 0xf0 && m_data.size() >= (isRead ? 7 : 6);
+
+    m_source = m_data[0];
+    m_dest = m_data[1];
+    m_type = m_data[2];
+    m_offset = m_data[3];
+    m_data.erase(m_data.begin(), m_data.begin() + 4);
+
+    if (isPlus) {
+	size_t start = isRead ? 0 : 1;
+	m_extType = (m_data[start] << 8) | m_data[start + 1];
+	m_data.erase(m_data.begin() + start, m_data.begin() + start + 2);
     }
 }
 
-EmsMessage::EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
+EmsMessage::EmsMessage(uint8_t dest, uint16_t type, uint8_t offset,
 		       const std::vector<uint8_t>& data,
 		       bool expectResponse) :
     m_valueHandler(),
     m_data(data),
     m_source(EmsProto::addressPC),
     m_dest(dest | (expectResponse ? 0x80 : 0)),
-    m_type(type),
+    m_type(type < 0xf0 ? type : 0xff),
+    m_extType(type >= 0xf0 ? type : 0),
     m_offset(offset)
 {
 }
@@ -166,6 +178,15 @@ EmsMessage::getSendData() const
     data.push_back(m_type);
     data.push_back(m_offset);
     data.insert(data.end(), m_data.begin(), m_data.end());
+    if (m_type >= 0xf0) {
+	size_t offset = 3;
+	bool isRead = m_dest & 0x80;
+	if (isRead && !m_data.empty()) {
+	    offset++;
+	}
+	data.insert(data.begin() + offset, m_extType >> 8);
+	data.insert(data.begin() + offset + 1, m_extType & 0xff);
+    }
 
     return data;
 }

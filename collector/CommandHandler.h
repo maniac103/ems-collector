@@ -100,13 +100,13 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	boost::tribool handleResponse();
 	void scheduleResponseTimeout();
 	void responseTimeout(const boost::system::error_code& error);
-	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length,
+	void startRequest(uint8_t dest, uint16_t type, size_t offset, size_t length,
 			  bool newRequest = true, bool raw = false);
 	bool continueRequest();
-	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
+	void sendCommand(uint8_t dest, uint16_t type, uint8_t offset,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
-	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
+	template<typename T> bool parseIntParameter(std::istream& request, T& data, unsigned int max);
 
     private:
 	static const unsigned int MaxRequestRetries = 5;
@@ -123,7 +123,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	size_t m_requestOffset;
 	size_t m_requestLength;
 	uint8_t m_requestDestination;
-	uint8_t m_requestType;
+	uint16_t m_requestType;
 	size_t m_parsePosition;
 	bool m_outputRawData;
 };
