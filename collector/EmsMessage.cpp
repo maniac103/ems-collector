@@ -26,7 +26,8 @@
 #include "EmsMessage.h"
 #include "Options.h"
 
-EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, int divider) :
+EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data,
+		   size_t len, int divider, bool isSigned) :
     m_type(type),
     m_subType(subType),
     m_readingType(Numeric),
@@ -37,12 +38,7 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	value = (value << 8) | data[i];
     }
 
-    if (divider == 0) {
-	int maxValue = (1 << 8 * len) - 1;
-	m_isValid = value != maxValue;
-	m_value = (unsigned int) value;
-	m_readingType = Integer;
-    } else {
+    if (isSigned) {
 	int highestbit = 1 << (8 * len - 1);
 	if (value & highestbit) {
 	    value &= ~highestbit;
@@ -54,7 +50,15 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data, size_t len, 
 	    // e.g. value 0xffff -> actual value -1
 	    value = value - highestbit;
 	}
+    } else {
+	int maxValue = (1 << 8 * len) - 1;
+	m_isValid = value != maxValue;
+    }
 
+    if (divider == 0) {
+	m_value = (unsigned int) value;
+	m_readingType = Integer;
+    } else {
 	m_value = (float) value / (float) divider;
     }
 }
@@ -310,15 +314,15 @@ void
 EmsMessage::parseInteger(size_t offset, size_t size,
 			 EmsValue::Type type, EmsValue::SubType subtype)
 {
-    parseNumeric(offset, size, 0, type, subtype);
+    parseNumeric(offset, size, 0, type, subtype, false);
 }
 
 void
 EmsMessage::parseNumeric(size_t offset, size_t size, int divider,
-			 EmsValue::Type type, EmsValue::SubType subtype)
+			 EmsValue::Type type, EmsValue::SubType subtype, bool isSigned)
 {
     if (canAccess(offset, size)) {
-	EmsValue value(type, subtype, &m_data.at(offset - m_offset), size, divider);
+	EmsValue value(type, subtype, &m_data.at(offset - m_offset), size, divider, isSigned);
 	m_valueHandler(value);
     }
 }
@@ -418,7 +422,7 @@ EmsMessage::parseUBAMonitorWWMessage()
     parseBool(7, 2, EmsValue::ZirkulationAktiv, EmsValue::None);
     parseBool(7, 3, EmsValue::Ladevorgang, EmsValue::WW);
     parseEnum(8, EmsValue::WWSystemType, EmsValue::None);
-    parseNumeric(9, 1, 10, EmsValue::DurchflussMenge, EmsValue::WW);
+    parseNumeric(9, 1, 10, EmsValue::DurchflussMenge, EmsValue::WW, false);
     parseInteger(10, 3, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
     parseInteger(13, 3, EmsValue::WarmwasserBereitungen, EmsValue::None);
 }
