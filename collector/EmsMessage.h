@@ -219,7 +219,8 @@ class EmsValue {
 	    Zirkulation,
 	    Raum,
 	    Aussen,
-	    Abgas
+	    Abgas,
+	    Ansaugluft
 	};
 
 	enum ReadingType {

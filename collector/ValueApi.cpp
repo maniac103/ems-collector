@@ -158,6 +158,7 @@ ValueApi::getSubTypeName(EmsValue::SubType subtype)
 	{ EmsValue::Raum, "indoor" },
 	{ EmsValue::Aussen, "outdoor" },
 	{ EmsValue::Abgas, "exhaust" },
+	{ EmsValue::Ansaugluft, "intake" }
     };
 
     auto iter = SUBTYPEMAPPING.find(subtype);
