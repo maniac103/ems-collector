@@ -353,7 +353,7 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
     parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
-    parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None);
+    parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None, false);
     parseNumeric(25, 2, 10, EmsValue::IstTemp, EmsValue::Ansaugluft);
 
     if (canAccess(18, 2)) {
