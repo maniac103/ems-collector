@@ -350,7 +350,6 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::Kessel);
     parseBool(7, 6, EmsValue::DreiWegeVentilAufWW, EmsValue::None);
     parseBool(7, 7, EmsValue::ZirkulationAktiv, EmsValue::None);
-    parseNumeric(11, 2, 10, EmsValue::IstTemp, EmsValue::WW);
     parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
     parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None, false);
