@@ -4,7 +4,10 @@ ems-collector
 Buderus EMS heating control data collection daemon
 
 ems-collector logs serial data from a connected Buderus heating
-by interpreting the incoming data and writing it into a mysql database.
+by interpreting the incoming data and writing it into a mysql database. It
+also provides a telnet-like interface for sending commands to the heating
+and receiving a stream of incoming data when being used with a TCP-to-EMS
+interface (e.g. NetIO with ethersex running on top)
 
 The ems data is described here:
 http://ems-gateway.myds.me/dokuwiki/doku.php?id=wiki:ems:telegramme
@@ -13,18 +16,22 @@ Requirements
 ============
 (examples for debian wheezy)
 
-The following packages are needed:
+The following packages are needed for building the collector:
 ```
 apt-get install libboost1.49-all-dev
 apt-get install libmysql++-dev
+```
+
+For using the bundled (demo) web interface, gnuplot is needed:
+```
 apt-get install gnuplot
 ```
 
-Clone git-Repository and compile
+Clone git repository and compile
 ================================
 ```
-git clone https://github.com/maniac103/ems-collector.git /usr/local/src/ems-collector
-cd /usr/local/src/ems-collector/collector
+git clone https://github.com/maniac103/ems-collector.git
+cd ems-collector/collector
 make
 ```
 
@@ -46,7 +53,6 @@ nano /etc/ems-collector.conf
 now, copy and paste this into the editor and customize to meet your environment:
 ```
 ratelimit = 120
-db-path = localhost:3306
 db-user = <user>
 db-pass = <password>
 ```
