@@ -515,7 +515,9 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseNumeric(6, 1, 2, EmsValue::RaumOffset, subtype);
     parseEnum(7, EmsValue::Betriebsart, subtype);
     parseBool(8, 0, EmsValue::Estrichtrocknung, subtype);
+    parseNumeric(15, 1, 1, EmsValue::MaxTemp, subtype);
     parseNumeric(16, 1, 1, EmsValue::MinTemp, subtype);
+    parseNumeric(17, 1, 1, EmsValue::AuslegungsTemp, subtype);
     parseBool(19, 1, EmsValue::SchaltzeitOptimierung, subtype);
     parseNumeric(22, 1, 1, EmsValue::SchwelleSommerWinter, subtype);
     parseNumeric(23, 1, 1, EmsValue::FrostSchutzTemp, subtype);
@@ -523,8 +525,6 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseEnum(28, EmsValue::Frostschutz, subtype);
     parseEnum(32, EmsValue::HeizSystem, subtype);
     parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
-    parseNumeric(35, 1, 1, EmsValue::MaxTemp, subtype);
-    parseNumeric(36, 1, 1, EmsValue::AuslegungsTemp, subtype);
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
     parseNumeric(38, 1, 1, EmsValue::AbsenkungsAbbruchTemp, subtype);
     parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);
