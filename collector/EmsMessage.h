@@ -191,6 +191,7 @@ class EmsValue {
 	    FuehrungsGroesse,
 	    UrlaubAbsenkungsArt,
 	    Frostschutz,
+	    FBTyp,
 	    /* kennlinie */
 	    HKKennlinie,
 	    /* error */

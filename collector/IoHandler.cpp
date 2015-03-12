@@ -223,6 +223,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::FuehrungsGroesse, "Führungsgröße" },
 	{ EmsValue::Frostschutz, "Frostschutz" },
 	{ EmsValue::UrlaubAbsenkungsArt, "Urlaubsabsenkungsart" },
+	{ EmsValue::FBTyp, "Fernbedienungstyp" },
 
 	{ EmsValue::HKKennlinie, "Kennlinie" },
 	{ EmsValue::Fehler, "Fehler" },
@@ -359,6 +360,10 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 3, "Außenhalt" }, { 2, "Raumhalt" }
     };
 
+    static const std::map<uint8_t, const char *> REMOTETYPEMAPPING = {
+	{ 0, "Keine" }, { 1, "RC20" }, { 2, "RC3x" }
+    };
+
     auto typeIter = TYPEMAPPING.find(value.getType());
     const char *type = typeIter != TYPEMAPPING.end() ? typeIter->second : NULL;
     auto subtypeIter = SUBTYPEMAPPING.find(value.getSubType());
@@ -412,6 +417,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		case EmsValue::HeizArt:
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
 		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
+		case EmsValue::FBTyp: map = &REMOTETYPEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
 		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
 		case EmsValue::UrlaubAbsenkungsArt: map = &VACATIONREDUCTIONMAPPING; break;

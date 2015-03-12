@@ -122,6 +122,7 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::FuehrungsGroesse, "relevantparameter" },
 	{ EmsValue::Frostschutz, "frostsafemode" },
 	{ EmsValue::UrlaubAbsenkungsArt, "vacationreductionmode" },
+	{ EmsValue::FBTyp, "remotecontroltype" },
 
 	{ EmsValue::HKKennlinie, "characteristic" },
 	{ EmsValue::Fehler, "error" },
@@ -230,6 +231,10 @@ ValueApi::formatValue(const EmsValue& value)
 	{ 3, "outdoor" }, { 2, "indoor" }
     };
 
+    static const std::map<uint8_t, const char *> REMOTETYPEMAPPING = {
+	{ 0, "none" }, { 1, "rc20" }, { 2, "rc3x" }
+    };
+
     std::ostringstream stream;
 
     switch (value.getReadingType()) {
@@ -266,6 +271,7 @@ ValueApi::formatValue(const EmsValue& value)
 		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
 		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
+		case EmsValue::FBTyp: map = &REMOTETYPEMAPPING; break;
 		case EmsValue::UrlaubAbsenkungsArt: map = &VACATIONREDUCTIONMAPPING; break;
 		default: break;
 	    }

@@ -522,6 +522,7 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseNumeric(22, 1, 1, EmsValue::SchwelleSommerWinter, subtype);
     parseNumeric(23, 1, 1, EmsValue::FrostSchutzTemp, subtype);
     parseEnum(25, EmsValue::RegelungsArt, subtype);
+    parseEnum(26, EmsValue::FBTyp, subtype);
     parseEnum(28, EmsValue::Frostschutz, subtype);
     parseEnum(32, EmsValue::HeizSystem, subtype);
     parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
