@@ -559,7 +559,17 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
     parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
-    parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
+    if (canAccess(3, 2)) {
+	if (m_data[3 - m_offset] == 0x7d && m_data[4 - m_offset] == 0) {
+	    // If the RC3x is mounted in the heater itself and not assigned
+	    // to a heating circuit, the actual temperature is passed as
+	    // 0x7d 0x00.
+	    // TODO: is ignoring actual temperature sufficient or should we
+	    // ignore more data?
+	} else {
+	    parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
+	}
+    }
     parseInteger(5, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
     parseInteger(6, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
