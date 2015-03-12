@@ -1,0 +1,3 @@
+collector/.depend
+collector/*.o
+collector/collectord
