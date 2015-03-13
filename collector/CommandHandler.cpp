@@ -792,13 +792,13 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
     } else if (cmd == "minheatflowtemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 16, 1, 5, 70);
     } else if (cmd == "maxheatflowtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 35, 1, 30, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 15, 1, 30, 90);
     } else if (cmd == "maxroomeffect") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 4, 2, 0, 10);
     } else if (cmd == "temperatureoffset") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 6, 2, -5, 5);
     } else if (cmd == "designtemperature") {
-	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 36, 1, 30, 90);
+	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 17, 1, 30, 90);
     } else if (cmd == "frostprotecttemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 23, 1, -20, 10);
     } else if (cmd == "summerwinterthreshold") {
