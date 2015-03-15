@@ -217,7 +217,6 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::DesinfektionTag, "Thermische Desinfektion Tag" },
 	{ EmsValue::Schaltpunkte, "Schaltpunkte" },
 	{ EmsValue::GebaeudeArt, "Gebäudeart" },
-	{ EmsValue::HeizArt, "Heizart" },
 	{ EmsValue::RegelungsArt, "Regelungsart" },
 	{ EmsValue::HeizSystem, "Heizsystem" },
 	{ EmsValue::FuehrungsGroesse, "Führungsgröße" },
@@ -341,7 +340,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
     };
 
     static const std::map<uint8_t, const char *> HEATINGTYPEMAPPING = {
-	{ 1, "Heizkörper" }, { 2, "Konvektor" }, { 3, "Fußboden" }, { 4, "Raumvorlauf" }
+	{ 1, "Heizkörper" }, { 2, "Konvektor" }, { 3, "Fußboden" },
     };
 
     static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
@@ -414,7 +413,6 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
 		case EmsValue::DesinfektionTag: map = &WEEKDAYMAPPING; break;
 		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
-		case EmsValue::HeizArt:
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
 		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
 		case EmsValue::FBTyp: map = &REMOTETYPEMAPPING; break;

@@ -66,6 +66,12 @@ class Options
 	    CloseAfterParse
 	} ParseResult;
 
+	typedef enum {
+	    RCUnknown,
+	    RC30,
+	    RC35
+	} RoomControllerType;
+
 	static unsigned int rateLimit() {
 	    return m_rateLimit;
 	}
@@ -93,6 +99,10 @@ class Options
 	}
 	static unsigned int dataPort() {
 	    return m_dataPort;
+	}
+
+	static RoomControllerType roomControllerType() {
+	    return m_rcType;
 	}
 
 	static ParseResult parse(int argc, char *argv[]);
@@ -129,6 +139,7 @@ class Options
 	static std::string m_dbPass;
 	static unsigned int m_commandPort;
 	static unsigned int m_dataPort;
+	static RoomControllerType m_rcType;
 };
 
 #endif /* __OPTIONS_H__ */

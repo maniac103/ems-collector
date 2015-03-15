@@ -116,7 +116,6 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::Betriebsart, "opmode" },
 	{ EmsValue::DesinfektionTag, "desinfectionday" },
 	{ EmsValue::GebaeudeArt, "buildingtype" },
-	{ EmsValue::HeizArt, "heatingtype" },
 	{ EmsValue::RegelungsArt, "controltype" },
 	{ EmsValue::HeizSystem, "heatsystem" },
 	{ EmsValue::FuehrungsGroesse, "relevantparameter" },
@@ -212,7 +211,7 @@ ValueApi::formatValue(const EmsValue& value)
     };
 
     static const std::map<uint8_t, const char *> HEATINGTYPEMAPPING = {
-	{ 1, "heater" }, { 2, "convector" }, { 3, "floorheater" }, { 4, "roomvorlauf" }
+	{ 1, "heater" }, { 2, "convector" }, { 3, "floorheater" },
     };
 
     static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
@@ -266,7 +265,6 @@ ValueApi::formatValue(const EmsValue& value)
 		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
 		case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
 		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
-		case EmsValue::HeizArt:
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
 		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;

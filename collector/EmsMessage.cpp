@@ -507,7 +507,22 @@ EmsMessage::parseRCSystemParameterMessage()
 void
 EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 {
-    parseEnum(0, EmsValue::HeizArt, subtype);
+    Options::RoomControllerType rcType = Options::roomControllerType();
+
+    if (rcType == Options::RC30 && canAccess(0, 1)) {
+	uint8_t value = m_data[0];
+	uint8_t system, roomControlled;
+	if (value == 4 || value == 5) {
+	    system = 0;
+	    roomControlled = 1;
+	} else {
+	    system = value;
+	    roomControlled = 0;
+	}
+	m_valueHandler(EmsValue(EmsValue::HeizSystem, subtype, system));
+	m_valueHandler(EmsValue(EmsValue::FuehrungsGroesse, subtype, roomControlled));
+    }
+
     parseNumeric(1, 1, 2, EmsValue::NachtTemp, subtype);
     parseNumeric(2, 1, 2, EmsValue::TagTemp, subtype);
     parseNumeric(3, 1, 2, EmsValue::UrlaubTemp, subtype);
@@ -524,8 +539,10 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseEnum(25, EmsValue::RegelungsArt, subtype);
     parseEnum(26, EmsValue::FBTyp, subtype);
     parseEnum(28, EmsValue::Frostschutz, subtype);
-    parseEnum(32, EmsValue::HeizSystem, subtype);
-    parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
+    if (rcType == Options::RC35) {
+	parseEnum(32, EmsValue::HeizSystem, subtype);
+	parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
+    }
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
     parseNumeric(38, 1, 1, EmsValue::AbsenkungsAbbruchTemp, subtype);
     parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);

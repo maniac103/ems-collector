@@ -36,6 +36,7 @@ std::string Options::m_dbUser;
 std::string Options::m_dbPass;
 unsigned int Options::m_commandPort = 0;
 unsigned int Options::m_dataPort = 0;
+Options::RoomControllerType Options::m_rcType = Options::RCUnknown;
 
 static void
 usage(std::ostream& stream, const char *programName,
@@ -49,7 +50,7 @@ Options::ParseResult
 Options::parse(int argc, char *argv[])
 {
     std::string defaultPidFilePath;
-    std::string config;
+    std::string config, rcType;
 
     defaultPidFilePath = "/var/run/";
     defaultPidFilePath += argv[0];
@@ -58,6 +59,8 @@ Options::parse(int argc, char *argv[])
     bpo::options_description general("General options");
     general.add_options()
 	("help,h", "Show this help message")
+	("rc-type,R", bpo::value<std::string>(&rcType)->composing(),
+	 "Type of used room controller (rc30 or rc35)")
 	("ratelimit,r", bpo::value<unsigned int>(&m_rateLimit)->default_value(60),
 	 "Rate limit (in s) for writing numeric sensor values into DB")
 	("debug,d", bpo::value<std::string>()->default_value("none"),
@@ -142,6 +145,18 @@ Options::parse(int argc, char *argv[])
     if (!variables.count("target")) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
+    }
+
+    if (variables.count("rc-type")) {
+	std::string type = variables["rc-type"].as<std::string>();
+	if (type == "rc30") {
+	    m_rcType = Options::RC30;
+	} else if (type == "rc35") {
+	    m_rcType = Options::RC35;
+	} else {
+	    usage(std::cerr, argv[0], visible);
+	    return ParseFailure;
+	}
     }
 
     if (variables.count("foreground")) {

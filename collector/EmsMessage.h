@@ -185,7 +185,6 @@ class EmsValue {
 	    Betriebsart,
 	    DesinfektionTag,
 	    GebaeudeArt,
-	    HeizArt,
 	    RegelungsArt,
 	    HeizSystem,
 	    FuehrungsGroesse,

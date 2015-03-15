@@ -23,9 +23,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include "CommandHandler.h"
+#include "Options.h"
 
 /* version of our command API */
-#define API_VERSION "2014031201"
+#define API_VERSION "2015031501"
 
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
@@ -579,7 +580,7 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 		"minheatflowtemperature <temp>\n"
 		"maxheatflowtemperature <temp>\n"
 		"reductionmode [offmode|reduced|raumhalt|aussenhalt]\n"
-		"relevantparameter [outdoor|indoor]\n"
+		"heatingsystem [none|heater|floorheater|convection] [outdoor|indoor]\n"
 		"vacationreductionmode [outdoor|indoor]\n"
 		"maxroomeffect <temp>\n"
 		"designtemperature <temp>\n"
@@ -734,18 +735,35 @@ CommandConnection::handleHkCommand(std::istream& request, uint8_t type)
 
 	sendCommand(EmsProto::addressRC3x, type, 25, &data, 1);
 	return Ok;
-    } else if (cmd == "relevantparameter") {
-	std::string ns;
-	uint8_t data;
+    } else if (cmd == "heatingsystem") {
+	Options::RoomControllerType rcType = Options::roomControllerType();
+	std::string system, controlType;
+	uint8_t systemData, controlData;
 
-	request >> ns;
+	request >> system >> controlType;
 
-	if (ns == "outdoor")     data = 0;
-	else if (ns == "indoor") data = 1;
+	if (system == "none")             systemData = 0;
+	else if (system == "heater")      systemData = 1;
+	else if (system == "floorheater") systemData = 2;
+	else if (system == "convection")  systemData = 3;
 	else return InvalidArgs;
 
-	sendCommand(EmsProto::addressRC3x, type, 33, &data, 1);
-	return Ok;
+	if (controlType == "outdoor")     controlData = 0;
+	else if (controlType == "indoor") controlData = 1;
+	else return InvalidArgs;
+
+	if (rcType == Options::RC30) {
+	    if (controlData == 1) {
+		systemData = 4; // Raumvorlauf
+	    }
+	    sendCommand(EmsProto::addressRC3x, type, 0, &systemData, 1);
+	    return Ok;
+	} else if (rcType == Options::RC35) {
+	    uint8_t data[] = { systemData, controlData };
+	    sendCommand(EmsProto::addressRC3x, type, 32, data, sizeof(data));
+	    return Ok;
+	}
+	return InvalidCmd;
     } else if (cmd == "vacationreductionmode") {
 	std::string ns;
 	uint8_t data;
