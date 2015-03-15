@@ -53,10 +53,11 @@ nano /etc/ems-collector.conf
 now, copy and paste this into the editor and customize to meet your environment:
 ```
 ratelimit = 120
+rc-type = rc30
 db-user = <user>
 db-pass = <password>
 ```
-close and save.
+close and save. The room controller type can be passed as either rc30 or rc35.
 
 Make it a service and go
 ========================
