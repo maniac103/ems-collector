@@ -34,6 +34,7 @@ class EmsProto {
 	static const uint8_t addressWM10 = 0x11;
 	static const uint8_t addressRC20 = 0x17;
 	static const uint8_t addressMM10 = 0x21;
+	static const uint8_t addressSM10 = 0x30;
 
     public:
 #pragma pack(push,1)
@@ -220,7 +221,10 @@ class EmsValue {
 	    Raum,
 	    Aussen,
 	    Abgas,
-	    Ansaugluft
+	    Ansaugluft,
+	    Solar,
+	    SolarPumpe,
+	    SolarSpeicher
 	};
 
 	enum ReadingType {
@@ -341,6 +345,8 @@ class EmsMessage
 	void parseWMTemp2Message();
 
 	void parseMMTempMessage();
+
+	void parseSolarMonitorMessage();
 
     private:
 	void parseNumeric(size_t offset, size_t size, int divider,

@@ -247,7 +247,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::Raum, "Raum" },
 	{ EmsValue::Aussen, "Außen" },
 	{ EmsValue::Abgas, "Abgas" },
-	{ EmsValue::Ansaugluft, "Ansaugluft" }
+	{ EmsValue::Ansaugluft, "Ansaugluft" },
+	{ EmsValue::Solar, "Solar" },
+	{ EmsValue::SolarSpeicher, "Solarspeicher" },
     };
     static const std::map<EmsValue::Type, const char *> UNITMAPPING = {
 	{ EmsValue::SollTemp, "°C" },

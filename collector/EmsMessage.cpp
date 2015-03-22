@@ -288,6 +288,12 @@ EmsMessage::handle()
 		case 0xAB: parseMMTempMessage(); handled = true; break;
 	    }
 	    break;
+	case EmsProto::addressSM10:
+	    /* SM10 message */
+	    switch (m_type) {
+		case 0x97: parseSolarMonitorMessage(); handled = true; break;
+	    }
+	    break;
     }
 
     if (!handled) {
@@ -642,5 +648,14 @@ EmsMessage::parseMMTempMessage()
 
     /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
     parseBool(3, 2, EmsValue::PumpeAktiv, EmsValue::HK2);
+}
+
+void
+EmsMessage::parseSolarMonitorMessage()
+{
+    parseInteger(4, 1, EmsValue::IstModulation, EmsValue::SolarPumpe);
+    parseNumeric(5, 2, 10, EmsValue::IstTemp, EmsValue::SolarSpeicher);
+    parseBool(7, 1, EmsValue::PumpeAktiv, EmsValue::Solar);
+    parseInteger(8, 3, EmsValue::BetriebsZeit, EmsValue::Solar);
 }
 

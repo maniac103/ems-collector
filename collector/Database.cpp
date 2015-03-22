@@ -247,6 +247,8 @@ Database::createSensorRows()
 		  "Temperatur Ausgang Waermetauscher", readingTypeTemperature, "°C", 1);
     query.execute(SensorWarmwasserDurchfluss, sensorTypeNumeric,
 		  "Warmwasserdurchfluss", readingTypeFlowRate, "l/min", 1);
+    query.execute(SensorSolarSpeicherTemp, sensorTypeNumeric,
+		  "Solarspeicher-Ist-Temperatur", readingTypeTemperature, "°C", 1);
 
     /* Boolean sensors */
     query.execute(SensorFlamme, sensorTypeBoolean, "Flamme");
@@ -271,6 +273,7 @@ Database::createSensorRows()
     query.execute(SensorHK2Pumpe, sensorTypeBoolean, "HK2 Pumpe");
     query.execute(SensorHK2Ferien, sensorTypeBoolean, "HK2 Ferien");
     query.execute(SensorHK2Party, sensorTypeBoolean, "HK2 Party");
+    query.execute(SensorSolarPumpe, sensorTypeBoolean, "Solar-Pumpe");
 
     /* State sensors */
     query.execute(SensorServiceCode, sensorTypeState, "Servicecode");
@@ -339,7 +342,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
-	{ EmsValue::DurchflussMenge, EmsValue::WW, SensorWarmwasserDurchfluss }
+	{ EmsValue::DurchflussMenge, EmsValue::WW, SensorWarmwasserDurchfluss },
+	{ EmsValue::IstTemp, EmsValue::SolarSpeicher, SensorSolarSpeicherTemp }
     };
 
     static const struct {
@@ -384,7 +388,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Tagbetrieb, EmsValue::Zirkulation, SensorZirkulationTagbetrieb },
 	{ EmsValue::WWVorrang, EmsValue::None, SensorWWVorrang },
 	{ EmsValue::Tagbetrieb, EmsValue::WW, SensorWWTagbetrieb },
-	{ EmsValue::Sommerbetrieb, EmsValue::None, SensorSommerbetrieb }
+	{ EmsValue::Sommerbetrieb, EmsValue::None, SensorSommerbetrieb },
+	{ EmsValue::PumpeAktiv, EmsValue::Solar, SensorSolarPumpe }
     };
 
     static const struct {
