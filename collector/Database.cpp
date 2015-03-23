@@ -249,6 +249,8 @@ Database::createSensorRows()
 		  "Warmwasserdurchfluss", readingTypeFlowRate, "l/min", 1);
     query.execute(SensorSolarSpeicherTemp, sensorTypeNumeric,
 		  "Solarspeicher-Ist-Temperatur", readingTypeTemperature, "°C", 1);
+    query.execute(SensorSolarKollektorTemp, sensorTypeNumeric,
+		  "Solarkollektor-Ist-Temperatur", readingTypeTemperature, "°C", 1);
 
     /* Boolean sensors */
     query.execute(SensorFlamme, sensorTypeBoolean, "Flamme");
@@ -343,7 +345,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
 	{ EmsValue::DurchflussMenge, EmsValue::WW, SensorWarmwasserDurchfluss },
-	{ EmsValue::IstTemp, EmsValue::SolarSpeicher, SensorSolarSpeicherTemp }
+	{ EmsValue::IstTemp, EmsValue::SolarSpeicher, SensorSolarSpeicherTemp },
+	{ EmsValue::IstTemp, EmsValue::SolarKollektor, SensorSolarKollektorTemp }
     };
 
     static const struct {

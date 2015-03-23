@@ -65,7 +65,8 @@ class Database {
 	    SensorPumpenModulation = 24,
 	    SensorWaermetauscherTemp = 25,
 	    SensorWarmwasserDurchfluss = 26,
-	    SensorSolarSpeicherTemp = 27
+	    SensorSolarSpeicherTemp = 27,
+	    SensorSolarKollektorTemp = 28
 	} NumericSensors;
 
 	typedef enum {

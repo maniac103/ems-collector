@@ -161,7 +161,8 @@ ValueApi::getSubTypeName(EmsValue::SubType subtype)
 	{ EmsValue::Ansaugluft, "intake" },
 	{ EmsValue::Solar, "solar" },
 	{ EmsValue::SolarPumpe, "solarpump" },
-	{ EmsValue::SolarSpeicher, "solartank" }
+	{ EmsValue::SolarSpeicher, "solartank" },
+	{ EmsValue::SolarKollektor, "solarcollector" }
     };
 
     auto iter = SUBTYPEMAPPING.find(subtype);

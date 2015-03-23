@@ -224,7 +224,8 @@ class EmsValue {
 	    Ansaugluft,
 	    Solar,
 	    SolarPumpe,
-	    SolarSpeicher
+	    SolarSpeicher,
+	    SolarKollektor
 	};
 
 	enum ReadingType {

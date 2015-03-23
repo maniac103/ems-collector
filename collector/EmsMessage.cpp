@@ -653,6 +653,7 @@ EmsMessage::parseMMTempMessage()
 void
 EmsMessage::parseSolarMonitorMessage()
 {
+    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::SolarKollektor);
     parseInteger(4, 1, EmsValue::IstModulation, EmsValue::SolarPumpe);
     parseNumeric(5, 2, 10, EmsValue::IstTemp, EmsValue::SolarSpeicher);
     parseBool(7, 1, EmsValue::PumpeAktiv, EmsValue::Solar);
