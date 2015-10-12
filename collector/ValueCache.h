@@ -20,6 +20,7 @@
 #ifndef __VALUECACHE_H__
 #define __VALUECACHE_H__
 
+#include <time.h>
 #include <map>
 #include <vector>
 #include "EmsMessage.h"

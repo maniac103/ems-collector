@@ -1,3 +1,4 @@
 collector/.depend
 collector/*.o
 collector/collectord
+collector/collectord.exe

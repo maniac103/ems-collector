@@ -17,11 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <asm/byteorder.h>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include "ByteOrder.h"
 #include "CommandHandler.h"
 #include "Options.h"
 
@@ -1409,7 +1409,7 @@ CommandConnection::buildRecordResponse(const EmsProto::ErrorRecord *record)
     response << " ";
     response << boost::format("%02x %c%c %d %d")
 	    % (unsigned int) record->source % record->errorAscii[0] % record->errorAscii[1]
-	    % __be16_to_cpu(record->code_be16) % __be16_to_cpu(record->durationMinutes_be16);
+	    % BE16_TO_CPU(record->code_be16) % BE16_TO_CPU(record->durationMinutes_be16);
 
     return response.str();
 }

@@ -1,0 +1,28 @@
+CC = i686-w64-mingw32-c++
+CFLAGS = -Wall -c -O2 -std=c++0x
+#CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
+LIBS = -static -lboost_system -lboost_thread-mt -lboost_chrono -lboost_program_options -lws2_32 -lmswsock
+SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
+       DataHandler.cpp EmsMessage.cpp ValueApi.cpp ValueCache.cpp \
+       Options.cpp
+OBJS = $(SRCS:%.cpp=%.o)
+DEPFILE = .depend
+
+all: collectord.exe
+
+clean:
+	rm -f collectord.exe
+	rm -f *.o
+	rm -f $(DEPFILE)
+
+$(DEPFILE): $(SRCS)
+	$(CC) $(CFLAGS) -MM $(SRCS) > $(DEPFILE)
+
+-include $(DEPFILE)
+
+collectord.exe: $(OBJS) $(DEPFILE) Makefile
+	$(CC) -o collectord.exe $(OBJS) $(LIBS)
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) $<
+

@@ -69,13 +69,16 @@ Options::parse(int argc, char *argv[])
 
     bpo::options_description daemon("Daemon options");
     daemon.add_options()
+#ifdef HAVE_DAEMONIZE
 	("pid-file,P",
 	 bpo::value<std::string>(&m_pidFilePath)->default_value(defaultPidFilePath),
 	 "Pid file path")
 	("foreground,f", "Run in foreground")
+#endif
 	("config-file,c", bpo::value<std::string>(&config),
 	 "File name to read configuration from");
 
+#ifdef HAVE_MYSQL
     bpo::options_description db("Database options");
     db.add_options()
 	("db-path", bpo::value<std::string>(&m_dbPath)->composing(),
@@ -84,6 +87,7 @@ Options::parse(int argc, char *argv[])
 	 "Database user name")
 	("db-pass,p", bpo::value<std::string>(&m_dbPass)->composing(),
 	 "Database password");
+#endif
 
     bpo::options_description tcp("TCP options");
     tcp.add_options()
@@ -99,19 +103,25 @@ Options::parse(int argc, char *argv[])
     bpo::options_description options;
     options.add(general);
     options.add(daemon);
+#ifdef HAVE_MYSQL
     options.add(db);
+#endif
     options.add(tcp);
     options.add(hidden);
 
     bpo::options_description configOptions;
     configOptions.add(general);
+#ifdef HAVE_MYSQL
     configOptions.add(db);
+#endif
     configOptions.add(tcp);
 
     bpo::options_description visible;
     visible.add(general);
     visible.add(daemon);
+#ifdef HAVE_MYSQL
     visible.add(db);
+#endif
     visible.add(tcp);
 
     bpo::positional_options_description p;

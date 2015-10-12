@@ -19,9 +19,9 @@
 
 #include <iostream>
 #include <iomanip>
-#include <asm/byteorder.h>
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
+#include "ByteOrder.h"
 #include "IoHandler.h"
 #include "Options.h"
 
@@ -447,7 +447,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	    } else {
 		boost::format f("Quelle 0x%02x, Fehler %c%c, Code %d, Dauer %d Minuten");
 		f % (unsigned int) record.source % record.errorAscii[0] % record.errorAscii[1];
-		f % __be16_to_cpu(record.code_be16) % __be16_to_cpu(record.durationMinutes_be16);
+		f % BE16_TO_CPU(record.code_be16) % BE16_TO_CPU(record.durationMinutes_be16);
 		stream << f;
 		if (record.time.valid) {
 		    boost::format ft("%d.%d.%d %d:%02d");

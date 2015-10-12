@@ -20,8 +20,9 @@
 #include <cerrno>
 #include <csignal>
 #include <iostream>
+#include <unistd.h>
+#include <boost/asio/signal_set.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/thread.hpp>
 #include "SerialHandler.h"
 #include "TcpHandler.h"
 #include "Database.h"
@@ -48,6 +49,13 @@ getHandler(const std::string& target, Database& db, ValueCache& cache)
     return NULL;
 }
 
+static void
+stopHandler(IoHandler *handler, bool *running)
+{
+    *running = false;
+    handler->stop();
+}
+
 int main(int argc, char *argv[])
 {
     Options::ParseResult result = Options::parse(argc, argv);
@@ -58,18 +66,17 @@ int main(int argc, char *argv[])
     }
 
     try {
-	sigset_t oldMask, newMask, waitMask;
-	struct timespec pollTimeout;
-	siginfo_t info;
 	const std::string& dbPath = Options::databasePath();
-	PidFile pid(Options::pidFilePath());
 	Database db;
 	ValueCache cache;
 	bool running = true;
 
+#ifdef HAVE_DAEMONIZE
+	PidFile pid(Options::pidFilePath());
 	if (Options::daemonize()) {
 	    pid.aquire();
 	}
+#endif
 
 	if (dbPath != "none") {
 	    if (!db.connect(dbPath, Options::databaseUser(), Options::databasePassword())) {
@@ -78,6 +85,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 
+#ifdef HAVE_DAEMONIZE
 	if (Options::daemonize()) {
 	    if (daemon(0, 0) == -1) {
 		std::ostringstream msg;
@@ -87,9 +95,7 @@ int main(int argc, char *argv[])
 
 	    pid.write();
 	}
-
-	pollTimeout.tv_sec = 2;
-	pollTimeout.tv_nsec = 0;
+#endif
 
 	while (running) {
 	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), db, cache));
@@ -99,33 +105,14 @@ int main(int argc, char *argv[])
 		throw std::runtime_error(msg.str());
 	    }
 
-	    /* block all signals for background thread */
-	    sigfillset(&newMask);
-	    pthread_sigmask(SIG_BLOCK, &newMask, &oldMask);
+	    boost::asio::signal_set signals(*handler, SIGINT, SIGTERM);
+#ifdef SIGQUIT
+	    signals.add(SIGQUIT);
+#endif
+	    signals.async_wait(boost::bind(&stopHandler, handler.get(), &running));
 
-	    /* run the IO service in background thread */
-	    boost::thread t(boost::bind(&IoHandler::run, handler.get()));
+	    handler->run();
 
-	    /* restore previous signals */
-	    pthread_sigmask(SIG_SETMASK, &oldMask, 0);
-
-	    /* wait for signal indicating time to shut down */
-	    sigemptyset(&waitMask);
-	    sigaddset(&waitMask, SIGINT);
-	    sigaddset(&waitMask, SIGQUIT);
-	    sigaddset(&waitMask, SIGTERM);
-
-	    pthread_sigmask(SIG_BLOCK, &waitMask, 0);
-
-	    do {
-		if (sigtimedwait(&waitMask, &info, &pollTimeout) >= 0) {
-		    running = false;
-		    handler->close();
-		    break;
-		}
-	    } while (handler->active());
-
-	    t.join();
 	    /* wait some time until retrying */
 	    if (running) {
 		sleep(10);
