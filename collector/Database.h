@@ -20,15 +20,14 @@
 #ifndef __DATABASE_H__
 #define __DATABASE_H__
 
-#ifdef HAVE_MYSQL
-# include <map>
-# include <queue>
-# include <mysql++/connection.h>
-# include <mysql++/query.h>
-#endif
 #include "EmsMessage.h"
 
 #ifdef HAVE_MYSQL
+
+#include <map>
+#include <queue>
+#include <mysql++/connection.h>
+#include <mysql++/query.h>
 
 class Database {
     public:
