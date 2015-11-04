@@ -280,6 +280,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::SollModulation, "%" },
 	{ EmsValue::MinModulation, "%" },
 	{ EmsValue::MaxModulation, "%" },
+	{ EmsValue::SollLeistung, "%" },
 	{ EmsValue::Flammenstrom, "µA" },
 	{ EmsValue::Systemdruck, "bar" },
 	{ EmsValue::BetriebsZeit, "min" },
