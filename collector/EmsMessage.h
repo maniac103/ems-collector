@@ -296,8 +296,9 @@ class EmsMessage
 {
     public:
 	typedef boost::function<void (const EmsValue& value)> ValueHandler;
+	typedef boost::function<const EmsValue * (EmsValue::Type type, EmsValue::SubType subtype)> CacheAccessor;
 
-	EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data);
+	EmsMessage(ValueHandler& valueHandler, CacheAccessor cacheAccesor, const std::vector<uint8_t>& data);
 	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
 		   const std::vector<uint8_t>& data, bool expectResponse);
 
@@ -365,6 +366,7 @@ class EmsMessage
 
     private:
 	ValueHandler m_valueHandler;
+	CacheAccessor m_cacheAccessor;
 	std::vector<unsigned char> m_data;
 	uint8_t m_source;
 	uint8_t m_dest;

@@ -126,8 +126,10 @@ EmsValue::EmsValue(Type type, SubType subType, const std::string& value) :
 {
 }
 
-EmsMessage::EmsMessage(ValueHandler& valueHandler, const std::vector<uint8_t>& data) :
+EmsMessage::EmsMessage(ValueHandler& valueHandler, CacheAccessor cacheAccessor,
+		       const std::vector<uint8_t>& data) :
     m_valueHandler(valueHandler),
+    m_cacheAccessor(cacheAccessor),
     m_data(data)
 {
     if (m_data.size() >= 4) {
@@ -527,7 +529,15 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
 	}
 	m_valueHandler(EmsValue(EmsValue::HeizSystem, subtype, system));
 	m_valueHandler(EmsValue(EmsValue::FuehrungsGroesse, subtype, roomControlled));
+    } else if (rcType == Options::RC35) {
+	parseEnum(32, EmsValue::HeizSystem, subtype);
+	parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
     }
+
+    const EmsValue *systemValue = m_cacheAccessor
+	    ? m_cacheAccessor(EmsValue::HeizSystem, subtype) : NULL;
+    bool isFloorHeating = systemValue && systemValue->isValid()
+	    && systemValue->getValue<uint8_t>() == 3;
 
     parseNumeric(1, 1, 2, EmsValue::NachtTemp, subtype);
     parseNumeric(2, 1, 2, EmsValue::TagTemp, subtype);
@@ -536,19 +546,20 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseNumeric(6, 1, 2, EmsValue::RaumOffset, subtype);
     parseEnum(7, EmsValue::Betriebsart, subtype);
     parseBool(8, 0, EmsValue::Estrichtrocknung, subtype);
-    parseNumeric(15, 1, 1, EmsValue::MaxTemp, subtype);
+    if (rcType == Options::RC35 && isFloorHeating) {
+	parseNumeric(35, 1, 1, EmsValue::MaxTemp, subtype);
+	parseNumeric(36, 1, 1, EmsValue::AuslegungsTemp, subtype);
+    } else {
+	parseNumeric(15, 1, 1, EmsValue::MaxTemp, subtype);
+	parseNumeric(17, 1, 1, EmsValue::AuslegungsTemp, subtype);
+    }
     parseNumeric(16, 1, 1, EmsValue::MinTemp, subtype);
-    parseNumeric(17, 1, 1, EmsValue::AuslegungsTemp, subtype);
     parseBool(19, 1, EmsValue::SchaltzeitOptimierung, subtype);
     parseNumeric(22, 1, 1, EmsValue::SchwelleSommerWinter, subtype);
     parseNumeric(23, 1, 1, EmsValue::FrostSchutzTemp, subtype);
     parseEnum(25, EmsValue::RegelungsArt, subtype);
     parseEnum(26, EmsValue::FBTyp, subtype);
     parseEnum(28, EmsValue::Frostschutz, subtype);
-    if (rcType == Options::RC35) {
-	parseEnum(32, EmsValue::HeizSystem, subtype);
-	parseEnum(33, EmsValue::FuehrungsGroesse, subtype);
-    }
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
     parseNumeric(38, 1, 1, EmsValue::AbsenkungsAbbruchTemp, subtype);
     parseNumeric(39, 1, 1, EmsValue::AbsenkungsSchwellenTemp, subtype);

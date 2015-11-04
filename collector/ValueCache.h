@@ -33,6 +33,7 @@ class ValueCache
 
 	void handleValue(const EmsValue& value);
 	void outputValues(const std::vector<std::string>& selector, std::ostream& stream);
+	const EmsValue * getValue(EmsValue::Type type, EmsValue::SubType subtype) const;
 
     private:
 	class CacheKey {

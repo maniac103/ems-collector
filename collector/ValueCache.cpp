@@ -17,6 +17,16 @@ ValueCache::handleValue(const EmsValue& value)
     m_cache.insert(std::make_pair(key, CacheEntry(value)));
 }
 
+const EmsValue *
+ValueCache::getValue(EmsValue::Type type, EmsValue::SubType subtype) const
+{
+    auto iter = m_cache.find(CacheKey(type, subtype));
+    if (iter == m_cache.end()) {
+	return NULL;
+    }
+    return &iter->second.value;
+}
+
 void
 ValueCache::outputValues(const std::vector<std::string>& selector, std::ostream& stream)
 {

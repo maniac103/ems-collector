@@ -37,6 +37,7 @@ IoHandler::IoHandler(Database& db, ValueCache& cache) :
     m_data.reserve(256);
 
     m_valueCb = boost::bind(&IoHandler::handleValue, this, _1);
+    m_cacheCb = boost::bind(&IoHandler::getCacheValue, this, _1, _2);
 }
 
 IoHandler::~IoHandler()
@@ -95,7 +96,7 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		break;
 	    case Checksum:
 		if (m_checkSum == dataByte) {
-		    EmsMessage message(m_valueCb, m_data);
+		    EmsMessage message(m_valueCb, m_cacheCb, m_data);
 		    message.handle();
 		    if (message.getDestination() == EmsProto::addressPC && m_pcMessageCallback) {
 			m_pcMessageCallback(message);

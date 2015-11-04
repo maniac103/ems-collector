@@ -56,6 +56,9 @@ class IoHandler : public boost::asio::io_service
 	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
 	void doClose(const boost::system::error_code& error);
 	void handleValue(const EmsValue& value);
+	const EmsValue * getCacheValue(EmsValue::Type type, EmsValue::SubType subtype) {
+	    return m_cache.getValue(type, subtype);
+	}
 
 	bool m_active;
 	unsigned char m_recvBuffer[maxReadLength];
@@ -78,6 +81,7 @@ class IoHandler : public boost::asio::io_service
 	uint8_t m_checkSum;
 	std::vector<uint8_t> m_data;
 	EmsMessage::ValueHandler m_valueCb;
+	EmsMessage::CacheAccessor m_cacheCb;
 };
 
 #endif /* __IOHANDLER_H__ */
