@@ -407,6 +407,7 @@ EmsMessage::parseUBAMonitorSlowMessage()
     parseInteger(9, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
     parseInteger(10, 3, EmsValue::Brennerstarts, EmsValue::Kessel);
     parseInteger(13, 3, EmsValue::BetriebsZeit, EmsValue::Kessel);
+    parseInteger(16, 3, EmsValue::BetriebsZeit2, EmsValue::Kessel);
     parseInteger(19, 3, EmsValue::HeizZeit, EmsValue::Kessel);
 }
 

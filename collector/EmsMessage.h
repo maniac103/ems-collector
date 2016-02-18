@@ -129,6 +129,7 @@ class EmsValue {
 	    DurchflussMenge,
 	    /* integer */
 	    BetriebsZeit,
+	    BetriebsZeit2,
 	    HeizZeit,
 	    WarmwasserbereitungsZeit,
 	    Brennerstarts,

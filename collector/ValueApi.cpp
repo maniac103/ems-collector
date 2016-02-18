@@ -51,6 +51,7 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::Flammenstrom, "flamecurrent" },
 	{ EmsValue::Systemdruck, "pressure" },
 	{ EmsValue::BetriebsZeit, "operatingminutes" },
+	{ EmsValue::BetriebsZeit2, "operatingminutes2" },
 	{ EmsValue::MinModulation, "minmodulation" },
 	{ EmsValue::MaxModulation, "maxmodulation" },
 	{ EmsValue::SollModulation, "targetmodulation" },
