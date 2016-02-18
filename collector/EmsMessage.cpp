@@ -26,8 +26,15 @@
 #include "EmsMessage.h"
 #include "Options.h"
 
+static const uint8_t INVALID_TEMP_VALUE_LOWER[] = { 0x7d, 0x00 };
+static const uint8_t INVALID_TEMP_VALUE_UPPER[] = { 0x83, 0x00 };
+const std::vector<const uint8_t *> EmsMessage::INVALID_TEMPERATURE_VALUES = {
+    INVALID_TEMP_VALUE_LOWER, INVALID_TEMP_VALUE_UPPER
+};
+
 EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data,
-		   size_t len, int divider, bool isSigned) :
+		   size_t len, int divider, bool isSigned,
+		   const std::vector<const uint8_t *> *invalidValues) :
     m_type(type),
     m_subType(subType),
     m_readingType(Numeric),
@@ -53,6 +60,15 @@ EmsValue::EmsValue(Type type, SubType subType, const uint8_t *data,
     } else {
 	int maxValue = (1 << 8 * len) - 1;
 	m_isValid = value != maxValue;
+    }
+
+    if (invalidValues) {
+	for (auto& invalid : *invalidValues) {
+	    if (memcmp(data, invalid, len) == 0) {
+		m_isValid = false;
+		break;
+	    }
+	}
     }
 
     if (divider == 0) {
@@ -319,18 +335,13 @@ EmsMessage::parseEnum(size_t offset, EmsValue::Type type, EmsValue::SubType subt
 }
 
 void
-EmsMessage::parseInteger(size_t offset, size_t size,
-			 EmsValue::Type type, EmsValue::SubType subtype)
-{
-    parseNumeric(offset, size, 0, type, subtype, false);
-}
-
-void
 EmsMessage::parseNumeric(size_t offset, size_t size, int divider,
-			 EmsValue::Type type, EmsValue::SubType subtype, bool isSigned)
+			 EmsValue::Type type, EmsValue::SubType subtype,
+			 bool isSigned, const std::vector<const uint8_t *> *invalidValues)
 {
     if (canAccess(offset, size)) {
-	EmsValue value(type, subtype, &m_data.at(offset - m_offset), size, divider, isSigned);
+	EmsValue value(type, subtype, &m_data.at(offset - m_offset),
+		size, divider, isSigned, invalidValues);
 	m_valueHandler(value);
     }
 }
@@ -349,7 +360,7 @@ void
 EmsMessage::parseUBAMonitorFastMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::Kessel);
-    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::Kessel);
+    parseTemperature(1, EmsValue::IstTemp, EmsValue::Kessel);
     parseInteger(3, 1, EmsValue::SollModulation, EmsValue::Brenner);
     parseInteger(4, 1, EmsValue::IstModulation, EmsValue::Brenner);
     parseBool(7, 0, EmsValue::FlammeAktiv, EmsValue::None);
@@ -358,10 +369,10 @@ EmsMessage::parseUBAMonitorFastMessage()
     parseBool(7, 5, EmsValue::PumpeAktiv, EmsValue::Kessel);
     parseBool(7, 6, EmsValue::DreiWegeVentilAufWW, EmsValue::None);
     parseBool(7, 7, EmsValue::ZirkulationAktiv, EmsValue::None);
-    parseNumeric(13, 2, 10, EmsValue::IstTemp, EmsValue::Ruecklauf);
+    parseTemperature(13, EmsValue::IstTemp, EmsValue::Ruecklauf);
     parseNumeric(15, 2, 10, EmsValue::Flammenstrom, EmsValue::None);
     parseNumeric(17, 1, 10, EmsValue::Systemdruck, EmsValue::None, false);
-    parseNumeric(25, 2, 10, EmsValue::IstTemp, EmsValue::Ansaugluft);
+    parseTemperature(25, EmsValue::IstTemp, EmsValue::Ansaugluft);
 
     if (canAccess(18, 2)) {
 	std::ostringstream ss;
@@ -401,9 +412,9 @@ EmsMessage::parseUBAMaintenanceStatusMessage()
 void
 EmsMessage::parseUBAMonitorSlowMessage()
 {
-    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::Aussen);
-    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::Waermetauscher);
-    parseNumeric(4, 2, 10, EmsValue::IstTemp, EmsValue::Abgas);
+    parseTemperature(0, EmsValue::IstTemp, EmsValue::Aussen);
+    parseTemperature(2, EmsValue::IstTemp, EmsValue::Waermetauscher);
+    parseTemperature(4, EmsValue::IstTemp, EmsValue::Abgas);
     parseInteger(9, 1, EmsValue::IstModulation, EmsValue::KesselPumpe);
     parseInteger(10, 3, EmsValue::Brennerstarts, EmsValue::Kessel);
     parseInteger(13, 3, EmsValue::BetriebsZeit, EmsValue::Kessel);
@@ -415,7 +426,7 @@ void
 EmsMessage::parseUBAMonitorWWMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::WW);
-    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::WW);
+    parseTemperature(1, EmsValue::IstTemp, EmsValue::WW);
     parseBool(5, 0, EmsValue::Tagbetrieb, EmsValue::WW);
     parseBool(5, 1, EmsValue::EinmalLadungAktiv, EmsValue::WW);
     parseBool(5, 2, EmsValue::DesinfektionAktiv, EmsValue::WW);
@@ -594,17 +605,7 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
     parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
-    if (canAccess(3, 2)) {
-	if (m_data[3 - m_offset] == 0x7d && m_data[4 - m_offset] == 0) {
-	    // If the RC3x is mounted in the heater itself and not assigned
-	    // to a heating circuit, the actual temperature is passed as
-	    // 0x7d 0x00.
-	    // TODO: is ignoring actual temperature sufficient or should we
-	    // ignore more data?
-	} else {
-	    parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
-	}
-    }
+    parseTemperature(3, EmsValue::IstTemp, EmsValue::Raum);
     parseInteger(5, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
     parseInteger(6, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
@@ -633,13 +634,13 @@ EmsMessage::parseRC20StatusMessage()
 {
     parseBool(0, 7, EmsValue::Tagbetrieb, EmsValue::HK1);
     parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
-    parseNumeric(3, 2, 10, EmsValue::IstTemp, EmsValue::Raum);
+    parseTemperature(3, EmsValue::IstTemp, EmsValue::Raum);
 }
 
 void
 EmsMessage::parseWMTemp1Message()
 {
-    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
+    parseTemperature(0, EmsValue::IstTemp, EmsValue::HK1);
 
     /* Byte 2 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
     parseBool(2, 2, EmsValue::PumpeAktiv, EmsValue::HK1);
@@ -648,14 +649,14 @@ EmsMessage::parseWMTemp1Message()
 void
 EmsMessage::parseWMTemp2Message()
 {
-    parseNumeric(0, 2, 10, EmsValue::IstTemp, EmsValue::HK1);
+    parseTemperature(0, EmsValue::IstTemp, EmsValue::HK1);
 }
 
 void
 EmsMessage::parseMMTempMessage()
 {
     parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::HK2);
-    parseNumeric(1, 2, 10, EmsValue::IstTemp, EmsValue::HK2);
+    parseTemperature(1, EmsValue::IstTemp, EmsValue::HK2);
     parseInteger(3, 1, EmsValue::Mischersteuerung, EmsValue::None);
 
     /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
@@ -665,9 +666,9 @@ EmsMessage::parseMMTempMessage()
 void
 EmsMessage::parseSolarMonitorMessage()
 {
-    parseNumeric(2, 2, 10, EmsValue::IstTemp, EmsValue::SolarKollektor);
+    parseTemperature(2, EmsValue::IstTemp, EmsValue::SolarKollektor);
     parseInteger(4, 1, EmsValue::IstModulation, EmsValue::SolarPumpe);
-    parseNumeric(5, 2, 10, EmsValue::IstTemp, EmsValue::SolarSpeicher);
+    parseTemperature(5, EmsValue::IstTemp, EmsValue::SolarSpeicher);
     parseBool(7, 1, EmsValue::PumpeAktiv, EmsValue::Solar);
     parseInteger(8, 3, EmsValue::BetriebsZeit, EmsValue::Solar);
 }

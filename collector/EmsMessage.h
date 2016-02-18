@@ -260,7 +260,8 @@ class EmsValue {
 	> Reading;
 
     public:
-	EmsValue(Type type, SubType subType, const uint8_t *value, size_t len, int divider, bool isSigned);
+	EmsValue(Type type, SubType subType, const uint8_t *value, size_t len, int divider,
+		 bool isSigned, const std::vector<const uint8_t *> *invalidValues = NULL);
 	EmsValue(Type type, SubType subType, uint8_t value, uint8_t bit);
 	EmsValue(Type type, SubType subType, uint8_t value);
 	EmsValue(Type type, SubType subType, uint8_t low, uint8_t medium, uint8_t high);
@@ -353,9 +354,15 @@ class EmsMessage
 
     private:
 	void parseNumeric(size_t offset, size_t size, int divider,
-			  EmsValue::Type type, EmsValue::SubType subtype, bool isSigned = true);
+			  EmsValue::Type type, EmsValue::SubType subtype, bool isSigned = true,
+			  const std::vector<const uint8_t *> *invalidValues = NULL);
 	void parseInteger(size_t offset, size_t size,
-			  EmsValue::Type type, EmsValue::SubType subtype);
+			  EmsValue::Type type, EmsValue::SubType subtype) {
+	    parseNumeric(offset, size, 0, type, subtype, false);
+	}
+	void parseTemperature(size_t offset, EmsValue::Type type, EmsValue::SubType subtype) {
+	    parseNumeric(offset, 2, 10, type, subtype, true, &INVALID_TEMPERATURE_VALUES);
+	}
 	void parseBool(size_t offset, uint8_t bit,
 		       EmsValue::Type type, EmsValue::SubType subtype);
 	void parseEnum(size_t offset,
@@ -366,6 +373,7 @@ class EmsMessage
 	}
 
     private:
+	static const std::vector<const uint8_t *> INVALID_TEMPERATURE_VALUES;
 	ValueHandler m_valueHandler;
 	CacheAccessor m_cacheAccessor;
 	std::vector<unsigned char> m_data;
