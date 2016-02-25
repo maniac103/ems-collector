@@ -211,8 +211,6 @@ Options::parse(int argc, char *argv[])
 		    module = DebugMessages;
 		} else if (item.compare(0, 4, "data") == 0) {
 		    module = DebugData;
-		} else if (item.compare(0, 5, "stats") == 0) {
-		    module = DebugStats;
 		} else {
 		    continue;
 		}
