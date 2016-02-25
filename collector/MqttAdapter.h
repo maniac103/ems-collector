@@ -29,16 +29,23 @@ class MqttAdapter {
     public:
 	MqttAdapter(boost::asio::io_service& ios,
 		    const std::string& host, const std::string& port);
-	~MqttAdapter();
 
 	void handleValue(const EmsValue& value);
 
     private:
 	void onConnect(bool sessionPresent, uint8_t returnCode);
 	void onError(const boost::system::error_code& ec);
+	void onClose();
+	void scheduleConnectionRetry();
 
     private:
+	static const unsigned int MinRetryDelaySeconds = 5;
+	static const unsigned int MaxRetryDelaySeconds = 5 * 60;
+
 	mqtt::client<boost::asio::ip::tcp::socket> m_client;
+	bool m_connected;
+	unsigned int m_retryDelay;
+	boost::asio::deadline_timer m_retryTimer;
 };
 
 #else /* HAVE_MQTT */
