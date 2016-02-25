@@ -42,6 +42,7 @@ IoHandler::IoHandler(Database& db, ValueCache& cache) :
 
 IoHandler::~IoHandler()
 {
+    m_mqttAdapter.reset();
 }
 
 void
@@ -526,4 +527,7 @@ IoHandler::handleValue(const EmsValue& value)
     }
     m_db.handleValue(value);
     m_cache.handleValue(value);
+    if (m_mqttAdapter) {
+	m_mqttAdapter->handleValue(value);
+    }
 }

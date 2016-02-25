@@ -31,22 +31,29 @@
 #include "ValueCache.h"
 
 static IoHandler *
-getHandler(const std::string& target, Database& db, ValueCache& cache)
+getHandler(const std::string& target, const std::string& mqttTarget, Database& db, ValueCache& cache)
 {
-    if (target.compare(0, 7, "serial:") == 0) {
-	return new SerialHandler(target.substr(7), db, cache);
-    }
+    IoHandler *handler = nullptr;
 
-    if (target.compare(0, 4, "tcp:") == 0) {
+    if (target.compare(0, 7, "serial:") == 0) {
+	handler = new SerialHandler(target.substr(7), db, cache);
+    } else if (target.compare(0, 4, "tcp:") == 0) {
 	size_t pos = target.find(':', 4);
 	if (pos != std::string::npos) {
 	    std::string host = target.substr(4, pos - 4);
 	    std::string port = target.substr(pos + 1);
-	    return new TcpHandler(host, port, db, cache);
+	    handler = new TcpHandler(host, port, db, cache);
 	}
     }
 
-    return NULL;
+    size_t pos = mqttTarget.find(':');
+    if (handler && pos != std::string::npos) {
+	std::string host = mqttTarget.substr(0, pos);
+	std::string port = mqttTarget.substr(pos + 1);
+	handler->setMqttAdapter(new MqttAdapter(*handler, host, port));
+    }
+
+    return handler;
 }
 
 static void
@@ -98,7 +105,8 @@ int main(int argc, char *argv[])
 #endif
 
 	while (running) {
-	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), db, cache));
+	    boost::scoped_ptr<IoHandler> handler(
+		    getHandler(Options::target(), Options::mqttTarget(), db, cache));
 	    if (!handler) {
 		std::ostringstream msg;
 		msg << "Target " << Options::target() << " is invalid.";

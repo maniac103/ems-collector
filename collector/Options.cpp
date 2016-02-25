@@ -27,6 +27,7 @@
 namespace bpo = boost::program_options;
 
 std::string Options::m_target;
+std::string Options::m_mqttTarget;
 unsigned int Options::m_rateLimit = 0;
 DebugStream Options::m_debugStreams[DebugCount];
 std::string Options::m_pidFilePath;
@@ -96,6 +97,11 @@ Options::parse(int argc, char *argv[])
 	("data-port,D", bpo::value<unsigned int>(&m_dataPort)->composing(),
 	 "TCP port for broadcasting live sensor data (0 to disable)");
 
+    bpo::options_description interface("Interface options");
+    interface.add_options()
+	("mqtt-broker", bpo::value<std::string>(&m_mqttTarget)->composing(),
+	 "MQTT broker address (<host>:<port>)");
+
     bpo::options_description hidden("Hidden options");
     hidden.add_options()
 	("target", bpo::value<std::string>(&m_target), "Connection target (serial:<device> or tcp:<host>:<port>)");
@@ -107,6 +113,7 @@ Options::parse(int argc, char *argv[])
     options.add(db);
 #endif
     options.add(tcp);
+    options.add(interface);
     options.add(hidden);
 
     bpo::options_description configOptions;
@@ -115,6 +122,7 @@ Options::parse(int argc, char *argv[])
     configOptions.add(db);
 #endif
     configOptions.add(tcp);
+    configOptions.add(interface);
 
     bpo::options_description visible;
     visible.add(general);
@@ -123,6 +131,7 @@ Options::parse(int argc, char *argv[])
     visible.add(db);
 #endif
     visible.add(tcp);
+    visible.add(interface);
 
     bpo::positional_options_description p;
     p.add("target", 1);

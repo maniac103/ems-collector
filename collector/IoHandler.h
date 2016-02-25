@@ -26,6 +26,7 @@
 #include <fstream>
 #include "Database.h"
 #include "EmsMessage.h"
+#include "MqttAdapter.h"
 #include "ValueCache.h"
 
 class IoHandler : public boost::asio::io_service
@@ -37,6 +38,10 @@ class IoHandler : public boost::asio::io_service
 	void close() {
 	    post(boost::bind(&IoHandler::doClose, this,
 			     boost::system::error_code()));
+	}
+
+	void setMqttAdapter(MqttAdapter *adapter) {
+	    m_mqttAdapter.reset(adapter);
 	}
 
 	bool active() {
@@ -80,6 +85,7 @@ class IoHandler : public boost::asio::io_service
 	size_t m_pos, m_length;
 	uint8_t m_checkSum;
 	std::vector<uint8_t> m_data;
+	std::unique_ptr<MqttAdapter> m_mqttAdapter;
 	EmsMessage::ValueHandler m_valueCb;
 	EmsMessage::CacheAccessor m_cacheCb;
 };
