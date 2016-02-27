@@ -28,6 +28,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/logic/tribool.hpp>
+#include "ApiCommandParser.h"
 #include "EmsMessage.h"
 #include "TcpHandler.h"
 
@@ -57,11 +58,6 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void onIncomingMessage(const EmsMessage& message);
 	void onTimeout();
 
-    public:
-	static std::string buildRecordResponse(const EmsProto::ErrorRecord *record);
-	static std::string buildRecordResponse(const EmsProto::ScheduleEntry *entry);
-	static std::string buildRecordResponse(const char *type, const EmsProto::HolidayEntry *entry);
-
     private:
 	void handleRequest(const boost::system::error_code& error);
 	void handleWrite(const boost::system::error_code& error);
@@ -82,64 +78,18 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 		CommandConnection *m_connection;
 	};
 
-	typedef enum {
-	    Ok,
-	    InvalidCmd,
-	    InvalidArgs
-	} CommandResult;
-
-	CommandResult handleCommand(std::istream& request);
-	CommandResult handleRcCommand(std::istream& request);
-	CommandResult handleUbaCommand(std::istream& request);
-#if defined(HAVE_RAW_READWRITE_COMMAND)
-	CommandResult handleRawCommand(std::istream& request);
-#endif
-	CommandResult handleCacheCommand(std::istream& request);
-	CommandResult handleHkCommand(std::istream& request, uint8_t base);
-	CommandResult handleSingleByteValue(std::istream& request, uint8_t dest, uint8_t type,
-					    uint8_t offset, int multiplier, int min, int max);
-	CommandResult handleSetHolidayCommand(std::istream& request, uint8_t type, uint8_t offset);
-	CommandResult handleWwCommand(std::istream& request);
-	CommandResult handleThermDesinfectCommand(std::istream& request);
-	CommandResult handleZirkPumpCommand(std::istream& request);
-
-	template<typename T> boost::tribool loopOverResponse(const char *prefix = "");
-
-	bool parseScheduleEntry(std::istream& request, EmsProto::ScheduleEntry *entry);
-	bool parseHolidayEntry(const std::string& string, EmsProto::HolidayEntry *entry);
-
 	void respond(const std::string& response) {
 	    boost::asio::async_write(m_socket, boost::asio::buffer(response + "\n"),
 		boost::bind(&CommandConnection::handleWrite, shared_from_this(),
 			    boost::asio::placeholders::error));
 	}
-	boost::tribool handleResponse();
-	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length,
-			  bool newRequest = true, bool raw = false);
-	bool continueRequest();
-	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
-			 const uint8_t *data, size_t count,
-			 bool expectResponse = false);
-	void sendActiveRequest();
-	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
 
     private:
-	static const unsigned int MaxRequestRetries = 5;
-
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::streambuf m_request;
 	std::shared_ptr<EmsCommandClient> m_commandClient;
+	ApiCommandParser m_parser;
 	CommandHandler& m_handler;
-	unsigned int m_responseCounter;
-	unsigned int m_retriesLeft;
-	std::shared_ptr<EmsMessage> m_activeRequest;
-	std::vector<uint8_t> m_requestResponse;
-	size_t m_requestOffset;
-	size_t m_requestLength;
-	uint8_t m_requestDestination;
-	uint8_t m_requestType;
-	size_t m_parsePosition;
-	bool m_outputRawData;
 };
 
 class CommandHandler : private boost::noncopyable

@@ -20,7 +20,7 @@
 #include <map>
 #include <sstream>
 #include <boost/format.hpp>
-#include "CommandHandler.h"
+#include "ApiCommandParser.h"
 #include "ValueApi.h"
 
 std::string
@@ -294,7 +294,7 @@ ValueApi::formatValue(const EmsValue& value)
 	}
 	case EmsValue::Error: {
 	    EmsValue::ErrorEntry entry = value.getValue<EmsValue::ErrorEntry>();
-	    std::string formatted = CommandConnection::buildRecordResponse(&entry.record);
+	    std::string formatted = ApiCommandParser::buildRecordResponse(&entry.record);
 	    if (formatted.empty()) {
 		formatted = "empty";
 	    }
