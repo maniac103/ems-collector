@@ -31,8 +31,7 @@
 CommandHandler::CommandHandler(TcpHandler& handler,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_handler(handler),
-    m_acceptor(handler, endpoint),
-    m_sendTimer(handler)
+    m_acceptor(handler, endpoint)
 {
     startAccepting();
 }
@@ -43,7 +42,6 @@ CommandHandler::~CommandHandler()
     std::for_each(m_connections.begin(), m_connections.end(),
 		  boost::bind(&CommandConnection::close, _1));
     m_connections.clear();
-    m_sendTimer.cancel();
 }
 
 void
@@ -76,16 +74,6 @@ CommandHandler::stopConnection(CommandConnection::Ptr connection)
 }
 
 void
-CommandHandler::handlePcMessage(const EmsMessage& message)
-{
-    m_lastCommTimes[message.getSource()] = boost::posix_time::microsec_clock::universal_time();
-
-    std::for_each(m_connections.begin(), m_connections.end(),
-		  boost::bind(&CommandConnection::handlePcMessage,
-			      _1, message));
-}
-
-void
 CommandHandler::startAccepting()
 {
     CommandConnection::Ptr connection(new CommandConnection(*this));
@@ -94,48 +82,15 @@ CommandHandler::startAccepting()
 					connection, boost::asio::placeholders::error));
 }
 
-void
-CommandHandler::sendMessage(const EmsMessage& msg)
-{
-    std::map<uint8_t, boost::posix_time::ptime>::iterator timeIter = m_lastCommTimes.find(msg.getDestination());
-    bool scheduled = false;
-
-    if (timeIter != m_lastCommTimes.end()) {
-	boost::posix_time::ptime now(boost::posix_time::microsec_clock::universal_time());
-	boost::posix_time::time_duration diff = now - timeIter->second;
-
-	if (diff.total_milliseconds() <= MinDistanceBetweenRequests) {
-	    m_sendTimer.expires_at(timeIter->second + boost::posix_time::milliseconds(MinDistanceBetweenRequests));
-	    m_sendTimer.async_wait(boost::bind(&CommandHandler::doSendMessage, this, msg));
-	    scheduled = true;
-	}
-    }
-    if (!scheduled) {
-	doSendMessage(msg);
-    }
-}
-
-void
-CommandHandler::doSendMessage(const EmsMessage& msg)
-{
-    m_handler.sendMessage(msg);
-    m_lastCommTimes[msg.getDestination()] = boost::posix_time::microsec_clock::universal_time();
-}
-
 
 CommandConnection::CommandConnection(CommandHandler& handler) :
     m_socket(handler.getHandler()),
+    m_commandClient(new CommandClient(this)),
     m_handler(handler),
-    m_responseTimeout(handler.getHandler()),
     m_responseCounter(0),
     m_parsePosition(0),
     m_outputRawData(false)
 {
-}
-
-CommandConnection::~CommandConnection()
-{
-    m_responseTimeout.cancel();
 }
 
 void
@@ -1128,7 +1083,7 @@ CommandConnection::handleZirkPumpCommand(std::istream& request)
 }
 
 void
-CommandConnection::handlePcMessage(const EmsMessage& message)
+CommandConnection::onIncomingMessage(const EmsMessage& message)
 {
     if (!m_activeRequest) {
 	return;
@@ -1152,7 +1107,6 @@ CommandConnection::handlePcMessage(const EmsMessage& message)
 	return;
     }
 
-    m_responseTimeout.cancel();
     if (data.empty()) {
 	// no more data is available
 	m_requestLength = m_requestResponse.size();
@@ -1364,17 +1318,9 @@ CommandConnection::loopOverResponse(const char *prefix)
 }
 
 void
-CommandConnection::scheduleResponseTimeout()
+CommandConnection::onTimeout()
 {
-    m_responseTimeout.expires_from_now(boost::posix_time::milliseconds(RequestTimeout));
-    m_responseTimeout.async_wait(boost::bind(&CommandConnection::responseTimeout,
-					     this, boost::asio::placeholders::error));
-}
-
-void
-CommandConnection::responseTimeout(const boost::system::error_code& error)
-{
-    if (!m_activeRequest || error == boost::asio::error::operation_aborted) {
+    if (!m_activeRequest) {
 	return;
     }
     m_retriesLeft--;
@@ -1382,8 +1328,7 @@ CommandConnection::responseTimeout(const boost::system::error_code& error)
 	m_activeRequest.reset();
 	respond("ERRTIMEOUT");
     } else {
-	scheduleResponseTimeout();
-	m_handler.sendMessage(*m_activeRequest);
+	sendActiveRequest();
     }
 }
 
@@ -1575,9 +1520,7 @@ CommandConnection::sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
     m_retriesLeft = MaxRequestRetries;
     m_activeRequest.reset(new EmsMessage(dest, type, offset, sendData, expectResponse));
 
-    scheduleResponseTimeout();
-
-    m_handler.sendMessage(*m_activeRequest);
+    sendActiveRequest();
 }
 
 bool
@@ -1594,4 +1537,10 @@ CommandConnection::parseIntParameter(std::istream& request, uint8_t& data, uint8
 
     data = value;
     return true;
+}
+
+void
+CommandConnection::sendActiveRequest()
+{
+    m_handler.getHandler().sendMessage(m_commandClient, m_activeRequest);
 }

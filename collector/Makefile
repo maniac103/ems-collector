@@ -4,8 +4,8 @@ CFLAGS = -Wall -c -O2 -I/usr/include/mysql -std=c++0x -DHAVE_MYSQL -DHAVE_DAEMON
 
 LIBS = -lpthread -lboost_system -lboost_program_options -lmysqlpp
 SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
-       DataHandler.cpp EmsMessage.cpp Database.cpp ValueApi.cpp ValueCache.cpp \
-       Options.cpp PidFile.cpp
+       CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp Database.cpp \
+       ValueApi.cpp ValueCache.cpp Options.cpp PidFile.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 DEPFILE = .depend
 

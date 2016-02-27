@@ -29,6 +29,7 @@ TcpHandler::TcpHandler(const std::string& host,
 		       Database& db,
 		       ValueCache& cache) :
     IoHandler(db, cache),
+    EmsCommandSender((boost::asio::io_service&) *this),
     m_socket(*this),
     m_watchdog(*this)
 {
@@ -63,8 +64,7 @@ TcpHandler::handleConnect(const boost::system::error_code& error)
 	if (port != 0) {
 	    boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), port);
 	    m_cmdHandler.reset(new CommandHandler(*this, cmdEndpoint));
-	    m_pcMessageCallback = boost::bind(&CommandHandler::handlePcMessage,
-					      m_cmdHandler, _1);
+	    m_pcMessageCallback = boost::bind(&EmsCommandSender::handlePcMessage, this, _1);
 	}
 	port = Options::dataPort();
 	if (port != 0) {
@@ -112,7 +112,7 @@ TcpHandler::doCloseImpl()
 }
 
 void
-TcpHandler::sendMessage(const EmsMessage& msg)
+TcpHandler::sendMessageImpl(const EmsMessage& msg)
 {
     boost::system::error_code error;
     std::vector<uint8_t> sendData = msg.getSendData();

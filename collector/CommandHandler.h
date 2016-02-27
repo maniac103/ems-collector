@@ -41,7 +41,6 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 
     public:
 	CommandConnection(CommandHandler& handler);
-	~CommandConnection();
 
     public:
 	boost::asio::ip::tcp::socket& socket() {
@@ -55,7 +54,8 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	void close() {
 	    m_socket.close();
 	}
-	void handlePcMessage(const EmsMessage& message);
+	void onIncomingMessage(const EmsMessage& message);
+	void onTimeout();
 
     public:
 	static std::string buildRecordResponse(const EmsProto::ErrorRecord *record);
@@ -65,6 +65,22 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
     private:
 	void handleRequest(const boost::system::error_code& error);
 	void handleWrite(const boost::system::error_code& error);
+
+	class CommandClient : public EmsCommandClient {
+	    public:
+		CommandClient(CommandConnection *connection) :
+		    m_connection(connection)
+		{}
+		void onIncomingMessage(const EmsMessage& message) override {
+		    m_connection->onIncomingMessage(message);
+		}
+		void onTimeout() {
+		    m_connection->onTimeout();
+		}
+
+	    private:
+		CommandConnection *m_connection;
+	};
 
 	typedef enum {
 	    Ok,
@@ -98,27 +114,25 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 			    boost::asio::placeholders::error));
 	}
 	boost::tribool handleResponse();
-	void scheduleResponseTimeout();
-	void responseTimeout(const boost::system::error_code& error);
 	void startRequest(uint8_t dest, uint8_t type, size_t offset, size_t length,
 			  bool newRequest = true, bool raw = false);
 	bool continueRequest();
 	void sendCommand(uint8_t dest, uint8_t type, uint8_t offset,
 			 const uint8_t *data, size_t count,
 			 bool expectResponse = false);
+	void sendActiveRequest();
 	bool parseIntParameter(std::istream& request, uint8_t& data, uint8_t max);
 
     private:
 	static const unsigned int MaxRequestRetries = 5;
-	static const unsigned int RequestTimeout = 1000; /* ms */
 
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::streambuf m_request;
+	std::shared_ptr<EmsCommandClient> m_commandClient;
 	CommandHandler& m_handler;
-	boost::asio::deadline_timer m_responseTimeout;
 	unsigned int m_responseCounter;
 	unsigned int m_retriesLeft;
-	std::unique_ptr<EmsMessage> m_activeRequest;
+	std::shared_ptr<EmsMessage> m_activeRequest;
 	std::vector<uint8_t> m_requestResponse;
 	size_t m_requestOffset;
 	size_t m_requestLength;
@@ -138,27 +152,19 @@ class CommandHandler : private boost::noncopyable
     public:
 	void startConnection(CommandConnection::Ptr connection);
 	void stopConnection(CommandConnection::Ptr connection);
-	void handlePcMessage(const EmsMessage& message);
 	TcpHandler& getHandler() const {
 	    return m_handler;
 	}
-	void sendMessage(const EmsMessage& msg);
 
     private:
 	void handleAccept(CommandConnection::Ptr connection,
 			  const boost::system::error_code& error);
 	void startAccepting();
-	void doSendMessage(const EmsMessage& msg);
-
-    private:
-	static const long MinDistanceBetweenRequests = 100; /* ms */
 
     private:
 	TcpHandler& m_handler;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;
-	boost::asio::deadline_timer m_sendTimer;
-	std::map<uint8_t, boost::posix_time::ptime> m_lastCommTimes;
 };
 
 #endif /* __COMMANDHANDLER_H__ */

@@ -20,18 +20,21 @@
 #ifndef __TCPHANDLER_H__
 #define __TCPHANDLER_H__
 
+#include "CommandScheduler.h"
 #include "IoHandler.h"
 #include <boost/shared_ptr.hpp>
 
 class CommandHandler;
 class DataHandler;
 
-class TcpHandler : public IoHandler
+class TcpHandler : public IoHandler, public EmsCommandSender
 {
     public:
 	TcpHandler(const std::string& host, const std::string& port, Database& db, ValueCache& cache);
 	~TcpHandler();
-	void sendMessage(const EmsMessage& msg);
+
+    protected:
+	virtual void sendMessageImpl(const EmsMessage& msg) override;
 
     protected:
 	virtual void readStart() {
