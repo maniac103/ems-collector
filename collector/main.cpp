@@ -64,10 +64,19 @@ getMqttAdapter(boost::asio::io_service& ios, EmsCommandSender *sender, const std
 }
 
 static void
-stopHandler(IoHandler *handler, bool *running)
+fillSignalSet(boost::asio::signal_set& signals) {
+    signals.add(SIGINT);
+    signals.add(SIGTERM);
+#ifdef SIGQUIT
+    signals.add(SIGQUIT);
+#endif
+}
+
+static void
+stopHandler(boost::asio::io_service *ios, bool *running)
 {
     *running = false;
-    handler->stop();
+    ios->stop();
 }
 
 int main(int argc, char *argv[])
@@ -151,17 +160,24 @@ int main(int argc, char *argv[])
 		handler->addValueCallback(valueCb);
 	    }
 
-	    boost::asio::signal_set signals(*handler, SIGINT, SIGTERM);
-#ifdef SIGQUIT
-	    signals.add(SIGQUIT);
-#endif
+	    boost::asio::signal_set signals(*handler);
+	    fillSignalSet(signals);
 	    signals.async_wait(boost::bind(&stopHandler, handler.get(), &running));
 
 	    handler->run();
 
 	    /* wait some time until retrying */
 	    if (running) {
-		sleep(10);
+		boost::asio::io_service ios;
+		boost::asio::deadline_timer timeout(ios);
+		boost::asio::signal_set waitSignals(ios);
+		timeout.expires_from_now(boost::posix_time::seconds(10));
+		timeout.async_wait([&] (const boost::system::error_code&) {
+		    ios.stop();
+		});
+		fillSignalSet(waitSignals);
+		waitSignals.async_wait(boost::bind(&stopHandler, &ios, &running));
+		ios.run();
 	    }
 	}
     } catch (std::exception& e) {
