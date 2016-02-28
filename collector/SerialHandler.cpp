@@ -20,12 +20,10 @@
 #include <iostream>
 #include <iomanip>
 #include "SerialHandler.h"
-#include "Options.h"
 
 SerialHandler::SerialHandler(const std::string& device,
-			     Database& db,
 			     ValueCache& cache) :
-    IoHandler(db, cache),
+    IoHandler(cache),
     m_serialPort(*this, device)
 {
     if (!m_serialPort.is_open()) {

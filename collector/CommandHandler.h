@@ -22,15 +22,12 @@
 
 #include <set>
 #include <boost/asio.hpp>
-#include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/logic/tribool.hpp>
 #include "ApiCommandParser.h"
+#include "CommandScheduler.h"
 #include "EmsMessage.h"
-#include "TcpHandler.h"
 
 class CommandHandler;
 
@@ -41,7 +38,10 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	typedef boost::shared_ptr<CommandConnection> Ptr;
 
     public:
-	CommandConnection(CommandHandler& handler);
+	CommandConnection(boost::asio::io_service& ios,
+			  EmsCommandSender& sender,
+			  CommandHandler& handler,
+			  ValueCache& cache);
 
     public:
 	boost::asio::ip::tcp::socket& socket() {
@@ -95,16 +95,15 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 class CommandHandler : private boost::noncopyable
 {
     public:
-	CommandHandler(TcpHandler& handler,
+	CommandHandler(boost::asio::io_service& ios,
+		       EmsCommandSender& sender,
+		       ValueCache& cache,
 		       boost::asio::ip::tcp::endpoint& endpoint);
 	~CommandHandler();
 
     public:
 	void startConnection(CommandConnection::Ptr connection);
 	void stopConnection(CommandConnection::Ptr connection);
-	TcpHandler& getHandler() const {
-	    return m_handler;
-	}
 
     private:
 	void handleAccept(CommandConnection::Ptr connection,
@@ -112,7 +111,9 @@ class CommandHandler : private boost::noncopyable
 	void startAccepting();
 
     private:
-	TcpHandler& m_handler;
+	boost::asio::io_service& m_ios;
+	EmsCommandSender& m_sender;
+	ValueCache& m_cache;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;
 };

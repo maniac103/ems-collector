@@ -20,40 +20,47 @@
 #include <cerrno>
 #include <csignal>
 #include <iostream>
-#include <unistd.h>
 #include <boost/asio/signal_set.hpp>
 #include <boost/scoped_ptr.hpp>
-#include "SerialHandler.h"
-#include "TcpHandler.h"
+#include "CommandHandler.h"
+#include "CommandScheduler.h"
 #include "Database.h"
+#include "DataHandler.h"
+#include "MqttAdapter.h"
 #include "Options.h"
 #include "PidFile.h"
+#include "SerialHandler.h"
+#include "TcpHandler.h"
 #include "ValueCache.h"
 
 static IoHandler *
-getHandler(const std::string& target, const std::string& mqttTarget, Database& db, ValueCache& cache)
+getHandler(const std::string& target, ValueCache& cache)
 {
-    IoHandler *handler = nullptr;
-
     if (target.compare(0, 7, "serial:") == 0) {
-	handler = new SerialHandler(target.substr(7), db, cache);
+	return new SerialHandler(target.substr(7), cache);
     } else if (target.compare(0, 4, "tcp:") == 0) {
 	size_t pos = target.find(':', 4);
 	if (pos != std::string::npos) {
 	    std::string host = target.substr(4, pos - 4);
 	    std::string port = target.substr(pos + 1);
-	    handler = new TcpHandler(host, port, db, cache);
+	    return new TcpHandler(host, port, cache);
 	}
     }
 
-    size_t pos = mqttTarget.find(':');
-    if (handler && pos != std::string::npos) {
-	std::string host = mqttTarget.substr(0, pos);
-	std::string port = mqttTarget.substr(pos + 1);
-	handler->setMqttAdapter(new MqttAdapter(*handler, host, port));
+    return nullptr;
+}
+
+static MqttAdapter *
+getMqttAdapter(boost::asio::io_service& ios, const std::string& target)
+{
+    size_t pos = target.find(':');
+    if (pos != std::string::npos) {
+	std::string host = target.substr(0, pos);
+	std::string port = target.substr(pos + 1);
+	return new MqttAdapter(ios, host, port);
     }
 
-    return handler;
+    return nullptr;
 }
 
 static void
@@ -104,13 +111,44 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	IoHandler::ValueCallback dbValueCb = boost::bind(&Database::handleValue,&db, _1);
+	IoHandler::ValueCallback cacheValueCb = boost::bind(&ValueCache::handleValue, &cache, _1);
+
 	while (running) {
-	    boost::scoped_ptr<IoHandler> handler(
-		    getHandler(Options::target(), Options::mqttTarget(), db, cache));
+	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), cache));
 	    if (!handler) {
 		std::ostringstream msg;
 		msg << "Target " << Options::target() << " is invalid.";
 		throw std::runtime_error(msg.str());
+	    }
+
+	    handler->addValueCallback(dbValueCb);
+	    handler->addValueCallback(cacheValueCb);
+
+	    boost::scoped_ptr<MqttAdapter> mqttAdapter(
+		    getMqttAdapter(*handler, Options::mqttTarget()));
+	    if (mqttAdapter) {
+		IoHandler::ValueCallback valueCb =
+			boost::bind(&MqttAdapter::handleValue, mqttAdapter.get(), _1);
+		handler->addValueCallback(valueCb);
+	    }
+
+	    boost::scoped_ptr<CommandHandler> cmdHandler;
+	    EmsCommandSender *sender = dynamic_cast<EmsCommandSender *>(handler.get());
+	    unsigned int cmdPort = Options::commandPort();
+	    if (sender && cmdPort != 0) {
+		boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), cmdPort);
+		cmdHandler.reset(new CommandHandler(*handler, *sender, cache, cmdEndpoint));
+	    }
+
+	    boost::scoped_ptr<DataHandler> dataHandler;
+	    unsigned int dataPort = Options::dataPort();
+	    if (dataPort != 0) {
+		boost::asio::ip::tcp::endpoint dataEndpoint(boost::asio::ip::tcp::v4(), dataPort);
+		dataHandler.reset(new DataHandler(*handler, dataEndpoint));
+		IoHandler::ValueCallback valueCb =
+			boost::bind(&DataHandler::handleValue, dataHandler.get(), _1);
+		handler->addValueCallback(valueCb);
 	    }
 
 	    boost::asio::signal_set signals(*handler, SIGINT, SIGTERM);

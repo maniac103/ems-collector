@@ -19,10 +19,8 @@
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/numeric/conversion/cast.hpp>
+#include "ApiCommandParser.h"
 #include "ByteOrder.h"
-#include "CommandHandler.h"
 #include "Options.h"
 
 /* version of our command API */

@@ -20,35 +20,32 @@
 #ifndef __IOHANDLER_H__
 #define __IOHANDLER_H__
 
+#include <list>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include <fstream>
-#include "Database.h"
 #include "EmsMessage.h"
-#include "MqttAdapter.h"
 #include "ValueCache.h"
 
 class IoHandler : public boost::asio::io_service
 {
     public:
-	IoHandler(Database& db, ValueCache& cache);
-	~IoHandler();
+	typedef std::function<void (const EmsValue& value)> ValueCallback;
+
+    public:
+	IoHandler(ValueCache& cache);
 
 	void close() {
 	    post(boost::bind(&IoHandler::doClose, this,
 			     boost::system::error_code()));
 	}
 
-	void setMqttAdapter(MqttAdapter *adapter) {
-	    m_mqttAdapter.reset(adapter);
-	}
-
 	bool active() {
 	    return m_active;
 	}
-	ValueCache& getCache() {
-	    return m_cache;
+
+	void addValueCallback(ValueCallback& cb) {
+	    m_valueCallbacks.push_back(cb);
 	}
 
     protected:
@@ -58,17 +55,13 @@ class IoHandler : public boost::asio::io_service
 	virtual void readStart() = 0;
 	virtual void doCloseImpl() = 0;
 
+	virtual void onPcMessageReceived(const EmsMessage& /* message */) { }
 	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
 	void doClose(const boost::system::error_code& error);
 	void handleValue(const EmsValue& value);
-	const EmsValue * getCacheValue(EmsValue::Type type, EmsValue::SubType subtype) {
-	    return m_cache.getValue(type, subtype);
-	}
 
 	bool m_active;
 	unsigned char m_recvBuffer[maxReadLength];
-	boost::function<void (const EmsMessage& message)> m_pcMessageCallback;
-	boost::function<void (const EmsValue& value)> m_valueCallback;
 
     private:
 	typedef enum {
@@ -78,14 +71,11 @@ class IoHandler : public boost::asio::io_service
 	    Checksum
 	} State;
 
-	Database& m_db;
-	ValueCache& m_cache;
-
 	State m_state;
 	size_t m_pos, m_length;
 	uint8_t m_checkSum;
 	std::vector<uint8_t> m_data;
-	std::unique_ptr<MqttAdapter> m_mqttAdapter;
+	std::list<ValueCallback> m_valueCallbacks;
 	EmsMessage::ValueHandler m_valueCb;
 	EmsMessage::CacheAccessor m_cacheCb;
 };

@@ -20,15 +20,12 @@
 #include <iostream>
 #include <iomanip>
 #include "TcpHandler.h"
-#include "CommandHandler.h"
-#include "DataHandler.h"
 #include "Options.h"
 
 TcpHandler::TcpHandler(const std::string& host,
 		       const std::string& port,
-		       Database& db,
 		       ValueCache& cache) :
-    IoHandler(db, cache),
+    IoHandler(cache),
     EmsCommandSender((boost::asio::io_service&) *this),
     m_socket(*this),
     m_watchdog(*this)
@@ -41,9 +38,14 @@ TcpHandler::TcpHandler(const std::string& host,
     if (error) {
 	doClose(error);
     } else {
-	m_socket.async_connect(*endpoint,
-			       boost::bind(&TcpHandler::handleConnect, this,
-					   boost::asio::placeholders::error));
+	m_socket.async_connect(*endpoint, [this] (const boost::system::error_code& error) {
+	    if (error) {
+		doClose(error);
+	    } else {
+		resetWatchdog();
+		readStart();
+	    }
+	});
     }
 }
 
@@ -55,42 +57,14 @@ TcpHandler::~TcpHandler()
 }
 
 void
-TcpHandler::handleConnect(const boost::system::error_code& error)
-{
-    if (error) {
-	doClose(error);
-    } else {
-	unsigned int port = Options::commandPort();
-	if (port != 0) {
-	    boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), port);
-	    m_cmdHandler.reset(new CommandHandler(*this, cmdEndpoint));
-	    m_pcMessageCallback = boost::bind(&EmsCommandSender::handlePcMessage, this, _1);
-	}
-	port = Options::dataPort();
-	if (port != 0) {
-	    boost::asio::ip::tcp::endpoint dataEndpoint(boost::asio::ip::tcp::v4(), port);
-	    m_dataHandler.reset(new DataHandler(*this, dataEndpoint));
-	    m_valueCallback = boost::bind(&DataHandler::handleValue, m_dataHandler, _1);
-	}
-	resetWatchdog();
-	readStart();
-    }
-}
-
-void
 TcpHandler::resetWatchdog()
 {
     m_watchdog.expires_from_now(boost::posix_time::minutes(2));
-    m_watchdog.async_wait(boost::bind(&TcpHandler::watchdogTimeout, this,
-				      boost::asio::placeholders::error));
-}
-
-void
-TcpHandler::watchdogTimeout(const boost::system::error_code& error)
-{
-    if (error != boost::asio::error::operation_aborted) {
-	doClose(error);
-    }
+    m_watchdog.async_wait([this] (const boost::system::error_code& error) {
+	if (error != boost::asio::error::operation_aborted) {
+	    doClose(error);
+	}
+    });
 }
 
 void
@@ -104,10 +78,6 @@ void
 TcpHandler::doCloseImpl()
 {
     m_watchdog.cancel();
-    m_cmdHandler.reset();
-    m_pcMessageCallback.clear();
-    m_dataHandler.reset();
-    m_valueCallback.clear();
     m_socket.close();
 }
 

@@ -20,21 +20,21 @@
 #ifndef __TCPHANDLER_H__
 #define __TCPHANDLER_H__
 
+#include <boost/shared_ptr.hpp>
 #include "CommandScheduler.h"
 #include "IoHandler.h"
-#include <boost/shared_ptr.hpp>
-
-class CommandHandler;
-class DataHandler;
 
 class TcpHandler : public IoHandler, public EmsCommandSender
 {
     public:
-	TcpHandler(const std::string& host, const std::string& port, Database& db, ValueCache& cache);
+	TcpHandler(const std::string& host, const std::string& port, ValueCache& cache);
 	~TcpHandler();
 
     protected:
 	virtual void sendMessageImpl(const EmsMessage& msg) override;
+	virtual void onPcMessageReceived(const EmsMessage& msg) override {
+	    handlePcMessage(msg);
+	}
 
     protected:
 	virtual void readStart() {
@@ -49,15 +49,11 @@ class TcpHandler : public IoHandler, public EmsCommandSender
 	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
 
     private:
-	void handleConnect(const boost::system::error_code& error);
 	void resetWatchdog();
-	void watchdogTimeout(const boost::system::error_code& error);
 
     private:
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::deadline_timer m_watchdog;
-	boost::shared_ptr<CommandHandler> m_cmdHandler;
-	boost::shared_ptr<DataHandler> m_dataHandler;
 };
 
 #endif /* __TCPHANDLER_H__ */

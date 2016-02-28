@@ -17,15 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/format.hpp>
+#include <iostream>
 #include "DataHandler.h"
-#include "CommandHandler.h"
 #include "ValueApi.h"
 
-DataHandler::DataHandler(TcpHandler& handler,
+DataHandler::DataHandler(boost::asio::io_service& ios,
 			 boost::asio::ip::tcp::endpoint& endpoint) :
-    m_handler(handler),
-    m_acceptor(handler, endpoint)
+    m_ios(ios),
+    m_acceptor(ios, endpoint)
 {
     startAccepting();
 }
@@ -76,15 +75,15 @@ DataHandler::handleValue(const EmsValue& value)
 void
 DataHandler::startAccepting()
 {
-    DataConnection::Ptr connection(new DataConnection(*this));
+    DataConnection::Ptr connection(new DataConnection(m_ios, *this));
     m_acceptor.async_accept(connection->socket(),
 		            boost::bind(&DataHandler::handleAccept, this,
 					connection, boost::asio::placeholders::error));
 }
 
 
-DataConnection::DataConnection(DataHandler& handler) :
-    m_socket(handler.getHandler()),
+DataConnection::DataConnection(boost::asio::io_service& ios, DataHandler& handler) :
+    m_socket(ios),
     m_handler(handler)
 {
 }

@@ -17,8 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <fstream>
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/program_options.hpp>

@@ -25,11 +25,9 @@
 #include "IoHandler.h"
 #include "Options.h"
 
-IoHandler::IoHandler(Database& db, ValueCache& cache) :
+IoHandler::IoHandler(ValueCache& cache) :
     boost::asio::io_service(),
     m_active(true),
-    m_db(db),
-    m_cache(cache),
     m_state(Syncing),
     m_pos(0)
 {
@@ -37,12 +35,9 @@ IoHandler::IoHandler(Database& db, ValueCache& cache) :
     m_data.reserve(256);
 
     m_valueCb = boost::bind(&IoHandler::handleValue, this, _1);
-    m_cacheCb = boost::bind(&IoHandler::getCacheValue, this, _1, _2);
-}
-
-IoHandler::~IoHandler()
-{
-    m_mqttAdapter.reset();
+    m_cacheCb = [cache] (EmsValue::Type type, EmsValue::SubType subtype) {
+	return cache.getValue(type, subtype);
+    };
 }
 
 void
@@ -99,8 +94,8 @@ IoHandler::readComplete(const boost::system::error_code& error,
 		if (m_checkSum == dataByte) {
 		    EmsMessage message(m_valueCb, m_cacheCb, m_data);
 		    message.handle();
-		    if (message.getDestination() == EmsProto::addressPC && m_pcMessageCallback) {
-			m_pcMessageCallback(message);
+		    if (message.getDestination() == EmsProto::addressPC) {
+			onPcMessageReceived(message);
 		    }
 		}
 		m_data.clear();
@@ -522,12 +517,7 @@ IoHandler::handleValue(const EmsValue& value)
 	printDescriptive(Options::dataDebug(), value);
 	Options::dataDebug() << std::endl;
     }
-    if (m_valueCallback) {
-	m_valueCallback(value);
-    }
-    m_db.handleValue(value);
-    m_cache.handleValue(value);
-    if (m_mqttAdapter) {
-	m_mqttAdapter->handleValue(value);
+    for (auto& cb : m_valueCallbacks) {
+	cb(value);
     }
 }

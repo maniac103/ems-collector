@@ -21,7 +21,6 @@
 #define __EMSMESSAGE_H__
 
 #include <vector>
-#include <ostream>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 

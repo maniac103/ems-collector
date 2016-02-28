@@ -17,18 +17,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/numeric/conversion/cast.hpp>
-#include "ByteOrder.h"
+#include <iostream>
 #include "CommandHandler.h"
-#include "Options.h"
 
-CommandHandler::CommandHandler(TcpHandler& handler,
+CommandHandler::CommandHandler(boost::asio::io_service& ios,
+			       EmsCommandSender& sender,
+			       ValueCache& cache,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
-    m_handler(handler),
-    m_acceptor(handler, endpoint)
+    m_ios(ios),
+    m_sender(sender),
+    m_cache(cache),
+    m_acceptor(ios, endpoint)
 {
     startAccepting();
 }
@@ -73,18 +72,20 @@ CommandHandler::stopConnection(CommandConnection::Ptr connection)
 void
 CommandHandler::startAccepting()
 {
-    CommandConnection::Ptr connection(new CommandConnection(*this));
+    CommandConnection::Ptr connection(new CommandConnection(m_ios, m_sender, *this, m_cache));
     m_acceptor.async_accept(connection->socket(),
 		            boost::bind(&CommandHandler::handleAccept, this,
 					connection, boost::asio::placeholders::error));
 }
 
 
-CommandConnection::CommandConnection(CommandHandler& handler) :
-    m_socket(handler.getHandler()),
+CommandConnection::CommandConnection(boost::asio::io_service& ios,
+				     EmsCommandSender& sender,
+				     CommandHandler& handler,
+				     ValueCache& cache) :
+    m_socket(ios),
     m_commandClient(new CommandClient(this)),
-    m_parser(handler.getHandler(), m_commandClient, handler.getHandler().getCache(),
-	     boost::bind(&CommandConnection::respond, this, _1)),
+    m_parser(sender, m_commandClient, cache, boost::bind(&CommandConnection::respond, this, _1)),
     m_handler(handler)
 {
 }
