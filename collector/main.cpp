@@ -51,13 +51,13 @@ getHandler(const std::string& target, ValueCache& cache)
 }
 
 static MqttAdapter *
-getMqttAdapter(boost::asio::io_service& ios, const std::string& target)
+getMqttAdapter(boost::asio::io_service& ios, EmsCommandSender *sender, const std::string& target)
 {
     size_t pos = target.find(':');
     if (pos != std::string::npos) {
 	std::string host = target.substr(0, pos);
 	std::string port = target.substr(pos + 1);
-	return new MqttAdapter(ios, host, port);
+	return new MqttAdapter(ios, sender, host, port);
     }
 
     return nullptr;
@@ -125,8 +125,9 @@ int main(int argc, char *argv[])
 	    handler->addValueCallback(dbValueCb);
 	    handler->addValueCallback(cacheValueCb);
 
+	    EmsCommandSender *sender = dynamic_cast<EmsCommandSender *>(handler.get());
 	    boost::scoped_ptr<MqttAdapter> mqttAdapter(
-		    getMqttAdapter(*handler, Options::mqttTarget()));
+		    getMqttAdapter(*handler, sender, Options::mqttTarget()));
 	    if (mqttAdapter) {
 		IoHandler::ValueCallback valueCb =
 			boost::bind(&MqttAdapter::handleValue, mqttAdapter.get(), _1);
@@ -134,11 +135,10 @@ int main(int argc, char *argv[])
 	    }
 
 	    boost::scoped_ptr<CommandHandler> cmdHandler;
-	    EmsCommandSender *sender = dynamic_cast<EmsCommandSender *>(handler.get());
 	    unsigned int cmdPort = Options::commandPort();
 	    if (sender && cmdPort != 0) {
 		boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), cmdPort);
-		cmdHandler.reset(new CommandHandler(*handler, *sender, cache, cmdEndpoint));
+		cmdHandler.reset(new CommandHandler(*handler, *sender, &cache, cmdEndpoint));
 	    }
 
 	    boost::scoped_ptr<DataHandler> dataHandler;

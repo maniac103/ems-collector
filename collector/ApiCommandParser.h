@@ -37,8 +37,8 @@ class ApiCommandParser : public boost::noncopyable
 
     public:
 	ApiCommandParser(EmsCommandSender& sender,
-			 std::shared_ptr<EmsCommandClient>& client,
-			 ValueCache& cache,
+			 const boost::shared_ptr<EmsCommandClient>& client,
+			 ValueCache *cache,
 			 OutputCallback outputCb);
 
 	CommandResult parse(std::istream& request);
@@ -90,12 +90,12 @@ class ApiCommandParser : public boost::noncopyable
 	static const unsigned int MaxRequestRetries = 5;
 
 	EmsCommandSender& m_sender;
-	std::shared_ptr<EmsCommandClient> m_client;
-	ValueCache& m_cache;
+	boost::shared_ptr<EmsCommandClient> m_client;
+	ValueCache *m_cache;
 	OutputCallback m_outputCb;
 	unsigned int m_responseCounter;
 	unsigned int m_retriesLeft;
-	std::shared_ptr<EmsMessage> m_activeRequest;
+	boost::shared_ptr<EmsMessage> m_activeRequest;
 	std::vector<uint8_t> m_requestResponse;
 	size_t m_requestOffset;
 	size_t m_requestLength;

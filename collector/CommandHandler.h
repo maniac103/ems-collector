@@ -41,7 +41,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
 	CommandConnection(boost::asio::io_service& ios,
 			  EmsCommandSender& sender,
 			  CommandHandler& handler,
-			  ValueCache& cache);
+			  ValueCache *cache);
 
     public:
 	boost::asio::ip::tcp::socket& socket() {
@@ -87,7 +87,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
     private:
 	boost::asio::ip::tcp::socket m_socket;
 	boost::asio::streambuf m_request;
-	std::shared_ptr<EmsCommandClient> m_commandClient;
+	boost::shared_ptr<EmsCommandClient> m_commandClient;
 	ApiCommandParser m_parser;
 	CommandHandler& m_handler;
 };
@@ -97,7 +97,7 @@ class CommandHandler : private boost::noncopyable
     public:
 	CommandHandler(boost::asio::io_service& ios,
 		       EmsCommandSender& sender,
-		       ValueCache& cache,
+		       ValueCache *cache,
 		       boost::asio::ip::tcp::endpoint& endpoint);
 	~CommandHandler();
 
@@ -113,7 +113,7 @@ class CommandHandler : private boost::noncopyable
     private:
 	boost::asio::io_service& m_ios;
 	EmsCommandSender& m_sender;
-	ValueCache& m_cache;
+	ValueCache *m_cache;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;
 };

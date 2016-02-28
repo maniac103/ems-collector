@@ -27,8 +27,8 @@
 #define API_VERSION "2015031501"
 
 ApiCommandParser::ApiCommandParser(EmsCommandSender& sender,
-				   std::shared_ptr<EmsCommandClient>& client,
-				   ValueCache& cache,
+				   const boost::shared_ptr<EmsCommandClient>& client,
+				   ValueCache *cache,
 				   OutputCallback outputCb) :
     m_sender(sender),
     m_client(client),
@@ -387,27 +387,29 @@ ApiCommandParser::handleCacheCommand(std::istream& request)
     std::string cmd;
     request >> cmd;
 
-    if (cmd == "help") {
-	output("Available subcommands:\n"
-		"fetch <key>\n"
-		"OK");
-	return Ok;
-    } else if (cmd == "fetch") {
-	std::ostringstream stream;
-	std::vector<std::string> selector;
+    if (m_cache) {
+	if (cmd == "help") {
+	    output("Available subcommands:\n"
+		   "fetch <key>\n"
+		   "OK");
+	    return Ok;
+	} else if (cmd == "fetch") {
+	    std::ostringstream stream;
+	    std::vector<std::string> selector;
 
-	while (request) {
-	    std::string token;
-	    request >> token;
-	    if (!token.empty()) {
-		selector.push_back(token);
+	    while (request) {
+		std::string token;
+		request >> token;
+		if (!token.empty()) {
+		    selector.push_back(token);
+		}
 	    }
-	}
 
-	m_cache.outputValues(selector, stream);
-	output(stream.str());
-	output("OK");
-	return Ok;
+	    m_cache->outputValues(selector, stream);
+	    output(stream.str());
+	    output("OK");
+	    return Ok;
+	}
     }
 
     return InvalidCmd;

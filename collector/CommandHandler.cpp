@@ -22,7 +22,7 @@
 
 CommandHandler::CommandHandler(boost::asio::io_service& ios,
 			       EmsCommandSender& sender,
-			       ValueCache& cache,
+			       ValueCache *cache,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_ios(ios),
     m_sender(sender),
@@ -82,7 +82,7 @@ CommandHandler::startAccepting()
 CommandConnection::CommandConnection(boost::asio::io_service& ios,
 				     EmsCommandSender& sender,
 				     CommandHandler& handler,
-				     ValueCache& cache) :
+				     ValueCache *cache) :
     m_socket(ios),
     m_commandClient(new CommandClient(this)),
     m_parser(sender, m_commandClient, cache, boost::bind(&CommandConnection::respond, this, _1)),

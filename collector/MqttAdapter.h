@@ -20,14 +20,20 @@
 #ifndef __MQTTADAPTER_H__
 #define __MQTTADAPTER_H__
 
+#include "CommandScheduler.h"
+#include "EmsMessage.h"
+
 #ifdef HAVE_MQTT
 
 #include <mqtt_client_cpp.hpp>
-#include "EmsMessage.h"
+#include <boost/noncopyable.hpp>
+#include "ApiCommandParser.h"
 
-class MqttAdapter {
+class MqttAdapter : public boost::noncopyable
+{
     public:
 	MqttAdapter(boost::asio::io_service& ios,
+		    EmsCommandSender *sender,
 		    const std::string& host, const std::string& port);
 
 	void handleValue(const EmsValue& value);
@@ -36,15 +42,36 @@ class MqttAdapter {
 	void onConnect(bool sessionPresent, uint8_t returnCode);
 	void onError(const boost::system::error_code& ec);
 	void onClose();
+	void onMessageReceived(const std::string& topic, const std::string& contents);
 	void scheduleConnectionRetry();
+
+    private:
+	class CommandClient : public EmsCommandClient {
+	    public:
+		CommandClient(MqttAdapter *adapter) :
+		    m_adapter(adapter)
+		{ }
+		virtual void onIncomingMessage(const EmsMessage& message) override {
+		    m_adapter->m_commandParser->onIncomingMessage(message);
+		}
+		virtual void onTimeout() override {
+		    m_adapter->m_commandParser->onTimeout();
+		}
+	    private:
+		MqttAdapter *m_adapter;
+	};
+	friend class CommandClient;
 
     private:
 	static const unsigned int MinRetryDelaySeconds = 5;
 	static const unsigned int MaxRetryDelaySeconds = 5 * 60;
 
 	mqtt::client<boost::asio::ip::tcp::socket> m_client;
+	EmsCommandSender * m_sender;
+	boost::shared_ptr<EmsCommandClient> m_cmdClient;
 	bool m_connected;
 	unsigned int m_retryDelay;
+	std::unique_ptr<ApiCommandParser> m_commandParser;
 	boost::asio::deadline_timer m_retryTimer;
 };
 
@@ -53,6 +80,7 @@ class MqttAdapter {
 class MqttAdapter {
     public:
 	MqttAdapter(boost::asio::io_service& /* ios */,
+		    EmsCommandSender * /* sender */,
 		    const std::string& /* host */, const std::string& /* port */)
 	{}
 

@@ -17,14 +17,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <boost/bind.hpp>
 #include "MqttAdapter.h"
 #include "Options.h"
 #include "ValueApi.h"
 
 MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
+			 EmsCommandSender *sender,
 			 const std::string& host, const std::string& port) :
     m_client(mqtt::make_client(ios, host, port)),
+    m_sender(sender),
+    m_cmdClient(new CommandClient(this)),
     m_connected(false),
     m_retryDelay(MinRetryDelaySeconds),
     m_retryTimer(ios)
@@ -33,7 +37,7 @@ MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
     m_client.set_error_handler(boost::bind(&MqttAdapter::onError, this, _1));
     m_client.set_connack_handler(boost::bind(&MqttAdapter::onConnect, this, _1, _2));
     m_client.set_close_handler(boost::bind(&MqttAdapter::onClose, this));
-
+    m_client.set_publish_handler(boost::bind(&MqttAdapter::onMessageReceived, this, _3, _4));
     m_client.connect();
 }
 
@@ -73,6 +77,11 @@ MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
     if (!m_connected) {
 	m_retryDelay = MinRetryDelaySeconds;
 	scheduleConnectionRetry();
+    } else if (m_sender) {
+	m_client.subscribe("/ems/control/#", 2);
+	auto outputCb = [] (const std::string&) {};
+	m_commandParser.reset(
+		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
     }
 }
 
@@ -81,6 +90,7 @@ MqttAdapter::onError(const boost::system::error_code& ec)
 {
     Options::ioDebug() << "MQTT: onError, code " << std::dec << ec << std::endl;
     m_connected = false;
+    m_commandParser.reset();
     scheduleConnectionRetry();
 }
 
@@ -89,8 +99,19 @@ MqttAdapter::onClose()
 {
     Options::ioDebug() << "MQTT: onClose" << std::endl;
     m_connected = false;
+    m_commandParser.reset();
     m_retryDelay = MinRetryDelaySeconds;
     scheduleConnectionRetry();
+}
+
+void
+MqttAdapter::onMessageReceived(const std::string& topic, const std::string& contents)
+{
+    Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
+    std::string command = topic.substr(13); // strip '/ems/control/'
+    std::replace(command.begin(), command.end(), '/', ' ');
+    std::istringstream commandStream(command + " " + contents);
+    m_commandParser->parse(commandStream);
 }
 
 void

@@ -34,8 +34,8 @@ class EmsCommandClient
 class EmsCommandSender : public boost::noncopyable
 {
     public:
-	typedef std::shared_ptr<EmsMessage> MessagePtr;
-	typedef std::shared_ptr<EmsCommandClient> ClientPtr;
+	typedef boost::shared_ptr<EmsMessage> MessagePtr;
+	typedef boost::shared_ptr<EmsCommandClient> ClientPtr;
 
 	EmsCommandSender(boost::asio::io_service& ios) :
 	    m_responseTimeout(ios),
