@@ -1,12 +1,26 @@
 CC = i686-w64-mingw32-c++
-CFLAGS = -Wall -c -O2 -std=c++0x
-#CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
-LIBS = -static -lboost_system -lboost_thread-mt -lboost_chrono -lboost_program_options -lws2_32 -lmswsock
+CFLAGS = -Wall -c -O2 -std=c++0x -static
+LIBS = -static -lpthread -lboost_system -lboost_chrono -lboost_program_options -lws2_32 -lmswsock
 SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
-       DataHandler.cpp EmsMessage.cpp ValueApi.cpp ValueCache.cpp \
-       Options.cpp
+       ApiCommandParser.cpp CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp \
+       ValueApi.cpp ValueCache.cpp Options.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 DEPFILE = .depend
+
+# Uncomment the following line in order to build the collector with support
+# for the 'raw read' and 'raw write' commands.
+# CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
+
+# Uncomment the following lines to build the collector with MQTT support.
+# If you want this, you need to clone the following repo to some directory
+# of your choice: git://github.com/redboltz/mqtt_client_cpp
+#
+# Then, adapt the include path below to point towards the MQTT client
+# include path. The default assumes that both ems-collector and
+# mqtt_client_cpp are cloned into the same top level path.
+#
+# CFLAGS += -I../../mqtt_client_cpp/include -DMQTT_NO_TLS -DHAVE_MQTT
+# SRCS += MqttAdapter.cpp
 
 all: collectord.exe
 

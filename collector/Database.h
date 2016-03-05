@@ -20,14 +20,11 @@
 #ifndef __DATABASE_H__
 #define __DATABASE_H__
 
-#include "EmsMessage.h"
-
-#ifdef HAVE_MYSQL
-
 #include <map>
 #include <queue>
-#include <mysql++/connection.h>
-#include <mysql++/query.h>
+#include <mysql/mysql++/connection.h>
+#include <mysql/mysql++/query.h>
+#include "EmsMessage.h"
 
 class Database {
     public:
@@ -142,21 +139,5 @@ class Database {
 	std::map<unsigned int, mysqlpp::ulonglong> m_lastInsertIds;
 	mysqlpp::Connection *m_connection;
 };
-
-#else /* HAVE_MYSQL */
-
-class Database {
-    public:
-	Database() {}
-
-	bool connect(const std::string& /* server */, const std::string& /* user */, const std::string& /* password */) {
-	    return true;
-	}
-
-	void handleValue(const EmsValue& /* value */) {
-	}
-};
-
-#endif /* HAVE_MYSQL */
 
 #endif /* __DATABASE_H__ */

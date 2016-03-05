@@ -1,13 +1,22 @@
 CC = g++
-CFLAGS = -Wall -c -O2 -I/usr/include/mysql -std=c++0x -DHAVE_MYSQL -DHAVE_DAEMONIZE
-#CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
+CFLAGS = -Wall -c -O2 -std=c++0x -DHAVE_DAEMONIZE
 
-LIBS = -lpthread -lboost_system -lboost_program_options -lmysqlpp
+LIBS = -lpthread -lboost_system -lboost_program_options
 SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
-       ApiCommandParser.cpp CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp Database.cpp \
+       ApiCommandParser.cpp CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp \
        ValueApi.cpp ValueCache.cpp Options.cpp PidFile.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 DEPFILE = .depend
+
+# Uncomment the following lines to build the collector with MySQL database
+# support. You'll need to have the development package of libmysql++ installed.
+# SRCS += Database.cpp
+# CFLAGS += -DHAVE_MYSQL
+# LIBS = -lmysqlpp
+
+# Uncomment the following line in order to build the collector with support
+# for the 'raw read' and 'raw write' commands.
+# CFLAGS += -DHAVE_RAW_READWRITE_COMMAND
 
 # Uncomment the following lines to build the collector with MQTT support.
 # If you want this, you need to clone the following repo to some directory

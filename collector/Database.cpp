@@ -18,9 +18,9 @@
  */
 
 #include <iostream>
-#include <mysql++/exceptions.h>
-#include <mysql++/query.h>
-#include <mysql++/ssqls.h>
+#include <mysql/mysql++/exceptions.h>
+#include <mysql/mysql++/query.h>
+#include <mysql/mysql++/ssqls.h>
 #include "Database.h"
 #include "Options.h"
 

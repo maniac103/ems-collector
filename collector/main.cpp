@@ -24,7 +24,9 @@
 #include <boost/scoped_ptr.hpp>
 #include "CommandHandler.h"
 #include "CommandScheduler.h"
-#include "Database.h"
+#ifdef HAVE_MYSQL
+# include "Database.h"
+#endif
 #include "DataHandler.h"
 #include "MqttAdapter.h"
 #include "Options.h"
@@ -89,8 +91,6 @@ int main(int argc, char *argv[])
     }
 
     try {
-	const std::string& dbPath = Options::databasePath();
-	Database db;
 	ValueCache cache;
 	bool running = true;
 
@@ -101,12 +101,19 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	IoHandler::ValueCallback dbValueCb;
+#ifdef HAVE_MYSQL
+	const std::string& dbPath = Options::databasePath();
+	Database db;
+
 	if (dbPath != "none") {
 	    if (!db.connect(dbPath, Options::databaseUser(), Options::databasePassword())) {
 		std::cerr << "Could not connect to database" << std::endl;
 		return 1;
 	    }
 	}
+	dbValueCb = boost::bind(&Database::handleValue,&db, _1);
+#endif
 
 #ifdef HAVE_DAEMONIZE
 	if (Options::daemonize()) {
@@ -120,7 +127,6 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	IoHandler::ValueCallback dbValueCb = boost::bind(&Database::handleValue,&db, _1);
 	IoHandler::ValueCallback cacheValueCb = boost::bind(&ValueCache::handleValue, &cache, _1);
 
 	while (running) {
@@ -131,7 +137,9 @@ int main(int argc, char *argv[])
 		throw std::runtime_error(msg.str());
 	    }
 
-	    handler->addValueCallback(dbValueCb);
+	    if (dbValueCb) {
+		handler->addValueCallback(dbValueCb);
+	    }
 	    handler->addValueCallback(cacheValueCb);
 
 	    EmsCommandSender *sender = dynamic_cast<EmsCommandSender *>(handler.get());
