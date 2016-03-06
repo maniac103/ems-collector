@@ -31,8 +31,15 @@ class EmsProto {
 	static const uint8_t addressPC   = 0x0b;
 	static const uint8_t addressRC3x = 0x10;
 	static const uint8_t addressWM10 = 0x11;
-	static const uint8_t addressRC20 = 0x17;
-	static const uint8_t addressMM10 = 0x21;
+	static const uint8_t addressRC2xStandalone = 0x17;
+	static const uint8_t addressRC2xHK1 = 0x18;
+	static const uint8_t addressRC2xHK2 = 0x19;
+	static const uint8_t addressRC2xHK3 = 0x1a;
+	static const uint8_t addressRC2xHK4 = 0x1b;
+	static const uint8_t addressMM10HK1 = 0x20;
+	static const uint8_t addressMM10HK2 = 0x21;
+	static const uint8_t addressMM10HK3 = 0x22;
+	static const uint8_t addressMM10HK4 = 0x23;
 	static const uint8_t addressSM10 = 0x30;
 
     public:
@@ -96,18 +103,20 @@ class EmsValue {
 	enum Type {
 	    /* numeric */
 	    SollTemp, /* HKx, Kessel */
-	    IstTemp, /* HKx, Kessel, Waermetauscher, Ruecklauf, WW, Raum, Aussen */
+	    IstTemp, /* HKx, Kessel, Waermetauscher, Ruecklauf, WW, Aussen */
 	    SetTemp, /* Kessel */
 	    MinTemp, /* HKx, Aussentemp. der Region */
 	    MaxTemp, /* HKx, WW */
 	    TagTemp,
 	    NachtTemp,
 	    UrlaubTemp,
+	    RaumSollTemp,
+	    RaumIstTemp,
 	    RaumEinfluss,
 	    RaumOffset,
 	    GedaempfteTemp, /* Aussen */
 	    DesinfektionsTemp,
-	    TemperaturAenderung,
+	    RaumTemperaturAenderung,
 	    Mischersteuerung,
 	    Flammenstrom,
 	    Systemdruck,
@@ -218,7 +227,6 @@ class EmsValue {
 	    Waermetauscher,
 	    WW,
 	    Zirkulation,
-	    Raum,
 	    Aussen,
 	    Abgas,
 	    Ansaugluft,
@@ -342,12 +350,12 @@ class EmsMessage
 	void parseRCHKMonitorMessage(EmsValue::SubType subType);
 	void parseRCHKOpmodeMessage(EmsValue::SubType subType);
 	void parseRCHKScheduleMessage(EmsValue::SubType subType);
-	void parseRC20StatusMessage();
+	void parseRC20StatusMessage(EmsValue::SubType subType);
 
 	void parseWMTemp1Message();
 	void parseWMTemp2Message();
 
-	void parseMMTempMessage();
+	void parseMMTempMessage(EmsValue::SubType subType);
 
 	void parseSolarMonitorMessage();
 
@@ -369,6 +377,18 @@ class EmsMessage
 
 	bool canAccess(size_t offset, size_t size) {
 	    return offset >= m_offset && offset + size <= m_offset + m_data.size();
+	}
+	EmsValue::SubType determineHKFromAddress(uint8_t address) {
+	    if (address == EmsProto::addressRC2xHK2 || address == EmsProto::addressMM10HK2) {
+		return EmsValue::HK2;
+	    }
+	    if (address == EmsProto::addressRC2xHK3 || address == EmsProto::addressMM10HK4) {
+		return EmsValue::HK3;
+	    }
+	    if (address == EmsProto::addressRC2xHK4 || address == EmsProto::addressMM10HK4) {
+		return EmsValue::HK4;
+	    }
+	    return EmsValue::HK1;
 	}
 
     private:

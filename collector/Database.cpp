@@ -359,7 +359,7 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::Brennerstarts, EmsValue::Kessel, SensorBrennerstarts },
 	{ EmsValue::WarmwasserbereitungsZeit, EmsValue::None, SensorWarmwasserbereitungsZeit },
 	{ EmsValue::WarmwasserBereitungen, EmsValue::None, SensorWarmwasserBereitungen },
-	{ EmsValue::Mischersteuerung, EmsValue::None, SensorMischersteuerung },
+	{ EmsValue::Mischersteuerung, EmsValue::HK2, SensorMischersteuerung },
 	{ EmsValue::IstModulation, EmsValue::Brenner, SensorMomLeistung },
 	{ EmsValue::SollModulation, EmsValue::Brenner, SensorMaxLeistung },
 	{ EmsValue::IstModulation, EmsValue::KesselPumpe, SensorPumpenModulation }

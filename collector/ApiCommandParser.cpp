@@ -24,7 +24,7 @@
 #include "Options.h"
 
 /* version of our command API */
-#define API_VERSION "2015031501"
+#define API_VERSION "2016030601"
 
 ApiCommandParser::ApiCommandParser(EmsCommandSender& sender,
 				   const boost::shared_ptr<EmsCommandClient>& client,

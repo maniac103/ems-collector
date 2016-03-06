@@ -285,11 +285,15 @@ EmsMessage::handle()
 		case 0xAC: /* command for MM10 */ handled = true; break;
 	    }
 	    break;
-	case EmsProto::addressRC20:
+	case EmsProto::addressRC2xStandalone:
+	case EmsProto::addressRC2xHK1:
+	case EmsProto::addressRC2xHK2:
+	case EmsProto::addressRC2xHK3:
+	case EmsProto::addressRC2xHK4:
 	    /* RC20 message */
 	    switch (m_type) {
 		case 0x1A: /* command for UBA3 */ handled = true; break;
-		case 0xAE: parseRC20StatusMessage(); handled = true; break;
+		case 0xAE: parseRC20StatusMessage(determineHKFromAddress(m_source)); handled = true; break;
 	    }
 	    break;
 	case EmsProto::addressWM10:
@@ -299,10 +303,13 @@ EmsMessage::handle()
 		case 0x1E: parseWMTemp2Message(); handled = true; break;
 	    }
 	    break;
-	case EmsProto::addressMM10:
+	case EmsProto::addressMM10HK1:
+	case EmsProto::addressMM10HK2:
+	case EmsProto::addressMM10HK3:
+	case EmsProto::addressMM10HK4:
 	    /* MM10 message */
 	    switch (m_type) {
-		case 0xAB: parseMMTempMessage(); handled = true; break;
+		case 0xAB: parseMMTempMessage(determineHKFromAddress(m_source)); handled = true; break;
 	    }
 	    break;
 	case EmsProto::addressSM10:
@@ -603,8 +610,8 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(0, 7, EmsValue::Manuellbetrieb, subtype);
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
-    parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
-    parseTemperature(3, EmsValue::IstTemp, EmsValue::Raum);
+    parseNumeric(2, 1, 2, EmsValue::RaumSollTemp, subtype);
+    parseTemperature(3, EmsValue::RaumIstTemp, subtype);
     parseInteger(5, 1, EmsValue::EinschaltoptimierungsZeit, subtype);
     parseInteger(6, 1, EmsValue::AusschaltoptimierungsZeit, subtype);
 
@@ -615,7 +622,7 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     }
 
     if (canAccess(10, 1) && (m_data[10 - m_offset] & 1) == 0) {
-	parseNumeric(10, 2, 100, EmsValue::TemperaturAenderung, EmsValue::Raum);
+	parseNumeric(10, 2, 100, EmsValue::RaumTemperaturAenderung, subtype);
     }
 
     parseNumeric(12, 1, 1, EmsValue::SollLeistung, subtype);
@@ -625,15 +632,14 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
     parseBool(13, 7, EmsValue::Ferien, subtype);
     parseBool(13, 4, EmsValue::SchaltuhrEin, subtype);
     parseNumeric(14, 1, 1, EmsValue::SollTemp, subtype);
-
 }
 
 void
-EmsMessage::parseRC20StatusMessage()
+EmsMessage::parseRC20StatusMessage(EmsValue::SubType subtype)
 {
-    parseBool(0, 7, EmsValue::Tagbetrieb, EmsValue::HK1);
-    parseNumeric(2, 1, 2, EmsValue::SollTemp, EmsValue::Raum);
-    parseTemperature(3, EmsValue::IstTemp, EmsValue::Raum);
+    parseBool(0, 7, EmsValue::Tagbetrieb, subtype);
+    parseNumeric(2, 1, 2, EmsValue::RaumSollTemp, subtype);
+    parseTemperature(3, EmsValue::RaumIstTemp, subtype);
 }
 
 void
@@ -652,14 +658,14 @@ EmsMessage::parseWMTemp2Message()
 }
 
 void
-EmsMessage::parseMMTempMessage()
+EmsMessage::parseMMTempMessage(EmsValue::SubType subtype)
 {
-    parseNumeric(0, 1, 1, EmsValue::SollTemp, EmsValue::HK2);
-    parseTemperature(1, EmsValue::IstTemp, EmsValue::HK2);
-    parseInteger(3, 1, EmsValue::Mischersteuerung, EmsValue::None);
+    parseNumeric(0, 1, 1, EmsValue::SollTemp, subtype);
+    parseTemperature(1, EmsValue::IstTemp, subtype);
+    parseInteger(3, 1, EmsValue::Mischersteuerung, subtype);
 
     /* Byte 3 = 0 -> Pumpe aus, 100 = 0x64 -> Pumpe an */
-    parseBool(3, 2, EmsValue::PumpeAktiv, EmsValue::HK2);
+    parseBool(3, 2, EmsValue::PumpeAktiv, subtype);
 }
 
 void
