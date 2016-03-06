@@ -19,6 +19,11 @@ Requirements
 The following packages are needed for building the collector:
 ```
 apt-get install libboost1.49-all-dev
+```
+
+If the collector should be built with MySQL support, the MySQL C++
+bindings are needed:
+```
 apt-get install libmysql++-dev
 ```
 
@@ -32,6 +37,13 @@ Clone git repository and compile
 ```
 git clone https://github.com/maniac103/ems-collector.git
 cd ems-collector/collector
+```
+
+There are several compile options for the collector: MySQL support,
+support for raw read/write commands and MQTT support. Be sure to review
+the options given in the Makefile and follow them accordingly. Afterwards,
+start the build:
+```
 make
 ```
 
