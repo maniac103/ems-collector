@@ -162,7 +162,6 @@ class EmsValue {
 	    NachladungAktiv,
 	    WarmwasserBereitung,
 	    WarmwasserTempOK,
-	    Automatikbetrieb,
 	    Tagbetrieb,
 	    Sommerbetrieb,
 	    Ausschaltoptimierung,
@@ -183,7 +182,6 @@ class EmsValue {
 	    SchaltzeitOptimierung,
 	    Fuehler1Defekt,
 	    Fuehler2Defekt,
-	    Manuellbetrieb,
 	    Stoerung,
 	    StoerungDesinfektion,
 	    Ladevorgang,
@@ -195,7 +193,7 @@ class EmsValue {
 	    Betriebsart,
 	    DesinfektionTag,
 	    GebaeudeArt,
-	    RegelungsArt,
+	    AbsenkModus,
 	    HeizSystem,
 	    FuehrungsGroesse,
 	    UrlaubAbsenkungsArt,
@@ -223,6 +221,7 @@ class EmsValue {
 	    Brenner,
 	    Kessel,
 	    KesselPumpe,
+	    RC,
 	    Ruecklauf,
 	    Waermetauscher,
 	    WW,
@@ -291,6 +290,11 @@ class EmsValue {
 	}
 	template<typename T> const T& getValue() const {
 	    return boost::get<T>(m_value);
+	}
+
+	// convenience shortcut
+	bool isForHK() const {
+	    return m_subType == HK1 || m_subType == HK2 || m_subType == HK3 || m_subType == HK4;
 	}
 
     private:

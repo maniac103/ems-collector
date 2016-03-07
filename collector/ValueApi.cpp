@@ -38,9 +38,9 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::RaumSollTemp, "roomtargettemperature" },
 	{ EmsValue::RaumIstTemp, "roomcurrenttemperature" },
 	{ EmsValue::RaumEinfluss, "maxroomeffect" },
-	{ EmsValue::RaumOffset, "roomoffset" },
+	{ EmsValue::RaumOffset, "roomtemperatureoffset" },
 	{ EmsValue::SchwelleSommerWinter, "summerwinterthreshold" },
-	{ EmsValue::FrostSchutzTemp, "frostsafetemperature" },
+	{ EmsValue::FrostSchutzTemp, "frostprotecttemperature" },
 	{ EmsValue::AuslegungsTemp, "designtemperature" },
 	{ EmsValue::RaumUebersteuerTemp, "temperatureoverride" },
 	{ EmsValue::AbsenkungsSchwellenTemp, "reducedmodethreshold" },
@@ -88,7 +88,6 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::NachladungAktiv, "boostcharge" },
 	{ EmsValue::WarmwasserBereitung, "warmwaterpreparationactive" },
 	{ EmsValue::WarmwasserTempOK, "warmwatertempok" },
-	{ EmsValue::Automatikbetrieb, "automode" },
 	{ EmsValue::Tagbetrieb, "daymode" },
 	{ EmsValue::Sommerbetrieb, "summermode" },
 	{ EmsValue::Ausschaltoptimierung, "offoptimization" },
@@ -99,16 +98,15 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::Ferien, "holidaymode" },
 	{ EmsValue::Party, "partymode" },
 	{ EmsValue::Pause, "pausemode" },
-	{ EmsValue::Frostschutzbetrieb, "frostsafemodeactive" },
+	{ EmsValue::Frostschutzbetrieb, "frostprotectmodeactive" },
 	{ EmsValue::SchaltuhrEin, "switchpointactive" },
 	{ EmsValue::KesselSchalter, "masterswitch" },
 	{ EmsValue::EigenesProgrammAktiv, "customschedule" },
 	{ EmsValue::EinmalLadungsLED, "onetimeloadindicator" },
-	{ EmsValue::ATDaempfung, "damping" },
+	{ EmsValue::ATDaempfung, "outdoortempdamping" },
 	{ EmsValue::SchaltzeitOptimierung, "scheduleoptimizer" },
 	{ EmsValue::Fuehler1Defekt, "sensor1failure" },
 	{ EmsValue::Fuehler2Defekt, "sensor2failure" },
-	{ EmsValue::Manuellbetrieb, "manualmode" },
 	{ EmsValue::Stoerung, "failure" },
 	{ EmsValue::StoerungDesinfektion, "desinfectionfailure" },
 	{ EmsValue::Ladevorgang, "loading" },
@@ -119,10 +117,10 @@ ValueApi::getTypeName(EmsValue::Type type)
 	{ EmsValue::Betriebsart, "opmode" },
 	{ EmsValue::DesinfektionTag, "desinfectionday" },
 	{ EmsValue::GebaeudeArt, "buildingtype" },
-	{ EmsValue::RegelungsArt, "controltype" },
-	{ EmsValue::HeizSystem, "heatsystem" },
+	{ EmsValue::AbsenkModus, "reductionmode" },
+	{ EmsValue::HeizSystem, "heatingsystem" },
 	{ EmsValue::FuehrungsGroesse, "relevantparameter" },
-	{ EmsValue::Frostschutz, "frostsafemode" },
+	{ EmsValue::Frostschutz, "frostprotectmode" },
 	{ EmsValue::UrlaubAbsenkungsArt, "vacationreductionmode" },
 	{ EmsValue::FBTyp, "remotecontroltype" },
 
@@ -207,6 +205,10 @@ ValueApi::formatValue(const EmsValue& value)
 	{ 0, "off" }, { 1, "on" }, { 2, "auto" }
     };
 
+    static const std::map<uint8_t, const char *> HKOPMODEMAPPING = {
+	{ 0, "night" }, { 1, "day" }, { 2, "auto" }
+    };
+
     static const std::map<uint8_t, const char *> DAYMAPPING = {
 	{ 0, "monday" }, { 1, "tuesday" }, { 2, "wednesday"}, { 3, "thursday" },
 	{ 4, "friday" }, { 5, "saturday" }, { 6, "sunday" }, { 7, "everyday" }
@@ -217,10 +219,10 @@ ValueApi::formatValue(const EmsValue& value)
     };
 
     static const std::map<uint8_t, const char *> HEATINGTYPEMAPPING = {
-	{ 1, "heater" }, { 2, "convector" }, { 3, "floorheater" },
+	{ 0, "none" }, { 1, "heater" }, { 2, "convection" }, { 3, "floorheater" },
     };
 
-    static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
+    static const std::map<uint8_t, const char *> REDUCTIONMODEMAPPING = {
 	{ 0, "offmode" }, { 1, "reduced" }, { 2, "raumhalt" }, { 3, "aussenhalt" }
     };
 
@@ -268,11 +270,13 @@ ValueApi::formatValue(const EmsValue& value)
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
 		case EmsValue::Wartungsmeldungen: map = &MAINTENANCEMESSAGESMAPPING; break;
 		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
-		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
+		case EmsValue::Betriebsart:
+		    map = value.isForHK() ? &HKOPMODEMAPPING : &OPMODEMAPPING;
+		    break;
 		case EmsValue::DesinfektionTag: map = &DAYMAPPING; break;
 		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
-		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
+		case EmsValue::AbsenkModus: map = &REDUCTIONMODEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
 		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
 		case EmsValue::FBTyp: map = &REMOTETYPEMAPPING; break;

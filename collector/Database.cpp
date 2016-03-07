@@ -265,13 +265,13 @@ Database::createSensorRows()
     query.execute(SensorSommerbetrieb, sensorTypeBoolean, "Sommerbetrieb");
     query.execute(SensorWarmwasserTempOK, sensorTypeBoolean, "Warmwassertemperatur OK");
     query.execute(SensorWWVorrang, sensorTypeBoolean, "Warmwasservorrang");
-    query.execute(SensorHK1Automatik, sensorTypeBoolean, "HK1 Automatikbetrieb");
     query.execute(SensorHK1Tagbetrieb, sensorTypeBoolean, "HK1 Tagbetrieb");
+    query.execute(SensorHK1Automatik, sensorTypeBoolean, "HK1 Automatikbetrieb");
     query.execute(SensorHK1Pumpe, sensorTypeBoolean, "HK1 Pumpe");
     query.execute(SensorHK1Ferien, sensorTypeBoolean, "HK1 Ferien");
     query.execute(SensorHK1Party, sensorTypeBoolean, "HK1 Party");
-    query.execute(SensorHK2Automatik, sensorTypeBoolean, "HK2 Automatikbetrieb");
     query.execute(SensorHK2Tagbetrieb, sensorTypeBoolean, "HK2 Tagbetrieb");
+    query.execute(SensorHK2Automatik, sensorTypeBoolean, "HK2 Automatikbetrieb");
     query.execute(SensorHK2Pumpe, sensorTypeBoolean, "HK2 Pumpe");
     query.execute(SensorHK2Ferien, sensorTypeBoolean, "HK2 Ferien");
     query.execute(SensorHK2Party, sensorTypeBoolean, "HK2 Party");
@@ -375,12 +375,10 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::ZuendungAktiv, EmsValue::None, SensorZuendung },
 	{ EmsValue::PumpeAktiv, EmsValue::Kessel, SensorKesselPumpe },
 	{ EmsValue::DreiWegeVentilAufWW, EmsValue::None, Sensor3WegeVentil },
-	{ EmsValue::Automatikbetrieb, EmsValue::HK1, SensorHK1Automatik },
 	{ EmsValue::Tagbetrieb, EmsValue::HK1, SensorHK1Tagbetrieb },
 	{ EmsValue::PumpeAktiv, EmsValue::HK1, SensorHK1Pumpe },
 	{ EmsValue::Ferien, EmsValue::HK1, SensorHK1Ferien },
 	{ EmsValue::Party, EmsValue::HK1, SensorHK1Party },
-	{ EmsValue::Automatikbetrieb, EmsValue::HK2, SensorHK2Automatik },
 	{ EmsValue::Tagbetrieb, EmsValue::HK2, SensorHK2Tagbetrieb },
 	{ EmsValue::PumpeAktiv, EmsValue::HK2, SensorHK2Pumpe },
 	{ EmsValue::Ferien, EmsValue::HK2, SensorHK2Ferien },
@@ -435,6 +433,11 @@ Database::handleValue(const EmsValue& value)
 	    addSensorValue(STATEMAPPING[i].sensor, value.getValue<std::string>());
 	    return;
 	}
+    }
+
+    if (value == EmsValue::Betriebsart && (subtype == EmsValue::HK1 || subtype == EmsValue::HK2)) {
+	BooleanSensors sensor = subtype == EmsValue::HK2 ? SensorHK2Automatik : SensorHK1Automatik;
+	addSensorValue(sensor, value.getValue<unsigned int>() == 2);
     }
 }
 

@@ -444,13 +444,21 @@ EmsMessage::parseUBAMonitorWWMessage()
     parseBool(6, 2, EmsValue::Stoerung, EmsValue::WW);
     parseBool(6, 3, EmsValue::StoerungDesinfektion, EmsValue::WW);
     parseBool(7, 0, EmsValue::Tagbetrieb, EmsValue::Zirkulation);
-    parseBool(7, 1, EmsValue::Manuellbetrieb, EmsValue::Zirkulation);
     parseBool(7, 2, EmsValue::ZirkulationAktiv, EmsValue::None);
     parseBool(7, 3, EmsValue::Ladevorgang, EmsValue::WW);
     parseEnum(8, EmsValue::WWSystemType, EmsValue::None);
     parseNumeric(9, 1, 10, EmsValue::DurchflussMenge, EmsValue::WW, false);
     parseInteger(10, 3, EmsValue::WarmwasserbereitungsZeit, EmsValue::None);
     parseInteger(13, 3, EmsValue::WarmwasserBereitungen, EmsValue::None);
+
+    if (canAccess(7, 1)) {
+	// offset 7, bit 1: manual mode
+	bool manual = m_data[7 - m_offset] & (1 << 1);
+	// offset 7, bit 0: manually enabled
+	bool enabled = m_data[7 - m_offset] & (1 << 0);
+	uint8_t mode = manual ? (enabled ? 1 : 0) : 2;
+	m_valueHandler(EmsValue(EmsValue::Betriebsart, EmsValue::Zirkulation, mode));
+    }
 }
 
 void
@@ -525,9 +533,9 @@ EmsMessage::parseRCWWOpmodeMessage()
 void
 EmsMessage::parseRCSystemParameterMessage()
 {
-    parseNumeric(5, 1, 1, EmsValue::MinTemp, EmsValue::Aussen);
-    parseEnum(6, EmsValue::GebaeudeArt, EmsValue::None);
-    parseBool(21, 1, EmsValue::ATDaempfung, EmsValue::None);
+    parseNumeric(5, 1, 1, EmsValue::MinTemp, EmsValue::RC);
+    parseEnum(6, EmsValue::GebaeudeArt, EmsValue::RC);
+    parseBool(21, 1, EmsValue::ATDaempfung, EmsValue::RC);
 }
 
 void
@@ -575,7 +583,7 @@ EmsMessage::parseRCHKOpmodeMessage(EmsValue::SubType subtype)
     parseBool(19, 1, EmsValue::SchaltzeitOptimierung, subtype);
     parseNumeric(22, 1, 1, EmsValue::SchwelleSommerWinter, subtype);
     parseNumeric(23, 1, 1, EmsValue::FrostSchutzTemp, subtype);
-    parseEnum(25, EmsValue::RegelungsArt, subtype);
+    parseEnum(25, EmsValue::AbsenkModus, subtype);
     parseEnum(26, EmsValue::FBTyp, subtype);
     parseEnum(28, EmsValue::Frostschutz, subtype);
     parseNumeric(37, 1, 2, EmsValue::RaumUebersteuerTemp, subtype);
@@ -603,13 +611,21 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
 {
     parseBool(0, 0, EmsValue::Ausschaltoptimierung, subtype);
     parseBool(0, 1, EmsValue::Einschaltoptimierung, subtype);
-    parseBool(0, 2, EmsValue::Automatikbetrieb, subtype);
     parseBool(0, 3, EmsValue::WWVorrang, subtype);
     parseBool(0, 4, EmsValue::Estrichtrocknung, subtype);
     parseBool(0, 6, EmsValue::Frostschutzbetrieb, subtype);
-    parseBool(0, 7, EmsValue::Manuellbetrieb, subtype);
     parseBool(1, 0, EmsValue::Sommerbetrieb, subtype);
     parseBool(1, 1, EmsValue::Tagbetrieb, subtype);
+
+    if (canAccess(0, 2)) {
+	// offset 0, bit 2: auto mode
+	bool automatic = m_data[0] & (1 << 7);
+	// offset 1, bit 1: day mode
+	bool day = m_data[1] & (1 << 1);
+	uint8_t mode = automatic ? 2 : day ? 1 : 0;
+	m_valueHandler(EmsValue(EmsValue::Betriebsart, subtype, mode));
+    }
+
     parseNumeric(2, 1, 2, EmsValue::RaumSollTemp, subtype);
     parseTemperature(3, EmsValue::RaumIstTemp, subtype);
     parseInteger(5, 1, EmsValue::EinschaltoptimierungsZeit, subtype);

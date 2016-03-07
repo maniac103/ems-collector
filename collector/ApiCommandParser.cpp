@@ -24,7 +24,7 @@
 #include "Options.h"
 
 /* version of our command API */
-#define API_VERSION "2016030601"
+#define API_VERSION "2016030701"
 
 ApiCommandParser::ApiCommandParser(EmsCommandSender& sender,
 				   const boost::shared_ptr<EmsCommandClient>& client,
@@ -112,7 +112,7 @@ ApiCommandParser::handleRcCommand(std::istream& request)
 
     if (cmd == "help") {
 	output("Available subcommands:\n"
-		"minoutdoortemperature <temp>\n"
+		"mintemperature <temp>\n"
 		"buildingtype [light|medium|heavy]\n"
 		"outdoortempdamping [on|off]\n"
 		"requestdata\n"
@@ -124,7 +124,7 @@ ApiCommandParser::handleRcCommand(std::istream& request)
     } else if (cmd == "requestdata") {
 	startRequest(EmsProto::addressRC3x, 0xa5, 0, 25);
 	return Ok;
-    } else if (cmd == "minoutdoortemperature") {
+    } else if (cmd == "mintemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, 0xa5, 5, 1, -30, 0);
     } else if (cmd == "buildingtype") {
 	std::string ns;
@@ -440,14 +440,14 @@ ApiCommandParser::handleHkCommand(std::istream& request, uint8_t type)
 		"customschedule [1|2] <index> unset\n"
 		"customschedule [1|2] <index> [monday|tuesday|...|sunday] HH:MM [on|off]\n"
 		"scheduleoptimizer [on|off]\n"
-		"minheatflowtemperature <temp>\n"
-		"maxheatflowtemperature <temp>\n"
+		"mintemperature <temp>\n"
+		"maxtemperature <temp>\n"
 		"reductionmode [offmode|reduced|raumhalt|aussenhalt]\n"
 		"heatingsystem [none|heater|floorheater|convection] [outdoor|indoor]\n"
 		"vacationreductionmode [outdoor|indoor]\n"
 		"maxroomeffect <temp>\n"
 		"designtemperature <temp>\n"
-		"temperatureoffset <temp>\n"
+		"roomtemperatureoffset <temp>\n"
 		"frostprotectmode [off|byoutdoortemp|byindoortemp]\n"
 		"frostprotecttemperature <temp>\n"
 		"summerwinterthreshold <temp>\n"
@@ -652,13 +652,13 @@ ApiCommandParser::handleHkCommand(std::istream& request, uint8_t type)
 
 	sendCommand(EmsProto::addressRC3x, type, 28, &data, 1);
 	return Ok;
-    } else if (cmd == "minheatflowtemperature") {
+    } else if (cmd == "mintemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 16, 1, 5, 70);
-    } else if (cmd == "maxheatflowtemperature") {
+    } else if (cmd == "maxtemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 15, 1, 30, 90);
     } else if (cmd == "maxroomeffect") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 4, 2, 0, 10);
-    } else if (cmd == "temperatureoffset") {
+    } else if (cmd == "roomtemperatureoffset") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 6, 2, -5, 5);
     } else if (cmd == "designtemperature") {
 	return handleSingleByteValue(request, EmsProto::addressRC3x, type, 17, 1, 30, 90);

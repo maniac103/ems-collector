@@ -184,7 +184,6 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::NachladungAktiv, "Nachladung" },
 	{ EmsValue::WarmwasserBereitung, "WW-Bereitung" },
 	{ EmsValue::WarmwasserTempOK, "WW-Temperatur OK" },
-	{ EmsValue::Automatikbetrieb, "Automatikbetrieb" },
 	{ EmsValue::Tagbetrieb, "Tagbetrieb" },
 	{ EmsValue::Sommerbetrieb, "Sommerbetrieb" },
 	{ EmsValue::Ausschaltoptimierung, "Ausschaltoptimierung" },
@@ -205,7 +204,6 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::SchaltzeitOptimierung, "Schaltzeitoptimierung" },
 	{ EmsValue::Fuehler1Defekt, "Fühler 1 defekt" },
 	{ EmsValue::Fuehler2Defekt, "Fühler 2 defekt" },
-	{ EmsValue::Manuellbetrieb, "Manueller Betrieb" },
 	{ EmsValue::Stoerung, "Störung" },
 	{ EmsValue::StoerungDesinfektion, "Störung Desinfektion" },
 	{ EmsValue::Ladevorgang, "Ladevorgang" },
@@ -217,7 +215,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ EmsValue::DesinfektionTag, "Thermische Desinfektion Tag" },
 	{ EmsValue::Schaltpunkte, "Schaltpunkte" },
 	{ EmsValue::GebaeudeArt, "Gebäudeart" },
-	{ EmsValue::RegelungsArt, "Regelungsart" },
+	{ EmsValue::AbsenkModus, "Absenk-Modus" },
 	{ EmsValue::HeizSystem, "Heizsystem" },
 	{ EmsValue::FuehrungsGroesse, "Führungsgröße" },
 	{ EmsValue::Frostschutz, "Frostschutz" },
@@ -340,6 +338,9 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 0, "ständig aus" }, { 1, "ständig an" }, { 2, "Automatik" }
     };
 
+    static const std::map<uint8_t, const char *> HKOPMODEMAPPING = {
+	{ 0, "immer Nachtbetrieb" }, { 1, "immer Tagbetrieb" }, { 2, "Automatik" }
+    };
 
     static const std::map<uint8_t, const char *> BUILDINGTYPEMAPPING = {
 	{ 0, "leicht" }, { 1, "mittel" }, { 2, "schwer" }
@@ -349,7 +350,7 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 	{ 1, "Heizkörper" }, { 2, "Konvektor" }, { 3, "Fußboden" },
     };
 
-    static const std::map<uint8_t, const char *> CONTROLTYPEMAPPING = {
+    static const std::map<uint8_t, const char *> REDUCTIONMODEMAPPING = {
 	{ 0, "Abschalt" }, { 1, "Reduziert" }, { 2, "Raumhalt" }, { 3, "Außenhalt" }
     };
 
@@ -416,11 +417,13 @@ printDescriptive(std::ostream& stream, const EmsValue& value)
 		case EmsValue::Schaltpunkte: map = &ZIRKSPMAPPING; break;
 		case EmsValue::Wartungsmeldungen: map = &MAINTENANCEMESSAGESMAPPING; break;
 		case EmsValue::WartungFaellig: map = &MAINTENANCENEEDEDMAPPING; break;
-		case EmsValue::Betriebsart: map = &OPMODEMAPPING; break;
+		case EmsValue::Betriebsart:
+		    map = value.isForHK() ? &HKOPMODEMAPPING : &OPMODEMAPPING;
+		    break;
 		case EmsValue::DesinfektionTag: map = &WEEKDAYMAPPING; break;
 		case EmsValue::GebaeudeArt: map = &BUILDINGTYPEMAPPING; break;
 		case EmsValue::HeizSystem: map = &HEATINGTYPEMAPPING; break;
-		case EmsValue::RegelungsArt: map = &CONTROLTYPEMAPPING; break;
+		case EmsValue::AbsenkModus: map = &REDUCTIONMODEMAPPING; break;
 		case EmsValue::FBTyp: map = &REMOTETYPEMAPPING; break;
 		case EmsValue::Frostschutz: map = &FROSTPROTECTMAPPING; break;
 		case EmsValue::FuehrungsGroesse: map = &RELEVANTVALUEMAPPING; break;
