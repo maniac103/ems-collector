@@ -18,9 +18,9 @@
  */
 
 #include <iostream>
-#include <mysql/mysql++/exceptions.h>
-#include <mysql/mysql++/query.h>
-#include <mysql/mysql++/ssqls.h>
+#include <mysql++/exceptions.h>
+#include <mysql++/query.h>
+#include <mysql++/ssqls.h>
 #include "Database.h"
 #include "Options.h"
 
@@ -339,8 +339,8 @@ Database::handleValue(const EmsValue& value)
 	{ EmsValue::IstTemp, EmsValue::Ruecklauf, SensorRuecklaufTemp },
 	{ EmsValue::IstTemp, EmsValue::Aussen, SensorAussenTemp },
 	{ EmsValue::GedaempfteTemp, EmsValue::Aussen, SensorGedaempfteAussenTemp },
-	{ EmsValue::SollTemp, EmsValue::Raum, SensorRaumSollTemp },
-	{ EmsValue::IstTemp, EmsValue::Raum, SensorRaumIstTemp },
+	{ EmsValue::SollTemp, EmsValue::HK2, SensorRaumSollTemp },
+	{ EmsValue::IstTemp, EmsValue::HK2, SensorRaumIstTemp },
 	{ EmsValue::Flammenstrom, EmsValue::None, SensorFlammenstrom },
 	{ EmsValue::Systemdruck, EmsValue::None, SensorSystemdruck },
 	{ EmsValue::IstTemp, EmsValue::Waermetauscher, SensorWaermetauscherTemp },
@@ -435,7 +435,7 @@ Database::handleValue(const EmsValue& value)
 	}
     }
 
-    if (value == EmsValue::Betriebsart && (subtype == EmsValue::HK1 || subtype == EmsValue::HK2)) {
+    if (type == EmsValue::Betriebsart && (subtype == EmsValue::HK1 || subtype == EmsValue::HK2)) {
 	BooleanSensors sensor = subtype == EmsValue::HK2 ? SensorHK2Automatik : SensorHK1Automatik;
 	addSensorValue(sensor, value.getValue<unsigned int>() == 2);
     }

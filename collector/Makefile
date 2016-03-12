@@ -11,8 +11,8 @@ DEPFILE = .depend
 # Uncomment the following lines to build the collector with MySQL database
 # support. You'll need to have the development package of libmysql++ installed.
 # SRCS += Database.cpp
-# CFLAGS += -DHAVE_MYSQL
-# LIBS = -lmysqlpp
+# CFLAGS += -DHAVE_MYSQL -I/usr/include/mysql
+# LIBS += -lmysqlpp
 
 # Uncomment the following line in order to build the collector with support
 # for the 'raw read' and 'raw write' commands.

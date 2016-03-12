@@ -22,8 +22,8 @@
 
 #include <map>
 #include <queue>
-#include <mysql/mysql++/connection.h>
-#include <mysql/mysql++/query.h>
+#include <mysql++/connection.h>
+#include <mysql++/query.h>
 #include "EmsMessage.h"
 
 class Database {
