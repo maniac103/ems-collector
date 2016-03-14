@@ -437,7 +437,7 @@ Database::handleValue(const EmsValue& value)
 
     if (type == EmsValue::Betriebsart && (subtype == EmsValue::HK1 || subtype == EmsValue::HK2)) {
 	BooleanSensors sensor = subtype == EmsValue::HK2 ? SensorHK2Automatik : SensorHK1Automatik;
-	addSensorValue(sensor, value.getValue<unsigned int>() == 2);
+	addSensorValue(sensor, value.getValue<uint8_t>() == 2);
     }
 }
 
