@@ -85,7 +85,7 @@ void
 TcpHandler::sendMessageImpl(const EmsMessage& msg)
 {
     boost::system::error_code error;
-    std::vector<uint8_t> sendData = msg.getSendData();
+    std::vector<uint8_t> sendData = msg.getSendData(true);
     DebugStream& debug = Options::ioDebug();
 
     if (debug) {

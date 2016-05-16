@@ -17,31 +17,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SERIALHANDLER_H__
-#define __SERIALHANDLER_H__
+#ifndef __SENDINGSERIALHANDLER_H__
+#define __SENDINGSERIALHANDLER_H__
 
-#include <boost/asio/serial_port.hpp>
-#include "IoHandler.h"
+#include "CommandScheduler.h"
+#include "SerialHandler.h"
 
-class SerialHandler : public IoHandler
+class SendingSerialHandler : public SerialHandler, public EmsCommandSender
 {
     public:
-	SerialHandler(const std::string& device, ValueCache& cache);
-	~SerialHandler();
+	SendingSerialHandler(const std::string& device, ValueCache& cache);
 
     protected:
-	virtual void readStart() {
-	    /* Start an asynchronous read and call read_complete when it completes or fails */
-	    m_serialPort.async_read_some(boost::asio::buffer(m_recvBuffer, maxReadLength),
-					 boost::bind(&SerialHandler::readComplete, this,
-						     boost::asio::placeholders::error,
-						     boost::asio::placeholders::bytes_transferred));
+	virtual void sendMessageImpl(const EmsMessage& msg) override;
+	virtual void onPcMessageReceived(const EmsMessage& msg) override {
+	    handlePcMessage(msg);
 	}
-
-	virtual void doCloseImpl();
-
-    protected:
-	boost::asio::serial_port m_serialPort;
 };
 
-#endif /* __SERIALHANDLER_H__ */
+#endif /* __SENDINGSERIALHANDLER_H__ */

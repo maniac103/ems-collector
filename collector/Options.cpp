@@ -42,6 +42,10 @@ usage(std::ostream& stream, const char *programName,
       bpo::options_description& options)
 {
     stream << "Usage: " << programName << " [options] <target>" << std::endl;
+    stream << std::endl << "Possible values for target:" << std::endl;
+    stream << "  serial:<device>     Connect to serial device <device> without sending support (e.g. Atmega8)" << std::endl;
+    stream << "  tx-serial:<device>  Connect to serial device <device> with sending support (e.g. EMS Gateway)" << std::endl;
+    stream << "  tcp:<host>:<port    Connect to TCP address <host> at <port> (e.g. NetIO)" << std::endl;
     stream << options << std::endl;
 }
 
@@ -102,7 +106,7 @@ Options::parse(int argc, char *argv[])
 
     bpo::options_description hidden("Hidden options");
     hidden.add_options()
-	("target", bpo::value<std::string>(&m_target), "Connection target (serial:<device> or tcp:<host>:<port>)");
+	("target", bpo::value<std::string>(&m_target), "Connection target");
 
     bpo::options_description options;
     options.add(general);

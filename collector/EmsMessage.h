@@ -333,7 +333,7 @@ class EmsMessage
 	const std::vector<uint8_t>& getData() const {
 	    return m_data;
 	}
-	std::vector<uint8_t> getSendData() const;
+	std::vector<uint8_t> getSendData(bool omitSenderAddress) const;
 
     private:
 	void parseUBATotalUptimeMessage();

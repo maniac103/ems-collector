@@ -31,6 +31,7 @@
 #include "MqttAdapter.h"
 #include "Options.h"
 #include "PidFile.h"
+#include "SendingSerialHandler.h"
 #include "SerialHandler.h"
 #include "TcpHandler.h"
 #include "ValueCache.h"
@@ -40,6 +41,8 @@ getHandler(const std::string& target, ValueCache& cache)
 {
     if (target.compare(0, 7, "serial:") == 0) {
 	return new SerialHandler(target.substr(7), cache);
+    } else if (target.compare(0, 7, "tx-serial:") == 0) {
+	return new SendingSerialHandler(target.substr(10), cache);
     } else if (target.compare(0, 4, "tcp:") == 0) {
 	size_t pos = target.find(':', 4);
 	if (pos != std::string::npos) {

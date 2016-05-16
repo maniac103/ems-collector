@@ -174,11 +174,14 @@ EmsMessage::EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
 }
 
 std::vector<uint8_t>
-EmsMessage::getSendData() const
+EmsMessage::getSendData(bool omitSenderAddress) const
 {
     std::vector<uint8_t> data;
+    static constexpr uint8_t ourSenderAddress = EmsProto::addressPC;
 
-    /* own address omitted on send */
+    if (!omitSenderAddress) {
+	data.push_back(ourSenderAddress);
+    }
     data.push_back(m_dest);
     data.push_back(m_type);
     data.push_back(m_offset);

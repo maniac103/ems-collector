@@ -2,8 +2,9 @@ CC = g++
 CFLAGS = -Wall -c -O2 -std=c++0x -DHAVE_DAEMONIZE
 
 LIBS = -lpthread -lboost_system -lboost_program_options
-SRCS = main.cpp IoHandler.cpp SerialHandler.cpp TcpHandler.cpp CommandHandler.cpp \
-       ApiCommandParser.cpp CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp \
+SRCS = main.cpp IoHandler.cpp SerialHandler.cpp SendingSerialHandler.cpp \
+       TcpHandler.cpp CommandHandler.cpp ApiCommandParser.cpp \
+       CommandScheduler.cpp DataHandler.cpp EmsMessage.cpp \
        ValueApi.cpp ValueCache.cpp Options.cpp PidFile.cpp
 OBJS = $(SRCS:%.cpp=%.o)
 DEPFILE = .depend
