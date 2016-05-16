@@ -41,7 +41,7 @@ getHandler(const std::string& target, ValueCache& cache)
 {
     if (target.compare(0, 7, "serial:") == 0) {
 	return new SerialHandler(target.substr(7), cache);
-    } else if (target.compare(0, 7, "tx-serial:") == 0) {
+    } else if (target.compare(0, 10, "tx-serial:") == 0) {
 	return new SendingSerialHandler(target.substr(10), cache);
     } else if (target.compare(0, 4, "tcp:") == 0) {
 	size_t pos = target.find(':', 4);
