@@ -140,15 +140,15 @@ Options::parse(int argc, char *argv[])
 
     bpo::variables_map variables;
     try {
+	bpo::store(bpo::command_line_parser(argc, argv).options(options).positional(p).run(),
+		   variables);
+	bpo::notify(variables);
+
 	if (!config.empty()) {
 	    std::ifstream configFile(config.c_str());
 	    bpo::store(bpo::parse_config_file(configFile, configOptions), variables);
 	    bpo::notify(variables);
 	}
-
-	bpo::store(bpo::command_line_parser(argc, argv).options(options).positional(p).run(),
-		   variables);
-	bpo::notify(variables);
     } catch (bpo::unknown_option& e) {
 	usage(std::cerr, argv[0], visible);
 	return ParseFailure;
