@@ -68,7 +68,7 @@ MqttAdapter::handleValue(const EmsValue& value)
     m_client.publish_at_most_once(topic, formattedValue);
 }
 
-void
+bool
 MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
 {
     Options::ioDebug() << "MQTT: onConnect, return code "
@@ -83,6 +83,7 @@ MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
 	m_commandParser.reset(
 		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
     }
+    return true;
 }
 
 void
@@ -104,7 +105,7 @@ MqttAdapter::onClose()
     scheduleConnectionRetry();
 }
 
-void
+bool
 MqttAdapter::onMessageReceived(const std::string& topic, const std::string& contents)
 {
     Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
@@ -112,6 +113,7 @@ MqttAdapter::onMessageReceived(const std::string& topic, const std::string& cont
     std::replace(command.begin(), command.end(), '/', ' ');
     std::istringstream commandStream(command + " " + contents);
     m_commandParser->parse(commandStream);
+    return true;
 }
 
 void

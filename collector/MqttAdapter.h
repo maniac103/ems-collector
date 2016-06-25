@@ -39,10 +39,10 @@ class MqttAdapter : public boost::noncopyable
 	void handleValue(const EmsValue& value);
 
     private:
-	void onConnect(bool sessionPresent, uint8_t returnCode);
+	bool onConnect(bool sessionPresent, uint8_t returnCode);
 	void onError(const boost::system::error_code& ec);
 	void onClose();
-	void onMessageReceived(const std::string& topic, const std::string& contents);
+	bool onMessageReceived(const std::string& topic, const std::string& contents);
 	void scheduleConnectionRetry();
 
     private:
@@ -66,7 +66,7 @@ class MqttAdapter : public boost::noncopyable
 	static const unsigned int MinRetryDelaySeconds = 5;
 	static const unsigned int MaxRetryDelaySeconds = 5 * 60;
 
-	mqtt::client<boost::asio::ip::tcp::socket> m_client;
+	mqtt::client<boost::asio::ip::tcp::socket, boost::asio::io_service::strand> m_client;
 	EmsCommandSender * m_sender;
 	boost::shared_ptr<EmsCommandClient> m_cmdClient;
 	bool m_connected;
