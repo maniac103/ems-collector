@@ -16,10 +16,13 @@ Requirements
 ============
 (examples for debian wheezy)
 
-The following packages are needed for building the collector:
+For building the collector, libboost is required:
 ```
 apt-get install libboost1.49-all-dev
 ```
+If MQTT support is enabled, the minimum required boost version is 1.57, so
+MQTT support can't be enabled on distributions that only ship older boost
+versions.
 
 If the collector should be built with MySQL support, the MySQL C++
 bindings are needed:
