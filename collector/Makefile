@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -c -O2 -std=c++1y -DHAVE_DAEMONIZE
+CFLAGS = -Wall -c -O2 -std=c++0x -DHAVE_DAEMONIZE
 
 LIBS = -lpthread -lboost_system -lboost_program_options
 SRCS = main.cpp IoHandler.cpp SerialHandler.cpp SendingSerialHandler.cpp \
