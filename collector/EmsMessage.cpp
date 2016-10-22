@@ -622,7 +622,7 @@ EmsMessage::parseRCHKMonitorMessage(EmsValue::SubType subtype)
 
     if (canAccess(0, 2)) {
 	// offset 0, bit 2: auto mode
-	bool automatic = m_data[0] & (1 << 7);
+	bool automatic = m_data[0] & (1 << 2);
 	// offset 1, bit 1: day mode
 	bool day = m_data[1] & (1 << 1);
 	uint8_t mode = automatic ? 2 : day ? 1 : 0;
