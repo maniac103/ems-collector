@@ -33,12 +33,12 @@ MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
     m_retryDelay(MinRetryDelaySeconds),
     m_retryTimer(ios)
 {
-    m_client.set_client_id("ems-collector");
-    m_client.set_error_handler(boost::bind(&MqttAdapter::onError, this, _1));
-    m_client.set_connack_handler(boost::bind(&MqttAdapter::onConnect, this, _1, _2));
-    m_client.set_close_handler(boost::bind(&MqttAdapter::onClose, this));
-    m_client.set_publish_handler(boost::bind(&MqttAdapter::onMessageReceived, this, _3, _4));
-    m_client.connect();
+    m_client->set_client_id("ems-collector");
+    m_client->set_error_handler(boost::bind(&MqttAdapter::onError, this, _1));
+    m_client->set_connack_handler(boost::bind(&MqttAdapter::onConnect, this, _1, _2));
+    m_client->set_close_handler(boost::bind(&MqttAdapter::onClose, this));
+    m_client->set_publish_handler(boost::bind(&MqttAdapter::onMessageReceived, this, _3, _4));
+    m_client->connect();
 }
 
 void
@@ -65,7 +65,7 @@ MqttAdapter::handleValue(const EmsValue& value)
     if (debug) {
 	debug << "MQTT: publishing topic '" << topic << "' with value " << formattedValue << std::endl;
     }
-    m_client.publish_at_most_once(topic, formattedValue);
+    m_client->publish_at_most_once(topic, formattedValue);
 }
 
 bool
@@ -78,7 +78,7 @@ MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
 	m_retryDelay = MinRetryDelaySeconds;
 	scheduleConnectionRetry();
     } else if (m_sender) {
-	m_client.subscribe("/ems/control/#", 2);
+	m_client->subscribe("/ems/control/#", 2);
 	auto outputCb = [] (const std::string&) {};
 	m_commandParser.reset(
 		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
@@ -124,7 +124,7 @@ MqttAdapter::scheduleConnectionRetry()
     m_retryTimer.async_wait([this] (const boost::system::error_code& error) {
 	if (error != boost::asio::error::operation_aborted) {
 	    m_retryDelay = std::min(m_retryDelay * 2, MaxRetryDelaySeconds);
-	    m_client.connect();
+	    m_client->connect();
 	}
     });
 }
