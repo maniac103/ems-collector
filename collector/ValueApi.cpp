@@ -149,6 +149,7 @@ ValueApi::getSubTypeName(EmsValue::SubType subtype)
 	{ EmsValue::HK2, "hk2" },
 	{ EmsValue::HK3, "hk3" },
 	{ EmsValue::HK4, "hk4" },
+	{ EmsValue::RC, "rc" },
 	{ EmsValue::Kessel, "heater" },
 	{ EmsValue::KesselPumpe, "heaterpump" },
 	{ EmsValue::Brenner, "burner" },
