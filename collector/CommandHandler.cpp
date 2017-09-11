@@ -118,6 +118,7 @@ CommandConnection::handleRequest(const boost::system::error_code& error)
 	    break;
     }
 
+    requestStream.clear();
     /* drain remainder */
     std::string remainder;
     std::getline(requestStream, remainder);
