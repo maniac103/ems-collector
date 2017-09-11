@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/date_time.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include "ApiCommandParser.h"
@@ -119,6 +120,7 @@ ApiCommandParser::handleRcCommand(std::istream& request)
 		"geterrors\n"
 		"getcontactinfo\n"
 		"setcontactinfo [1|2] <text>\n"
+		"settime YYYY-MM-DD HH:MM:SS\n"
 		"OK");
 	return Ok;
     } else if (cmd == "requestdata") {
@@ -178,6 +180,42 @@ ApiCommandParser::handleRcCommand(std::istream& request)
 	return Ok;
     } else if (cmd == "geterrors") {
 	startRequest(EmsProto::addressRC3x, 0x12, 0, 4 * sizeof(EmsProto::ErrorRecord));
+	return Ok;
+    } else if (cmd == "settime") {
+	std::locale prevLocale = request.imbue(std::locale(std::locale::classic(),
+		new boost::local_time::local_time_input_facet("%Y-%m-%d %H:%M:%S")));
+	boost::posix_time::ptime time;
+
+	request >> time;
+	request.imbue(prevLocale);
+
+	if (!request) {
+	    return InvalidArgs;
+	}
+
+	boost::gregorian::date date = time.date();
+	boost::posix_time::time_duration timeOfDay = time.time_of_day();
+
+	EmsProto::SystemTimeRecord record;
+	memset(&record, 0, sizeof(record));
+
+	record.common.year = date.year() - 2000;
+	record.common.month = date.month();
+	record.common.day = date.day();
+	record.common.hour = timeOfDay.hours();
+	record.common.minute = timeOfDay.minutes();
+	record.second = timeOfDay.seconds();
+	switch (date.day_of_week()) {
+	    case boost::date_time::Monday: record.dayOfWeek = 0; break;
+	    case boost::date_time::Tuesday: record.dayOfWeek = 1; break;
+	    case boost::date_time::Wednesday: record.dayOfWeek = 2; break;
+	    case boost::date_time::Thursday: record.dayOfWeek = 3; break;
+	    case boost::date_time::Friday: record.dayOfWeek = 4; break;
+	    case boost::date_time::Saturday: record.dayOfWeek = 5; break;
+	    case boost::date_time::Sunday: record.dayOfWeek = 6; break;
+	}
+
+	sendCommand(EmsProto::addressRC3x, 0x06, 0, (uint8_t *) &record, sizeof(record));
 	return Ok;
     }
 
