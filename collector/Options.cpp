@@ -45,7 +45,7 @@ usage(std::ostream& stream, const char *programName,
     stream << std::endl << "Possible values for target:" << std::endl;
     stream << "  serial:<device>     Connect to serial device <device> without sending support (e.g. Atmega8)" << std::endl;
     stream << "  tx-serial:<device>  Connect to serial device <device> with sending support (e.g. EMS Gateway)" << std::endl;
-    stream << "  tcp:<host>:<port    Connect to TCP address <host> at <port> (e.g. NetIO)" << std::endl;
+    stream << "  tcp:<host>:<port>   Connect to TCP address <host> at <port> (e.g. NetIO)" << std::endl;
     stream << options << std::endl;
 }
 
