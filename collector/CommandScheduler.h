@@ -23,6 +23,7 @@
 #include <list>
 #include <boost/asio.hpp>
 #include "EmsMessage.h"
+#include "Noncopyable.h"
 
 class EmsCommandClient
 {

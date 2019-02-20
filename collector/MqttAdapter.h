@@ -26,8 +26,8 @@
 #ifdef HAVE_MQTT
 
 #include <mqtt_client_cpp.hpp>
-#include <boost/noncopyable.hpp>
 #include "ApiCommandParser.h"
+#include "Noncopyable.h"
 
 class MqttAdapter : public boost::noncopyable
 {

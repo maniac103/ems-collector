@@ -24,10 +24,10 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/noncopyable.hpp>
 #include "ApiCommandParser.h"
 #include "CommandScheduler.h"
 #include "EmsMessage.h"
+#include "Noncopyable.h"
 
 class CommandHandler;
 
