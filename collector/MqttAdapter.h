@@ -66,7 +66,7 @@ class MqttAdapter : public boost::noncopyable
 	static const unsigned int MinRetryDelaySeconds = 5;
 	static const unsigned int MaxRetryDelaySeconds = 5 * 60;
 
-	std::shared_ptr<mqtt::client<boost::asio::ip::tcp::socket, boost::asio::io_service::strand> > m_client;
+	std::shared_ptr<mqtt::client<mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, boost::asio::io_service::strand> > > m_client;
 	EmsCommandSender * m_sender;
 	boost::shared_ptr<EmsCommandClient> m_cmdClient;
 	bool m_connected;
