@@ -34,7 +34,8 @@ class MqttAdapter : public boost::noncopyable
     public:
 	MqttAdapter(boost::asio::io_service& ios,
 		    EmsCommandSender *sender,
-		    const std::string& host, const std::string& port);
+		    const std::string& host, const std::string& port,
+		    const std::string& topicPrefix);
 
 	void handleValue(const EmsValue& value);
 
@@ -73,6 +74,7 @@ class MqttAdapter : public boost::noncopyable
 	unsigned int m_retryDelay;
 	std::unique_ptr<ApiCommandParser> m_commandParser;
 	boost::asio::deadline_timer m_retryTimer;
+	std::string m_topicPrefix;
 };
 
 #else /* HAVE_MQTT */
@@ -81,7 +83,8 @@ class MqttAdapter {
     public:
 	MqttAdapter(boost::asio::io_service& /* ios */,
 		    EmsCommandSender * /* sender */,
-		    const std::string& /* host */, const std::string& /* port */)
+		    const std::string& /* host */, const std::string& /* port */,
+		    const std::string& /* topicPrefix */)
 	{}
 
 	void handleValue(const EmsValue& /* value */) {}

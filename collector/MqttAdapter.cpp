@@ -25,13 +25,15 @@
 
 MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
 			 EmsCommandSender *sender,
-			 const std::string& host, const std::string& port) :
+			 const std::string& host, const std::string& port,
+			 const std::string& topicPrefix) :
     m_client(mqtt::make_client(ios, host, port)),
     m_sender(sender),
     m_cmdClient(new CommandClient(this)),
     m_connected(false),
     m_retryDelay(MinRetryDelaySeconds),
-    m_retryTimer(ios)
+    m_retryTimer(ios),
+    m_topicPrefix(topicPrefix.empty() ? "/ems" : topicPrefix)
 {
     m_client->set_client_id("ems-collector");
     m_client->set_error_handler(boost::bind(&MqttAdapter::onError, this, _1));
@@ -51,7 +53,7 @@ MqttAdapter::handleValue(const EmsValue& value)
     std::string type = ValueApi::getTypeName(value.getType());
     std::string subtype = ValueApi::getSubTypeName(value.getSubType());
 
-    std::string topic = "/ems/sensor/";
+    std::string topic = m_topicPrefix + "/sensor/";
     if (!subtype.empty()) {
 	topic += subtype + "/";
     }
@@ -78,7 +80,7 @@ MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
 	m_retryDelay = MinRetryDelaySeconds;
 	scheduleConnectionRetry();
     } else if (m_sender) {
-	m_client->subscribe("/ems/control/#", 2);
+	m_client->subscribe(m_topicPrefix + "/control/#", 2);
 	auto outputCb = [] (const std::string&) {};
 	m_commandParser.reset(
 		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
@@ -109,7 +111,7 @@ bool
 MqttAdapter::onMessageReceived(const std::string& topic, const std::string& contents)
 {
     Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
-    std::string command = topic.substr(13); // strip '/ems/control/'
+    std::string command = topic.substr(m_topicPrefix.length() + 9); // strip '/ems/control/'
     std::replace(command.begin(), command.end(), '/', ' ');
     std::istringstream commandStream(command + " " + contents);
     m_commandParser->parse(commandStream);

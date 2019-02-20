@@ -82,6 +82,9 @@ class Options
 	static const std::string& mqttTarget() {
 	    return m_mqttTarget;
 	}
+	static const std::string& mqttPrefix() {
+	    return m_mqttPrefix;
+	}
 	static bool daemonize() {
 	    return m_daemonize;
 	}
@@ -131,6 +134,7 @@ class Options
     private:
 	static std::string m_target;
 	static std::string m_mqttTarget;
+	static std::string m_mqttPrefix;
 	static unsigned int m_rateLimit;
 	static std::string m_pidFilePath;
 	static bool m_daemonize;

@@ -62,7 +62,7 @@ getMqttAdapter(boost::asio::io_service& ios, EmsCommandSender *sender, const std
     if (pos != std::string::npos) {
 	std::string host = target.substr(0, pos);
 	std::string port = target.substr(pos + 1);
-	return new MqttAdapter(ios, sender, host, port);
+	return new MqttAdapter(ios, sender, host, port, Options::mqttPrefix());
     }
 
     return nullptr;
