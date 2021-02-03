@@ -22,6 +22,7 @@
 
 #include <time.h>
 #include <map>
+#include <ostream>
 #include <vector>
 #include "EmsMessage.h"
 
