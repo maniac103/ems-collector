@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include "CommandScheduler.h"
 
 void

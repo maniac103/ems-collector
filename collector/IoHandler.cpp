@@ -19,7 +19,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include "ByteOrder.h"
 #include "IoHandler.h"
@@ -34,7 +33,7 @@ IoHandler::IoHandler(ValueCache& cache) :
     /* pre-alloc buffer to avoid reallocations */
     m_data.reserve(256);
 
-    m_valueCb = boost::bind(&IoHandler::handleValue, this, _1);
+    m_valueCb = boost::bind(&IoHandler::handleValue, this, boost::placeholders::_1);
     m_cacheCb = [cache] (EmsValue::Type type, EmsValue::SubType subtype) {
 	return cache.getValue(type, subtype);
     };

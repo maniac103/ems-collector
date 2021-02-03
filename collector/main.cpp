@@ -21,6 +21,7 @@
 #include <csignal>
 #include <iostream>
 #include <boost/asio/signal_set.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/scoped_ptr.hpp>
 #include "CommandHandler.h"
 #include "CommandScheduler.h"
@@ -115,7 +116,7 @@ int main(int argc, char *argv[])
 		return 1;
 	    }
 	}
-	dbValueCb = boost::bind(&Database::handleValue,&db, _1);
+	dbValueCb = boost::bind(&Database::handleValue,&db, boost::placeholders::_1);
 #endif
 
 #ifdef HAVE_DAEMONIZE
@@ -130,7 +131,8 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	IoHandler::ValueCallback cacheValueCb = boost::bind(&ValueCache::handleValue, &cache, _1);
+	IoHandler::ValueCallback cacheValueCb =
+		boost::bind(&ValueCache::handleValue, &cache, boost::placeholders::_1);
 
 	while (running) {
 	    boost::scoped_ptr<IoHandler> handler(getHandler(Options::target(), cache));
@@ -150,7 +152,7 @@ int main(int argc, char *argv[])
 		    getMqttAdapter(*handler, sender, Options::mqttTarget()));
 	    if (mqttAdapter) {
 		IoHandler::ValueCallback valueCb =
-			boost::bind(&MqttAdapter::handleValue, mqttAdapter.get(), _1);
+			boost::bind(&MqttAdapter::handleValue, mqttAdapter.get(), boost::placeholders::_1);
 		handler->addValueCallback(valueCb);
 	    }
 
@@ -167,7 +169,7 @@ int main(int argc, char *argv[])
 		boost::asio::ip::tcp::endpoint dataEndpoint(boost::asio::ip::tcp::v4(), dataPort);
 		dataHandler.reset(new DataHandler(*handler, dataEndpoint));
 		IoHandler::ValueCallback valueCb =
-			boost::bind(&DataHandler::handleValue, dataHandler.get(), _1);
+			boost::bind(&DataHandler::handleValue, dataHandler.get(), boost::placeholders::_1);
 		handler->addValueCallback(valueCb);
 	    }
 

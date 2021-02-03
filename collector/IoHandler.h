@@ -22,7 +22,7 @@
 
 #include <list>
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include "EmsMessage.h"
 #include "ValueCache.h"

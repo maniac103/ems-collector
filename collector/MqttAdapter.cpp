@@ -18,7 +18,7 @@
  */
 
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include "MqttAdapter.h"
 #include "Options.h"
 #include "ValueApi.h"
@@ -36,10 +36,12 @@ MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
     m_topicPrefix(topicPrefix.empty() ? "/ems" : topicPrefix)
 {
     m_client->set_client_id("ems-collector");
-    m_client->set_error_handler(boost::bind(&MqttAdapter::onError, this, _1));
-    m_client->set_connack_handler(boost::bind(&MqttAdapter::onConnect, this, _1, _2));
+    m_client->set_error_handler(boost::bind(&MqttAdapter::onError, this, boost::placeholders::_1));
+    m_client->set_connack_handler(boost::bind(&MqttAdapter::onConnect, this,
+					      boost::placeholders::_1, boost::placeholders::_2));
     m_client->set_close_handler(boost::bind(&MqttAdapter::onClose, this));
-    m_client->set_publish_handler(boost::bind(&MqttAdapter::onMessageReceived, this, _3, _4));
+    m_client->set_publish_handler(boost::bind(&MqttAdapter::onMessageReceived, this,
+					      boost::placeholders::_3, boost::placeholders::_4));
     m_client->connect();
 }
 

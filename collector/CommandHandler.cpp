@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/bind/bind.hpp>
 #include <iostream>
 #include "CommandHandler.h"
 
@@ -36,7 +37,7 @@ CommandHandler::~CommandHandler()
 {
     m_acceptor.close();
     std::for_each(m_connections.begin(), m_connections.end(),
-		  boost::bind(&CommandConnection::close, _1));
+		  boost::bind(&CommandConnection::close, boost::placeholders::_1));
     m_connections.clear();
 }
 
@@ -85,7 +86,7 @@ CommandConnection::CommandConnection(boost::asio::io_service& ios,
 				     ValueCache *cache) :
     m_socket(ios),
     m_commandClient(new CommandClient(this)),
-    m_parser(sender, m_commandClient, cache, boost::bind(&CommandConnection::respond, this, _1)),
+    m_parser(sender, m_commandClient, cache, boost::bind(&CommandConnection::respond, this, boost::placeholders::_1)),
     m_handler(handler)
 {
 }

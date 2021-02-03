@@ -33,7 +33,7 @@ DataHandler::~DataHandler()
 {
     m_acceptor.close();
     std::for_each(m_connections.begin(), m_connections.end(),
-		  boost::bind(&DataConnection::close, _1));
+		  boost::bind(&DataConnection::close, boost::placeholders::_1));
     m_connections.clear();
 }
 
@@ -69,7 +69,7 @@ void
 DataHandler::handleValue(const EmsValue& value)
 {
     std::for_each(m_connections.begin(), m_connections.end(),
-		  boost::bind(&DataConnection::handleValue, _1, value));
+		  boost::bind(&DataConnection::handleValue, boost::placeholders::_1, value));
 }
 
 void
