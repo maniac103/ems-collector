@@ -27,7 +27,7 @@ DEPFILE = .depend
 # include path. The default assumes that both ems-collector and
 # mqtt_client_cpp are cloned into the same top level path.
 #
-#CFLAGS += -I../../mqtt_client_cpp/include -DMQTT_NO_TLS -DHAVE_MQTT -std=c++14
+#CFLAGS += -I../../mqtt_client_cpp/include -DMQTT_NO_TLS -DHAVE_MQTT -DMQTT_NS=mqtt -std=c++14
 #SRCS += MqttAdapter.cpp
 
 all: collectord

@@ -20,7 +20,7 @@ For building the collector, libboost is required:
 ```
 apt-get install libboost1.49-all-dev
 ```
-If MQTT support is enabled, the minimum required boost version is 1.57, so
+If MQTT support is enabled, the minimum required boost version is 1.67, so
 MQTT support can't be enabled on distributions that only ship older boost
 versions.
 

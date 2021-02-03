@@ -21,6 +21,9 @@
 #define __EMSMESSAGE_H__
 
 #include <vector>
+#ifdef HAVE_MQTT // as per its README, mqtt_client_cpp requires its config to be included prior to the boost::variant include
+# include <mqtt/config.hpp>
+#endif
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
 

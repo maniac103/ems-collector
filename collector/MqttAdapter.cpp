@@ -69,20 +69,20 @@ MqttAdapter::handleValue(const EmsValue& value)
     if (debug) {
 	debug << "MQTT: publishing topic '" << topic << "' with value " << formattedValue << std::endl;
     }
-    m_client->publish_at_most_once(topic, formattedValue);
+    m_client->publish(topic, formattedValue, mqtt::qos::at_most_once);
 }
 
 bool
-MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
+MqttAdapter::onConnect(bool sessionPresent, mqtt::connect_return_code returnCode)
 {
     Options::ioDebug() << "MQTT: onConnect, return code "
 		       << std::dec << (unsigned int) returnCode << std::endl;
-    m_connected = returnCode == 0;
+    m_connected = returnCode == mqtt::connect_return_code::accepted;
     if (!m_connected) {
 	m_retryDelay = MinRetryDelaySeconds;
 	scheduleConnectionRetry();
     } else if (m_sender) {
-	m_client->subscribe(m_topicPrefix + "/control/#", 2);
+	m_client->subscribe(m_topicPrefix + "/control/#", mqtt::qos::exactly_once);
 	auto outputCb = [] (const std::string&) {};
 	m_commandParser.reset(
 		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
@@ -91,7 +91,7 @@ MqttAdapter::onConnect(bool sessionPresent, uint8_t returnCode)
 }
 
 void
-MqttAdapter::onError(const boost::system::error_code& ec)
+MqttAdapter::onError(const mqtt::error_code& ec)
 {
     Options::ioDebug() << "MQTT: onError, code " << std::dec << ec << std::endl;
     m_connected = false;
@@ -110,12 +110,12 @@ MqttAdapter::onClose()
 }
 
 bool
-MqttAdapter::onMessageReceived(const std::string& topic, const std::string& contents)
+MqttAdapter::onMessageReceived(const mqtt::buffer& topic, const mqtt::buffer& contents)
 {
     Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
-    std::string command = topic.substr(m_topicPrefix.length() + 9); // strip '/ems/control/'
+    std::string command = topic.substr(m_topicPrefix.length() + 9).to_string(); // strip '/ems/control/'
     std::replace(command.begin(), command.end(), '/', ' ');
-    std::istringstream commandStream(command + " " + contents);
+    std::istringstream commandStream(command + " " + contents.to_string());
     m_commandParser->parse(commandStream);
     return true;
 }
