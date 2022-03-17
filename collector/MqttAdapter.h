@@ -25,6 +25,7 @@
 
 #ifdef HAVE_MQTT
 
+#include <queue>
 #include <mqtt_client_cpp.hpp>
 #include "ApiCommandParser.h"
 #include "Noncopyable.h"
@@ -45,6 +46,7 @@ class MqttAdapter : public boost::noncopyable
 	void onClose();
 	bool onMessageReceived(const mqtt::buffer& topic, const mqtt::buffer& contents);
 	void scheduleConnectionRetry();
+	void sendNextRequest();
 
     private:
 	class CommandClient : public EmsCommandClient {
@@ -53,10 +55,14 @@ class MqttAdapter : public boost::noncopyable
 		    m_adapter(adapter)
 		{ }
 		virtual void onIncomingMessage(const EmsMessage& message) override {
-		    m_adapter->m_commandParser->onIncomingMessage(message);
+		    if (!indeterminate(m_adapter->m_commandParser->onIncomingMessage(message))) {
+			m_adapter->sendNextRequest();
+		    }
 		}
 		virtual void onTimeout() override {
-		    m_adapter->m_commandParser->onTimeout();
+		    if (m_adapter->m_commandParser->onTimeout()) {
+			m_adapter->sendNextRequest();
+		    }
 		}
 	    private:
 		MqttAdapter *m_adapter;
@@ -71,6 +77,7 @@ class MqttAdapter : public boost::noncopyable
 		mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, boost::asio::io_service::strand> > > > m_client;
 	EmsCommandSender * m_sender;
 	boost::shared_ptr<EmsCommandClient> m_cmdClient;
+	std::queue<std::string> m_pendingCommands;
 	bool m_connected;
 	unsigned int m_retryDelay;
 	std::unique_ptr<ApiCommandParser> m_commandParser;

@@ -115,8 +115,8 @@ MqttAdapter::onMessageReceived(const mqtt::buffer& topic, const mqtt::buffer& co
     Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
     std::string command = topic.substr(m_topicPrefix.length() + 9).to_string(); // strip '/ems/control/'
     std::replace(command.begin(), command.end(), '/', ' ');
-    std::istringstream commandStream(command + " " + contents.to_string());
-    m_commandParser->parse(commandStream);
+    m_pendingCommands.emplace(command + " " + contents.to_string());
+    sendNextRequest();
     return true;
 }
 
@@ -133,3 +133,13 @@ MqttAdapter::scheduleConnectionRetry()
     });
 }
 
+void
+MqttAdapter::sendNextRequest()
+{
+    if (m_commandParser && !m_pendingCommands.empty()) {
+	std::istringstream commandStream(m_pendingCommands.front());
+	if (m_commandParser->parse(commandStream) != ApiCommandParser::Busy) {
+	    m_pendingCommands.pop();
+	}
+    }
+}
