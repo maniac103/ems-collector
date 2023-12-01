@@ -25,10 +25,12 @@
 
 MqttAdapter::MqttAdapter(boost::asio::io_service& ios,
 			 EmsCommandSender *sender,
+			 IncomingMessageHandler& msgHandler,
 			 const std::string& host, const std::string& port,
 			 const std::string& topicPrefix) :
     m_client(mqtt::make_client(ios, host, port)),
     m_sender(sender),
+    m_msgHandler(msgHandler),
     m_cmdClient(new CommandClient(this)),
     m_connected(false),
     m_retryDelay(MinRetryDelaySeconds),
@@ -85,7 +87,7 @@ MqttAdapter::onConnect(bool sessionPresent, mqtt::connect_return_code returnCode
 	m_client->subscribe(m_topicPrefix + "/control/#", mqtt::qos::exactly_once);
 	auto outputCb = [] (const std::string&) {};
 	m_commandParser.reset(
-		new ApiCommandParser(*m_sender, m_cmdClient, nullptr, outputCb));
+		new ApiCommandParser(*m_sender, m_msgHandler, m_cmdClient, nullptr, outputCb));
     }
     return true;
 }

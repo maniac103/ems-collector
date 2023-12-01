@@ -23,10 +23,12 @@
 
 CommandHandler::CommandHandler(boost::asio::io_service& ios,
 			       EmsCommandSender& sender,
+			       IncomingMessageHandler& msgHandler,
 			       ValueCache *cache,
 			       boost::asio::ip::tcp::endpoint& endpoint) :
     m_ios(ios),
     m_sender(sender),
+    m_msgHandler(msgHandler),
     m_cache(cache),
     m_acceptor(ios, endpoint)
 {
@@ -73,7 +75,7 @@ CommandHandler::stopConnection(CommandConnection::Ptr connection)
 void
 CommandHandler::startAccepting()
 {
-    CommandConnection::Ptr connection(new CommandConnection(m_ios, m_sender, *this, m_cache));
+    CommandConnection::Ptr connection(new CommandConnection(m_ios, m_sender, m_msgHandler, *this, m_cache));
     m_acceptor.async_accept(connection->socket(),
 		            boost::bind(&CommandHandler::handleAccept, this,
 					connection, boost::asio::placeholders::error));
@@ -82,11 +84,13 @@ CommandHandler::startAccepting()
 
 CommandConnection::CommandConnection(boost::asio::io_service& ios,
 				     EmsCommandSender& sender,
+				     IncomingMessageHandler& msgHandler,
 				     CommandHandler& handler,
 				     ValueCache *cache) :
     m_socket(ios),
     m_commandClient(new CommandClient(this)),
-    m_parser(sender, m_commandClient, cache, boost::bind(&CommandConnection::respond, this, boost::placeholders::_1)),
+    m_parser(sender, msgHandler, m_commandClient, cache,
+	     boost::bind(&CommandConnection::respond, this, boost::placeholders::_1)),
     m_handler(handler)
 {
 }

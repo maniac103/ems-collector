@@ -164,9 +164,16 @@ EmsMessage::EmsMessage(ValueHandler& valueHandler, CacheAccessor cacheAccessor,
 EmsMessage::EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
 		       const std::vector<uint8_t>& data,
 		       bool expectResponse) :
+    EmsMessage(dest, EmsProto::addressPC, type, offset, data, expectResponse)
+{}
+
+EmsMessage::EmsMessage(uint8_t dest, uint8_t source,
+		       uint8_t type, uint8_t offset,
+		       const std::vector<uint8_t>& data,
+		       bool expectResponse) :
     m_valueHandler(),
     m_data(data),
-    m_source(EmsProto::addressPC),
+    m_source(source),
     m_dest(dest | (expectResponse ? 0x80 : 0)),
     m_type(type),
     m_offset(offset)
@@ -177,10 +184,9 @@ std::vector<uint8_t>
 EmsMessage::getSendData(bool omitSenderAddress) const
 {
     std::vector<uint8_t> data;
-    static constexpr uint8_t ourSenderAddress = EmsProto::addressPC;
 
     if (!omitSenderAddress) {
-	data.push_back(ourSenderAddress);
+	data.push_back(m_source);
     }
     data.push_back(m_dest);
     data.push_back(m_type);
@@ -327,8 +333,8 @@ EmsMessage::handle()
 	DebugStream& dataDebug = Options::dataDebug();
 	if (dataDebug) {
 	    dataDebug << "DATA: Unhandled message received";
-	    dataDebug << boost::format("(source 0x%02x, type 0x%02x).")
-		    % (unsigned int) m_source % (unsigned int) m_type;
+	    dataDebug << boost::format("(source 0x%02x, dest 0x%02x, type 0x%02x).")
+		    % (unsigned int) m_source % (unsigned int) m_dest % (unsigned int) m_type;
 	    dataDebug << std::endl;
 	}
     }

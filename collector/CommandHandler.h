@@ -27,6 +27,7 @@
 #include "ApiCommandParser.h"
 #include "CommandScheduler.h"
 #include "EmsMessage.h"
+#include "IncomingMessageHandler.h"
 #include "Noncopyable.h"
 
 class CommandHandler;
@@ -40,6 +41,7 @@ class CommandConnection : public boost::enable_shared_from_this<CommandConnectio
     public:
 	CommandConnection(boost::asio::io_service& ios,
 			  EmsCommandSender& sender,
+			  IncomingMessageHandler& msgHandler,
 			  CommandHandler& handler,
 			  ValueCache *cache);
 
@@ -97,6 +99,7 @@ class CommandHandler : private boost::noncopyable
     public:
 	CommandHandler(boost::asio::io_service& ios,
 		       EmsCommandSender& sender,
+		       IncomingMessageHandler& msgHandler,
 		       ValueCache *cache,
 		       boost::asio::ip::tcp::endpoint& endpoint);
 	~CommandHandler();
@@ -113,6 +116,7 @@ class CommandHandler : private boost::noncopyable
     private:
 	boost::asio::io_service& m_ios;
 	EmsCommandSender& m_sender;
+	IncomingMessageHandler& m_msgHandler;
 	ValueCache *m_cache;
 	boost::asio::ip::tcp::acceptor m_acceptor;
 	std::set<CommandConnection::Ptr> m_connections;

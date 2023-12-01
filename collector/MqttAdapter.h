@@ -28,6 +28,7 @@
 #include <queue>
 #include <mqtt_client_cpp.hpp>
 #include "ApiCommandParser.h"
+#include "IncomingMessageHandler.h"
 #include "Noncopyable.h"
 
 class MqttAdapter : public boost::noncopyable
@@ -35,6 +36,7 @@ class MqttAdapter : public boost::noncopyable
     public:
 	MqttAdapter(boost::asio::io_service& ios,
 		    EmsCommandSender *sender,
+		    IncomingMessageHandler& msgHandler,
 		    const std::string& host, const std::string& port,
 		    const std::string& topicPrefix);
 
@@ -76,6 +78,7 @@ class MqttAdapter : public boost::noncopyable
 	std::shared_ptr<mqtt::callable_overlay<mqtt::client<
 		mqtt::tcp_endpoint<boost::asio::ip::tcp::socket, boost::asio::io_service::strand> > > > m_client;
 	EmsCommandSender * m_sender;
+	IncomingMessageHandler& m_msgHandler;
 	boost::shared_ptr<EmsCommandClient> m_cmdClient;
 	std::queue<std::string> m_pendingCommands;
 	bool m_connected;
@@ -91,6 +94,7 @@ class MqttAdapter {
     public:
 	MqttAdapter(boost::asio::io_service& /* ios */,
 		    EmsCommandSender * /* sender */,
+		    IncomingMessageHandler& /* msgHandler */,
 		    const std::string& /* host */, const std::string& /* port */,
 		    const std::string& /* topicPrefix */)
 	{}

@@ -22,6 +22,7 @@
 
 #include <boost/logic/tribool.hpp>
 #include "CommandScheduler.h"
+#include "IncomingMessageHandler.h"
 #include "ValueCache.h"
 
 class ApiCommandParser : public boost::noncopyable
@@ -37,6 +38,7 @@ class ApiCommandParser : public boost::noncopyable
 
     public:
 	ApiCommandParser(EmsCommandSender& sender,
+			 IncomingMessageHandler& msgHandler,
 			 const boost::shared_ptr<EmsCommandClient>& client,
 			 ValueCache *cache,
 			 OutputCallback outputCb);
@@ -90,6 +92,7 @@ class ApiCommandParser : public boost::noncopyable
 	static const unsigned int MaxRequestRetries = 5;
 
 	EmsCommandSender& m_sender;
+	IncomingMessageHandler& m_msgHandler;
 	boost::shared_ptr<EmsCommandClient> m_client;
 	ValueCache *m_cache;
 	OutputCallback m_outputCb;

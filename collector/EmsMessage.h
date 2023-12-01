@@ -317,6 +317,8 @@ class EmsMessage
 	EmsMessage(ValueHandler& valueHandler, CacheAccessor cacheAccesor, const std::vector<uint8_t>& data);
 	EmsMessage(uint8_t dest, uint8_t type, uint8_t offset,
 		   const std::vector<uint8_t>& data, bool expectResponse);
+	EmsMessage(uint8_t dest, uint8_t source, uint8_t type, uint8_t offset,
+		   const std::vector<uint8_t>& data, bool expectResponse);
 
 	void handle();
 

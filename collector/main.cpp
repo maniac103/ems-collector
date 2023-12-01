@@ -57,13 +57,13 @@ getHandler(const std::string& target, ValueCache& cache)
 }
 
 static MqttAdapter *
-getMqttAdapter(boost::asio::io_service& ios, EmsCommandSender *sender, const std::string& target)
+getMqttAdapter(IoHandler& handler, EmsCommandSender *sender, const std::string& target)
 {
     size_t pos = target.find(':');
     if (pos != std::string::npos) {
 	std::string host = target.substr(0, pos);
 	std::string port = target.substr(pos + 1);
-	return new MqttAdapter(ios, sender, host, port, Options::mqttPrefix());
+	return new MqttAdapter(handler, sender, handler, host, port, Options::mqttPrefix());
     }
 
     return nullptr;
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	    unsigned int cmdPort = Options::commandPort();
 	    if (sender && cmdPort != 0) {
 		boost::asio::ip::tcp::endpoint cmdEndpoint(boost::asio::ip::tcp::v4(), cmdPort);
-		cmdHandler.reset(new CommandHandler(*handler, *sender, &cache, cmdEndpoint));
+		cmdHandler.reset(new CommandHandler(*handler, *sender, *handler, &cache, cmdEndpoint));
 	    }
 
 	    boost::scoped_ptr<DataHandler> dataHandler;

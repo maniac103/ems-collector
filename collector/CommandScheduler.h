@@ -21,6 +21,7 @@
 #define __COMMANDSCHEDULER_H__
 
 #include <list>
+#include <map>
 #include <boost/asio.hpp>
 #include "EmsMessage.h"
 #include "Noncopyable.h"

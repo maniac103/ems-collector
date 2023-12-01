@@ -28,10 +28,12 @@
 #define API_VERSION "2016030701"
 
 ApiCommandParser::ApiCommandParser(EmsCommandSender& sender,
+				   IncomingMessageHandler& msgHandler,
 				   const boost::shared_ptr<EmsCommandClient>& client,
 				   ValueCache *cache,
 				   OutputCallback outputCb) :
     m_sender(sender),
+    m_msgHandler(msgHandler),
     m_client(client),
     m_cache(cache),
     m_outputCb(outputCb),
@@ -1041,8 +1043,18 @@ ApiCommandParser::onIncomingMessage(const EmsMessage& message)
     uint8_t offset = message.getOffset();
 
     if (type == 0xff) {
+	bool success = offset != 0x04;
+	if (success) {
+	    EmsMessage simulatedResponse(0, // simulate broadcast
+					 m_activeRequest->getDestination(),
+					 m_activeRequest->getType(),
+					 m_activeRequest->getOffset(),
+					 m_activeRequest->getData(),
+					 false);
+	    m_msgHandler.handleIncomingMessage(simulatedResponse.getSendData(false));
+	}
 	m_activeRequest.reset();
-	return offset != 0x04;
+	return success;
     }
 
     if (source != m_requestDestination ||

@@ -17,56 +17,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __IOHANDLER_H__
-#define __IOHANDLER_H__
+#ifndef __INCOMINGMESSAGEHANDLER_H__
+#define __INCOMINGMESSAGEHANDLER_H__
 
 #include <list>
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include "EmsMessage.h"
-#include "IncomingMessageHandler.h"
 #include "ValueCache.h"
 
-class IoHandler : public boost::asio::io_service, public IncomingMessageHandler
+class IncomingMessageHandler
 {
     public:
-	IoHandler(ValueCache& cache);
+	typedef std::function<void (const EmsValue& value)> ValueCallback;
 
-	void close() {
-	    post(boost::bind(&IoHandler::doClose, this,
-			     boost::system::error_code()));
+    public:
+	IncomingMessageHandler(ValueCache& cache);
+
+	void addValueCallback(ValueCallback& cb) {
+	    m_valueCallbacks.push_back(cb);
 	}
 
-	bool active() {
-	    return m_active;
-	}
-
-    protected:
-	/* maximum amount of data to read in one operation */
-	static const int maxReadLength = 512;
-
-	virtual void readStart() = 0;
-	virtual void doCloseImpl() = 0;
-
-	virtual void readComplete(const boost::system::error_code& error, size_t bytesTransferred);
-	void doClose(const boost::system::error_code& error);
-
-	bool m_active;
-	unsigned char m_recvBuffer[maxReadLength];
+	void handleIncomingMessage(const std::vector<uint8_t>& data);
+	virtual void onPcMessageReceived(const EmsMessage& /* message */) {}
 
     private:
-	typedef enum {
-	    Syncing,
-	    Length,
-	    Data,
-	    Checksum
-	} State;
+	void handleValue(const EmsValue& value);
 
-	State m_state;
-	size_t m_pos, m_length;
-	uint8_t m_checkSum;
-	std::vector<uint8_t> m_data;
+	std::list<ValueCallback> m_valueCallbacks;
+	EmsMessage::ValueHandler m_valueCb;
+	EmsMessage::CacheAccessor m_cacheCb;
 };
 
-#endif /* __IOHANDLER_H__ */
+#endif /* __INCOMINGMESSAGEANDLER_H__ */
