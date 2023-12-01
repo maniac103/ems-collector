@@ -112,11 +112,14 @@ MqttAdapter::onClose()
 bool
 MqttAdapter::onMessageReceived(const mqtt::buffer& topic, const mqtt::buffer& contents)
 {
+    size_t prefixLength = m_topicPrefix.length();
     Options::ioDebug() << "MQTT: got incoming message, topic " << topic << ", contents " << contents << std::endl;
-    std::string command = topic.substr(m_topicPrefix.length() + 9).to_string(); // strip '/ems/control/'
-    std::replace(command.begin(), command.end(), '/', ' ');
-    m_pendingCommands.emplace(command + " " + contents.to_string());
-    sendNextRequest();
+    if (topic.find(m_topicPrefix) == 0 && topic.find("/control/", prefixLength) == prefixLength) {
+        std::string command = topic.substr(prefixLength + 9).to_string(); // strip '/ems/control/'
+        std::replace(command.begin(), command.end(), '/', ' ');
+        m_pendingCommands.emplace(command + " " + contents.to_string());
+        sendNextRequest();
+    }
     return true;
 }
 
